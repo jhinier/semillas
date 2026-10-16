@@ -1,0 +1,41 @@
+{
+  "name": "semillas-backend",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "build": "tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "test": "bun test",
+    "test:coverage": "bun test --coverage",
+    "test:e2e": "bun test ./test/app.e2e-spec.ts",
+    "typecheck": "tsc --noEmit",
+    "gen:types": "bun run --cwd .. db:types",
+    "db:studio": "drizzle-kit studio",
+    "db:check": "drizzle-kit check",
+    "db:generate:draft": "drizzle-kit generate",
+    "migrar:contenido": "bun --env-file=.dev.vars run src/migracion/migrar-contenido.ts"
+  },
+  "dependencies": {
+    "@asteasolutions/zod-to-openapi": "^8.5.0",
+    "@hono/zod-openapi": "^1.4.0",
+    "@hono/zod-validator": "0.8.0",
+    "@libsql/client": "^0.17.4",
+    "@scalar/hono-api-reference": "^0.11.8",
+    "@supabase/supabase-js": "2.110.2",
+    "drizzle-orm": "^0.45.2",
+    "hono": "4.12.28",
+    "openapi3-ts": "^4.6.0",
+    "postgres": "^3.4.9",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20260708.1",
+    "@types/bun": "^1.3.14",
+    "@types/node": "26.1.1",
+    "drizzle-kit": "^0.31.10",
+    "supabase": "2.109.1",
+    "typescript": "7.0.2",
+    "wrangler": "4.110.0"
+  }
+}

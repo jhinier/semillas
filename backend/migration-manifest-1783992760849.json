@@ -1,0 +1,101 @@
+{
+  "iniciadoEn": "2026-07-14T01:30:13.524Z",
+  "completadoEn": "2026-07-14T01:32:40.848Z",
+  "tablas": {
+    "testamento_biblico": {
+      "origen": 2,
+      "destino": 0
+    },
+    "libro_biblico": {
+      "origen": 66,
+      "destino": 0
+    },
+    "version_biblica": {
+      "origen": 4,
+      "destino": 4
+    },
+    "grupo_edad": {
+      "origen": 3,
+      "destino": 3
+    },
+    "tipo_paso_crecer": {
+      "origen": 6,
+      "destino": 0
+    },
+    "tipo_actividad": {
+      "origen": 13,
+      "destino": 13
+    },
+    "regla_nivel": {
+      "origen": 7,
+      "destino": 0
+    },
+    "logro": {
+      "origen": 9,
+      "destino": 9
+    },
+    "recurso_multimedia": {
+      "origen": 18,
+      "destino": 18
+    },
+    "senda": {
+      "origen": 3,
+      "destino": 3
+    },
+    "tema": {
+      "origen": 10,
+      "destino": 10
+    },
+    "tema_grupo_edad": {
+      "origen": 24,
+      "destino": 24
+    },
+    "paso_tema": {
+      "origen": 17,
+      "destino": 17
+    },
+    "contenido_paso_tema": {
+      "origen": 35,
+      "destino": 35
+    },
+    "pregunta_reflexion": {
+      "origen": 3,
+      "destino": 3
+    },
+    "versiculo_clave": {
+      "origen": 1,
+      "destino": 1
+    },
+    "referencia_biblica": {
+      "origen": 1,
+      "destino": 1
+    },
+    "actividad": {
+      "origen": 15,
+      "destino": 15
+    },
+    "opcion_actividad": {
+      "origen": 6,
+      "destino": 6
+    },
+    "paquete_sin_conexion": {
+      "origen": 3,
+      "destino": 3
+    }
+  },
+  "storage": [
+    {
+      "bucket": "imagenes",
+      "copiados": 10,
+      "errores": 0
+    },
+    {
+      "bucket": "media",
+      "copiados": 17,
+      "errores": 0
+    }
+  ],
+  "errores": [
+    "Error tabla configuracion_plataforma: column \"valor\" is of type jsonb but expression is of type boolean"
+  ]
+}

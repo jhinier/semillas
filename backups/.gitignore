@@ -1,0 +1,3 @@
+# Los dumps y manifiestos de respaldo no se versionan.
+*
+!.gitignore

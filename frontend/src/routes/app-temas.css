@@ -1,0 +1,226 @@
+.temas-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+}
+
+.temas-page__main {
+  min-width: 0;
+}
+
+.temas-page__filters {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.temas-page__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.temas-page__aside {
+  display: none;
+}
+
+.temas-aside {
+  display: none;
+}
+
+.temas-page__mobile-summary {
+  display: block;
+  margin-bottom: 0.875rem;
+}
+
+.temas-senda-scroll,
+.temas-tabs-scroll,
+.temas-status-tabs {
+  display: flex;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.temas-senda-scroll::-webkit-scrollbar,
+.temas-tabs-scroll::-webkit-scrollbar,
+.temas-status-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.temas-senda-scroll > *,
+.temas-tabs-scroll > *,
+.temas-status-tab {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+}
+
+@media (max-width: 767px) {
+  .temas-page {
+    gap: 0.875rem;
+    padding-bottom: calc(7rem + env(safe-area-inset-bottom));
+  }
+
+  .temas-page__filters {
+    gap: 0.125rem;
+  }
+
+  .temas-page__grid {
+    gap: 0.875rem;
+  }
+
+  .theme-card--mobile-list {
+    display: grid !important;
+    grid-template-columns: 9.5rem minmax(0, 1fr);
+    min-height: 17rem;
+    border-radius: 24px !important;
+  }
+
+  .theme-card--mobile-list .theme-card__media {
+    width: 9.5rem !important;
+    height: 100% !important;
+    min-height: 17rem;
+    border-radius: 0;
+  }
+
+  .theme-card--mobile-list .theme-card__media img {
+    object-position: center;
+  }
+
+  .theme-card--mobile-list .theme-card__body {
+    min-width: 0;
+    padding: 1.25rem 1.1rem !important;
+  }
+
+  .theme-card--mobile-list .theme-card__content {
+    gap: 0.45rem !important;
+  }
+
+  .theme-card--mobile-list .theme-card__senda-label {
+    max-width: 100%;
+    padding: 0.28rem 0.55rem;
+    font-size: 0.64rem;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .theme-card--mobile-list .theme-card__title {
+    font-size: 1.15rem !important;
+    line-height: 1.08 !important;
+    -webkit-line-clamp: 2;
+  }
+
+  .theme-card--mobile-list .theme-card__description {
+    min-height: 0 !important;
+    font-size: 0.76rem !important;
+    line-height: 1.42 !important;
+    -webkit-line-clamp: 2;
+  }
+
+  .theme-card--mobile-list .theme-card__metadata {
+    gap: 0.35rem;
+    font-size: 0.66rem;
+  }
+
+  .theme-card--mobile-list .theme-card__metadata > span {
+    padding: 0.24rem 0.45rem;
+  }
+
+  .theme-card--mobile-list .theme-card__footer {
+    margin-top: 0.65rem !important;
+    gap: 0.5rem !important;
+  }
+
+  .theme-card--mobile-list .theme-card__progress {
+    gap: 0.45rem;
+  }
+
+  .theme-card--mobile-list .theme-card__progress > div {
+    height: 0.34rem;
+  }
+
+  .theme-card--mobile-list .theme-card__progress > span {
+    min-width: 24px;
+    font-size: 0.68rem;
+  }
+
+  .theme-card--mobile-list .theme-card__action {
+    width: fit-content !important;
+    max-width: 100% !important;
+    align-self: flex-start !important;
+    padding: 0.45rem 0.8rem !important;
+    font-size: 0.7rem !important;
+  }
+
+  .theme-card--mobile-list .theme-card__favorite {
+    top: 0.65rem;
+    right: 0.65rem;
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+}
+
+@media (max-width: 390px) {
+  .theme-card--mobile-list {
+    grid-template-columns: 8.25rem minmax(0, 1fr);
+    min-height: 16rem;
+  }
+
+  .theme-card--mobile-list .theme-card__media {
+    width: 8.25rem !important;
+    min-height: 16rem;
+  }
+
+  .theme-card--mobile-list .theme-card__body {
+    padding: 1rem .9rem !important;
+  }
+
+  .theme-card--mobile-list .theme-card__description {
+    display: none;
+  }
+}
+
+@media (min-width: 640px) {
+  .temas-page__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .temas-page {
+    grid-template-columns: minmax(0, 1fr) 286px;
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  .temas-page__aside {
+    display: flex;
+    position: sticky;
+    top: 1.5rem;
+    flex-direction: column;
+    gap: 1.25rem;
+    width: 100%;
+  }
+
+  .temas-page__mobile-summary {
+    display: none;
+  }
+
+  .temas-aside {
+    display: flex;
+  }
+}
+
+@media (min-width: 1500px) {
+  .temas-page__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
+}

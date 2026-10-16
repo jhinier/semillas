@@ -1,0 +1,745 @@
+[
+  {
+    "id": "DESV-01",
+    "estado": "desviacion",
+    "gate": "G0-G8",
+    "pruebas": [
+      "tests/e2e/pwa-installability.spec.ts",
+      "tests/e2e/pwa-offline.spec.ts"
+    ],
+    "evidencias": [
+      "docs/entrega/desviaciones.md",
+      "docs/evidencias/G6/pwa.md"
+    ],
+    "archivos": [
+      "frontend/vite.config.ts",
+      "frontend/index.html"
+    ]
+  },
+  {
+    "id": "ENT-01",
+    "estado": "revalidar",
+    "gate": "G6",
+    "pruebas": [
+      "tests/e2e/pwa-installability.spec.ts",
+      "tests/e2e/pwa-offline.spec.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G6/pwa.md",
+      "docs/evidencias/G6/android-gama-baja.md"
+    ]
+  },
+  {
+    "id": "ENT-02",
+    "estado": "brecha",
+    "gate": "G8",
+    "pruebas": [
+      "scripts/smoke.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G8/README.md"
+    ]
+  },
+  {
+    "id": "ENT-03",
+    "estado": "revalidar",
+    "gate": "G8",
+    "pruebas": [
+      "tests/trazabilidad-requisitos.test.ts"
+    ],
+    "evidencias": [
+      "README.md",
+      "docs/estado-docs.md"
+    ]
+  },
+  {
+    "id": "ENT-04",
+    "estado": "brecha",
+    "gate": "G7-G8",
+    "pruebas": [
+      "scripts/backup-supabase.test.ts",
+      "scripts/backup-storage.test.ts"
+    ],
+    "evidencias": [
+      "docs/operacion/backup-restore.md",
+      "docs/evidencias/G7/README.md",
+      "docs/evidencias/G8/rollback-staging.md"
+    ]
+  },
+  {
+    "id": "ENT-05",
+    "estado": "revalidar",
+    "gate": "G8",
+    "pruebas": [
+      "scripts/smoke.test.ts"
+    ],
+    "evidencias": [
+      ".github/workflows/deploy.yml",
+      "docs/evidencias/G8/workflow.md"
+    ]
+  },
+  {
+    "id": "ENT-06",
+    "estado": "cumple",
+    "gate": "G1-G7",
+    "pruebas": [
+      "tests/seguridad-configuracion.test.ts"
+    ],
+    "evidencias": [
+      "backend/.env.example",
+      "frontend/.env.example",
+      "docs/operacion/entornos.md"
+    ]
+  },
+  {
+    "id": "ENT-07",
+    "estado": "cumple",
+    "gate": "G7",
+    "pruebas": [
+      "scripts/check-doc-links.test.ts"
+    ],
+    "evidencias": [
+      "README.md",
+      "docs/estado-docs.md"
+    ]
+  },
+  {
+    "id": "ENT-08",
+    "estado": "revalidar",
+    "gate": "G7-G8",
+    "pruebas": [
+      "tests/e2e/smoke.spec.ts"
+    ],
+    "evidencias": [
+      "docs/manual-usuario.md",
+      "docs/evidencias/G7/revision-tercero.md"
+    ]
+  },
+  {
+    "id": "ENT-09",
+    "estado": "revalidar",
+    "gate": "G7-G8",
+    "pruebas": [
+      "backend/src/modules/admin/admin.routes.test.ts"
+    ],
+    "evidencias": [
+      "docs/manual-administrador.md",
+      "docs/cms.md",
+      "docs/evidencias/G7/revision-tercero.md"
+    ]
+  },
+  {
+    "id": "ENT-10",
+    "estado": "revalidar",
+    "gate": "G7-G8",
+    "pruebas": [
+      "scripts/check-doc-links.test.ts"
+    ],
+    "evidencias": [
+      "docs/arquitectura.md",
+      "docs/estado-docs.md"
+    ]
+  },
+  {
+    "id": "RF-01",
+    "estado": "revalidar",
+    "gate": "G2",
+    "pruebas": [
+      "frontend/src/features/auth/migracion-invitado.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G2/README.md",
+      "docs/evidencias/G3/README.md"
+    ]
+  },
+  {
+    "id": "RF-02",
+    "estado": "revalidar",
+    "gate": "G2",
+    "pruebas": [
+      "frontend/src/features/auth/social-login.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G2/README.md",
+      "docs/auth/oauth-entornos.md"
+    ]
+  },
+  {
+    "id": "RF-03",
+    "estado": "brecha",
+    "gate": "G2",
+    "pruebas": [
+      "frontend/src/features/auth/social-login.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G2/README.md",
+      "docs/auth/oauth-entornos.md"
+    ]
+  },
+  {
+    "id": "RF-04",
+    "estado": "revalidar",
+    "gate": "G2",
+    "pruebas": [
+      "backend/src/modules/users/users.schemas.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G2/README.md"
+    ]
+  },
+  {
+    "id": "RF-05",
+    "estado": "revalidar",
+    "gate": "G2",
+    "pruebas": [
+      "backend/src/modules/users/users.schemas.test.ts",
+      "backend/src/modules/users/users.routes.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G2/README.md"
+    ]
+  },
+  {
+    "id": "RF-06",
+    "estado": "brecha",
+    "gate": "G2",
+    "pruebas": [
+      "frontend/src/features/auth/migracion-invitado.test.ts",
+      "backend/src/modules/auth/casos-uso/resolver-sesion.test.ts",
+      "backend/src/modules/users/casos-uso/vincular-cuenta.test.ts",
+      "frontend/src/routes/auth.callback.test.tsx",
+      "frontend/src/shared/auth/supabase.helpers.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G2/README.md"
+    ]
+  },
+  {
+    "id": "RF-07",
+    "estado": "revalidar",
+    "gate": "G2",
+    "pruebas": [
+      "backend/src/shared/middleware/auth.middleware.test.ts",
+      "backend/src/shared/middleware/role.middleware.test.ts",
+      "backend/test/app.e2e-spec.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G1/README.md",
+      "docs/evidencias/G2/README.md"
+    ]
+  },
+  {
+    "id": "RF-08",
+    "estado": "revalidar",
+    "gate": "G4",
+    "pruebas": [
+      "backend/src/modules/sendas/sendas.routes.test.ts",
+      "backend/src/modules/themes/themes.routes.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G4/README.md"
+    ]
+  },
+  {
+    "id": "RF-09",
+    "estado": "revalidar",
+    "gate": "G4",
+    "pruebas": [
+      "backend/src/modules/admin/publicacion/matriz-crecer.test.ts",
+      "frontend/src/features/crecer/componentes/actividad-wrapper.test.tsx"
+    ],
+    "evidencias": [
+      "docs/evidencias/G4/README.md"
+    ]
+  },
+  {
+    "id": "RF-10",
+    "estado": "revalidar",
+    "gate": "G4",
+    "pruebas": [
+      "backend/src/modules/admin/publicacion/validar-publicacion.test.ts",
+      "backend/src/openapi/spec.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G4/README.md",
+      "docs/cms.md"
+    ]
+  },
+  {
+    "id": "RF-11",
+    "estado": "revalidar",
+    "gate": "G4",
+    "pruebas": [
+      "backend/src/modules/activities/activity-config.schemas.test.ts",
+      "frontend/src/shared/schemas/actividad-config.schema.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G4/README.md"
+    ]
+  },
+  {
+    "id": "RF-12",
+    "estado": "revalidar",
+    "gate": "G4",
+    "pruebas": [
+      "frontend/src/features/crecer/componentes/actividad-wrapper.test.tsx"
+    ],
+    "evidencias": [
+      "docs/evidencias/G4/README.md"
+    ]
+  },
+  {
+    "id": "RF-13",
+    "estado": "revalidar",
+    "gate": "G5",
+    "pruebas": [
+      "backend/src/modules/gamification/gamification-awards.test.ts",
+      "backend/test/gamification-idempotency.e2e-spec.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G5/README.md"
+    ]
+  },
+  {
+    "id": "RF-14",
+    "estado": "cumple",
+    "gate": "G5",
+    "pruebas": [
+      "backend/src/modules/gamification/racha.service.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G5/README.md",
+      "backend/src/modules/gamification/racha.service.ts"
+    ]
+  },
+  {
+    "id": "RF-15",
+    "estado": "revalidar",
+    "gate": "G5",
+    "pruebas": [
+      "backend/src/modules/gamification/gamification-awards.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G5/README.md"
+    ]
+  },
+  {
+    "id": "RF-16",
+    "estado": "revalidar",
+    "gate": "G4",
+    "pruebas": [
+      "backend/src/modules/admin/admin.schemas.test.ts",
+      "backend/src/modules/admin/admin.routes.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G4/README.md",
+      "docs/cms.md"
+    ]
+  },
+  {
+    "id": "RF-17",
+    "estado": "cumple",
+    "gate": "G4",
+    "pruebas": [
+      "backend/src/modules/admin/publicacion/validar-publicacion.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G4/README.md"
+    ]
+  },
+  {
+    "id": "RF-18",
+    "estado": "revalidar",
+    "gate": "G4",
+    "pruebas": [
+      "backend/src/modules/admin/publicacion/validar-publicacion.test.ts",
+      "backend/src/modules/admin/admin.routes.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G4/README.md"
+    ]
+  },
+  {
+    "id": "RF-19",
+    "estado": "revalidar",
+    "gate": "G4-G8",
+    "pruebas": [
+      "backend/src/modules/themes/themes.service.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G4/README.md",
+      "docs/evidencias/G8/README.md"
+    ]
+  },
+  {
+    "id": "RF-20",
+    "estado": "revalidar",
+    "gate": "G4",
+    "pruebas": [
+      "backend/src/modules/media/media.routes.test.ts",
+      "backend/src/modules/media/media.use-cases.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G4/README.md",
+      "docs/seguridad.md"
+    ]
+  },
+  {
+    "id": "RF-21",
+    "estado": "revalidar",
+    "gate": "G3",
+    "pruebas": [
+      "frontend/src/lib/offline/download-transaction.test.ts",
+      "frontend/src/lib/offline/offline-package.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G3/README.md",
+      "docs/evidencias/G6/pwa.md"
+    ]
+  },
+  {
+    "id": "RF-22",
+    "estado": "brecha",
+    "gate": "G3",
+    "pruebas": [
+      "backend/src/modules/sync/sync.unit-of-work.test.ts",
+      "backend/src/modules/sync/casos-uso/procesar-sync-push.test.ts",
+      "frontend/src/lib/offline/sync-reconciliation.test.ts",
+      "frontend/src/lib/offline/syncEngine.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G3/README.md",
+      "docs/offline-sync.md"
+    ]
+  },
+  {
+    "id": "RF-23",
+    "estado": "revalidar",
+    "gate": "G5",
+    "pruebas": [
+      "backend/src/modules/clubs/casos-uso/clubs.test.ts",
+      "frontend/src/features/clubes/clubes.api.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G5/README.md"
+    ]
+  },
+  {
+    "id": "RF-24",
+    "estado": "revalidar",
+    "gate": "G5",
+    "pruebas": [
+      "backend/src/modules/clubs/clubs.mapper.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G5/README.md"
+    ]
+  },
+  {
+    "id": "RF-25",
+    "estado": "revalidar",
+    "gate": "G5",
+    "pruebas": [
+      "backend/src/modules/clubs/casos-uso/clubs.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G5/README.md"
+    ]
+  },
+  {
+    "id": "RF-26",
+    "estado": "cumple",
+    "gate": "G5",
+    "pruebas": [
+      "frontend/src/features/logros/utils/share-payload.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G5/README.md"
+    ]
+  },
+  {
+    "id": "RF-27",
+    "estado": "revalidar",
+    "gate": "G4-G6",
+    "pruebas": [
+      "tests/e2e/smoke.spec.ts",
+      "tests/e2e/accessibility.spec.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G6/pwa.md"
+    ]
+  },
+  {
+    "id": "RF-B1",
+    "estado": "revalidar",
+    "gate": "G1",
+    "pruebas": [
+      "backend/src/db/senda-imagen-schema.test.ts"
+    ],
+    "evidencias": [
+      "supabase/migrations",
+      "docs/base-datos.md"
+    ]
+  },
+  {
+    "id": "RF-B2",
+    "estado": "cumple",
+    "gate": "G1",
+    "pruebas": [
+      "backend/src/openapi/spec.test.ts",
+      "backend/src/openapi/paridad-rutas.test.ts",
+      "tests/contrato-openapi-frontend.test.ts",
+      "tests/contrato-publico.test.ts"
+    ],
+    "evidencias": [
+      "docs/api.md",
+      "backend/src/openapi/spec.ts",
+      "docs/evidencias/G1/README.md"
+    ]
+  },
+  {
+    "id": "RNF-01",
+    "estado": "revalidar",
+    "gate": "G1",
+    "pruebas": [
+      "backend/src/openapi/spec.test.ts",
+      "backend/src/legacy-routes.test.ts"
+    ],
+    "evidencias": [
+      "docs/arquitectura.md",
+      "docs/api.md"
+    ]
+  },
+  {
+    "id": "RNF-02",
+    "estado": "brecha",
+    "gate": "G6",
+    "pruebas": [
+      "scripts/check-bundle-budget.test.ts",
+      "tests/e2e/pwa-offline.spec.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G6/baseline.md",
+      "docs/evidencias/G6/android-gama-baja.md"
+    ]
+  },
+  {
+    "id": "RNF-03",
+    "estado": "brecha",
+    "gate": "G6",
+    "pruebas": [
+      "frontend/src/lib/offline/sync-lifecycle.test.ts",
+      "backend/src/modules/sync/sync.unit-of-work.test.ts",
+      "frontend/src/lib/offline/sync-reconciliation.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G3/README.md"
+    ]
+  },
+  {
+    "id": "RNF-04",
+    "estado": "revalidar",
+    "gate": "G4",
+    "pruebas": [
+      "backend/src/modules/activities/activity-config.schemas.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G4/README.md",
+      "docs/cms.md"
+    ]
+  },
+  {
+    "id": "RNF-05",
+    "estado": "revalidar",
+    "gate": "G1",
+    "pruebas": [
+      "backend/src/db/senda-imagen-schema.test.ts"
+    ],
+    "evidencias": [
+      "docs/base-datos.md",
+      "docs/evidencias/G1/README.md"
+    ]
+  },
+  {
+    "id": "RNF-06",
+    "estado": "cumple",
+    "gate": "G6",
+    "pruebas": [
+      "frontend/src/shared/i18n/i18n.test.ts"
+    ],
+    "evidencias": [
+      "scripts/check-i18n.ts",
+      "docs/evidencias/G6/baseline.md"
+    ],
+    "archivos": [
+      "frontend/src/shared/i18n/i18n.ts",
+      "frontend/src/shared/i18n/resources.ts"
+    ]
+  },
+  {
+    "id": "RNF-07",
+    "estado": "brecha",
+    "gate": "G6",
+    "pruebas": [
+      "tests/e2e/accessibility.spec.ts",
+      "frontend/src/features/crecer/hooks/use-narracion-paso.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G6/accessibility.md",
+      "docs/evidencias/G6/pwa.md"
+    ]
+  },
+  {
+    "id": "RNF-08",
+    "estado": "brecha",
+    "gate": "G4",
+    "pruebas": [
+      "scripts/check-doc-links.test.ts",
+      "tests/trazabilidad-requisitos.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G0/cobertura-baseline.md",
+      "docs/estado-docs.md"
+    ]
+  },
+  {
+    "id": "RNF-09",
+    "estado": "revalidar",
+    "gate": "G6",
+    "pruebas": [
+      "tests/e2e/pwa-installability.spec.ts",
+      "tests/e2e/pwa-offline.spec.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G6/pwa.md",
+      "docs/entrega/desviaciones.md"
+    ],
+    "archivos": [
+      "frontend/vite.config.ts",
+      "frontend/src/componentes/ui/pwa-lifecycle.tsx"
+    ]
+  },
+  {
+    "id": "RS-01",
+    "estado": "revalidar",
+    "gate": "G1",
+    "pruebas": [
+      "backend/src/shared/middleware/auth.middleware.test.ts",
+      "backend/test/app.e2e-spec.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G1/README.md"
+    ]
+  },
+  {
+    "id": "RS-02",
+    "estado": "revalidar",
+    "gate": "G1",
+    "pruebas": [
+      "backend/src/shared/middleware/role.middleware.test.ts",
+      "backend/test/app.e2e-spec.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G1/README.md"
+    ]
+  },
+  {
+    "id": "RS-03",
+    "estado": "revalidar",
+    "gate": "G2-G5",
+    "pruebas": [
+      "backend/src/modules/users/users.schemas.test.ts",
+      "backend/src/modules/clubs/clubs.mapper.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G2/README.md",
+      "docs/evidencias/G5/README.md"
+    ]
+  },
+  {
+    "id": "RS-04",
+    "estado": "revalidar",
+    "gate": "G6",
+    "pruebas": [
+      "tests/e2e/smoke.spec.ts"
+    ],
+    "evidencias": [
+      "docs/seguridad.md",
+      "docs/evidencias/G6/baseline.md"
+    ]
+  },
+  {
+    "id": "RS-05",
+    "estado": "revalidar",
+    "gate": "G8",
+    "pruebas": [
+      "scripts/smoke.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G8/README.md",
+      "frontend/public/_headers"
+    ]
+  },
+  {
+    "id": "RS-06",
+    "estado": "cumple",
+    "gate": "G3",
+    "pruebas": [
+      "backend/src/modules/admin/publicacion/validar-publicacion.test.ts",
+      "backend/src/shared/middleware/error-handler.test.ts"
+    ],
+    "evidencias": [
+      "docs/seguridad.md",
+      "docs/evidencias/G1/README.md"
+    ]
+  },
+  {
+    "id": "RS-07",
+    "estado": "brecha",
+    "gate": "G3",
+    "pruebas": [
+      "frontend/src/lib/offline/user-scope.test.ts",
+      "backend/src/modules/sync/casos-uso/procesar-sync-push.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G3/README.md",
+      "docs/offline-sync.md"
+    ]
+  },
+  {
+    "id": "RS-08",
+    "estado": "revalidar",
+    "gate": "G4",
+    "pruebas": [
+      "backend/src/modules/admin/publicacion/validar-publicacion.test.ts",
+      "backend/src/modules/admin/admin.routes.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G4/README.md"
+    ]
+  },
+  {
+    "id": "RS-09",
+    "estado": "cumple",
+    "gate": "G5",
+    "pruebas": [
+      "backend/src/modules/clubs/moderation.routes.test.ts",
+      "backend/src/modules/clubs/moderation-policy.test.ts"
+    ],
+    "evidencias": [
+      "docs/evidencias/G5/README.md"
+    ]
+  },
+  {
+    "id": "RS-10",
+    "estado": "brecha",
+    "gate": "G5",
+    "pruebas": [
+      "tests/seguridad-configuracion.test.ts"
+    ],
+    "evidencias": [
+      "docs/seguridad.md",
+      "docs/evidencias/G1/README.md"
+    ]
+  }
+]

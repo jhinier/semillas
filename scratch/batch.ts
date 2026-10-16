@@ -1,0 +1,116 @@
+  async function calcularCompletitudTemasEnLote(temas: any[]) {
+    if (temas.length === 0) return new Map();
+    const temaIds = temas.map(t => t.id);
+
+    const [gruposResult, pasosResult, actividadesResult, versiculoResult] = await Promise.all([
+      supabase.from("tema_grupo_edad").select("tema_id, grupo_edad_id, grupo_edad:grupo_edad_id(codigo)").in("tema_id", temaIds),
+      supabase.from("paso_tema").select("tema_id, id, tipo_paso_id, orden, tipo_paso:tipo_paso_id(codigo), contenidos:contenido_paso_tema(id, grupo_edad_id, titulo, cuerpo, recurso_audio_id)").in("tema_id", temaIds),
+      supabase.from("actividad").select("tema_id, id, paso_id, grupo_edad_id, titulo, consigna, configuracion, tipo_actividad:tipo_actividad_id(codigo), opciones:opcion_actividad(correcta)").in("tema_id", temaIds),
+      supabase.from("versiculo_clave").select("tema_id, texto, libro_id, capitulo, versiculo").in("tema_id", temaIds)
+    ]);
+
+    const gruposMap = new Map<string, any[]>();
+    const pasosMap = new Map<string, any[]>();
+    const actMap = new Map<string, any[]>();
+    const verMap = new Map<string, any>();
+
+    temaIds.forEach(id => {
+      gruposMap.set(id, []);
+      pasosMap.set(id, []);
+      actMap.set(id, []);
+    });
+
+    (gruposResult.data ?? []).forEach(g => gruposMap.get(g.tema_id)?.push(g));
+    (pasosResult.data ?? []).forEach(p => pasosMap.get(p.tema_id)?.push(p));
+    (actividadesResult.data ?? []).forEach(a => actMap.get(a.tema_id)?.push(a));
+    (versiculoResult.data ?? []).forEach(v => verMap.set(v.tema_id, v));
+
+    const completitudMap = new Map<string, any>();
+
+    temas.forEach(tema => {
+      const grupos = gruposMap.get(tema.id) ?? [];
+      const pasos = pasosMap.get(tema.id) ?? [];
+      const actividades = actMap.get(tema.id) ?? [];
+      const versiculoResultData = verMap.get(tema.id);
+      
+      const portadaResultData = tema.portada_recurso ? { id: tema.portada_recurso.id, texto_alternativo: tema.portada_recurso.texto_alternativo } : null;
+
+      const esperados = Math.max(grupos.length * 6, 1);
+      const contenidosValidos = pasos.flatMap((paso: any) => paso.contenidos ?? []).filter((contenido: any) => contenido.titulo?.trim() && contenido.cuerpo?.trim()).length;
+      const gruposEdadIds = grupos.map((grupo: any) => grupo.grupo_edad_id);
+      const gruposSemillas = grupos.filter((grupo: any) => {
+        const edad = Array.isArray(grupo.grupo_edad) ? grupo.grupo_edad[0] : grupo.grupo_edad;
+        return edad?.codigo === "semillas";
+      }).map((grupo: any) => grupo.grupo_edad_id);
+      const celdas = pasos.flatMap((paso: any) => {
+        const tipoPaso = Array.isArray(paso.tipo_paso) ? paso.tipo_paso[0] : paso.tipo_paso;
+        const codigoMomento = tipoPaso?.codigo as MomentoCrecer | undefined;
+        if (!codigoMomento) return [];
+        return (paso.contenidos ?? []).map((contenido: any) => ({
+          grupoEdadId: contenido.grupo_edad_id,
+          codigoMomento,
+          completa: Boolean(contenido.titulo?.trim() && contenido.cuerpo?.trim()),
+          audioValida: Boolean(contenido.recurso_audio_id),
+          orden: paso.orden,
+        }));
+      });
+      const matriz = evaluarMatrizCrecer(gruposEdadIds, celdas);
+      const narracionSemillasValida = gruposSemillas.length === 0 || MOMENTOS.every((momento) =>
+        gruposSemillas.every((grupoEdadId: any) => celdas.some((celda: any) => celda.grupoEdadId === grupoEdadId && celda.codigoMomento === momento && celda.completa && celda.audioValida)),
+      );
+      const publicacion = validarPublicacion({
+        titulo: tema.titulo,
+        sendaId: tema.senda_id,
+        versionBiblicaId: tema.version_biblica_id,
+        versiculo: versiculoResultData
+          ? { texto: versiculoResultData.texto, libroId: String(versiculoResultData.libro_id), capitulo: versiculoResultData.capitulo, numero: versiculoResultData.versiculo }
+          : null,
+        portada: portadaResultData
+          ? { id: portadaResultData.id, alt: portadaResultData.texto_alternativo }
+          : null,
+        gruposEdadIds,
+        celdasCrecer: celdas,
+        actividades: actividades.map((actividad: any) => ({
+          id: actividad.id,
+          titulo: actividad.titulo,
+          consigna: actividad.consigna,
+          requiereOpciones: (Array.isArray(actividad.tipo_actividad) ? actividad.tipo_actividad[0] : actividad.tipo_actividad)?.codigo === "cuestionario",
+          configuracionValida: validarConfiguracionActividad(
+            String((Array.isArray(actividad.tipo_actividad) ? actividad.tipo_actividad[0] : actividad.tipo_actividad)?.codigo ?? ""),
+            actividad.configuracion,
+          ).success,
+          opciones: actividad.opciones ?? [],
+        })),
+        revisionAprobada: true, // Listado general no verifica revisión para completitud base
+        narracionSemillasValida,
+      });
+
+      const criterios = [
+        { codigo: "informacion", etiqueta: "Información general", completo: Boolean(tema.titulo && tema.slug && tema.objetivo && tema.resumen && tema.senda_id) },
+        { codigo: "portada", etiqueta: "Portada", completo: Boolean(tema.portada_recurso_id) },
+        { codigo: "publico", etiqueta: "Público objetivo", completo: grupos.length > 0 },
+        { codigo: "crecer", etiqueta: "Recorrido CRECER", completo: matriz.valida, detalle: `${contenidosValidos}/${esperados} contenidos` },
+        { codigo: "actividades", etiqueta: "Actividades", completo: actividades.length > 0, detalle: `${actividades.length} actividades` },
+        { codigo: "configuracion", etiqueta: "Configuración", completo: Boolean(tema.version_biblica_id && tema.minutos_estimados > 0 && tema.xp_recompensa >= 0) },
+        { codigo: "publicacion", etiqueta: "Validación de publicación", completo: publicacion.valido, detalle: publicacion.errores.map((error: any) => error.codigo).join(", ") }
+      ];
+      const porcentaje = Math.round((criterios.filter((criterio) => criterio.completo).length / criterios.length) * 100);
+
+      completitudMap.set(tema.id, {
+        porcentaje,
+        listo_para_revision: criterios.every((criterio) => criterio.completo),
+        criterios,
+        estadisticas: {
+          grupos_edad: grupos.length,
+          pasos_creados: pasos.length,
+          contenidos_creados: contenidosValidos,
+          contenidos_esperados: esperados,
+          actividades: actividades.length
+        },
+        revisionAprobada: true,
+        errores_publicacion: publicacion.errores
+      });
+    });
+
+    return completitudMap;
+  }

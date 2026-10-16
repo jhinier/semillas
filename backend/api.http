@@ -1,0 +1,182 @@
+### ============================================
+### Semillas API — Endpoints de prueba
+### ============================================
+### Base: http://localhost:8787
+### Cliente: VS Code REST Client
+### ============================================
+
+### ────────────────────────────────────────────
+### Health
+### ────────────────────────────────────────────
+### @name health
+GET http://localhost:8787/health
+
+### ────────────────────────────────────────────
+### Root
+### ────────────────────────────────────────────
+GET http://localhost:8787/
+
+### ────────────────────────────────────────────
+### Catálogo: Franjas de edad
+### ────────────────────────────────────────────
+### @name ageGroups
+GET http://localhost:8787/catalogo/grupos-etarios
+
+### ────────────────────────────────────────────
+### Catálogo: Tipos de actividad
+### ────────────────────────────────────────────
+### @name activityTypes
+GET http://localhost:8787/catalogo/tipos-actividad
+
+### ────────────────────────────────────────────
+### Catálogo: Pasos CRECER
+### ────────────────────────────────────────────
+### @name crecerSteps
+GET http://localhost:8787/catalogo/pasos-crecer
+
+### ────────────────────────────────────────────
+### Sendas
+### ────────────────────────────────────────────
+### @name sendas
+GET http://localhost:8787/sendas
+
+### ────────────────────────────────────────────
+### Auth: Crear invitado
+### ────────────────────────────────────────────
+### @name createGuest
+POST http://localhost:8787/autenticacion/invitado
+Content-Type: application/json
+
+{
+  "apodo": "Semillero"
+}
+
+### Auth: Crear invitado con franja
+POST http://localhost:8787/autenticacion/invitado
+Content-Type: application/json
+
+{
+  "apodo": "Explorador",
+  "grupo_edad_id": "34a4ef91-70c8-47ea-91db-68c66512ccf5"
+}
+
+### ────────────────────────────────────────────
+### Perfil / Usuario
+### ────────────────────────────────────────────
+### @name me
+### Reemplaza GUEST_ID con el headerValue de createGuest
+GET http://localhost:8787/perfil
+X-Guest-User-Id: GUEST_ID
+
+### Actualizar perfil
+PATCH http://localhost:8787/perfil/actualizar
+Content-Type: application/json
+X-Guest-User-Id: GUEST_ID
+
+{
+  "apodo": "NuevoNombre",
+  "audio_preferido": true,
+  "tamano_texto": "large"
+}
+
+### ────────────────────────────────────────────
+### Temas
+### ────────────────────────────────────────────
+### Listar temas publicados
+### @name themes
+GET http://localhost:8787/temas
+
+### Listar temas por senda
+GET http://localhost:8787/temas?senda_id=SENDA_ID
+
+### Detalle de tema
+### @name themeDetail
+### Reemplaza TEMA_ID con un id del listado
+GET http://localhost:8787/temas/TEMA_ID
+
+### ────────────────────────────────────────────
+### Pasos CRECER de un tema
+### ────────────────────────────────────────────
+### @name themeSteps
+GET http://localhost:8787/temas/TEMA_ID/pasos
+
+### Pasos filtrados por franja
+GET http://localhost:8787/temas/TEMA_ID/pasos?grupo_edad_id=GRUPO_EDAD_ID
+
+### ────────────────────────────────────────────
+### Actividades de un tema
+### ────────────────────────────────────────────
+### @name themeActivities
+GET http://localhost:8787/temas/TEMA_ID/actividades
+
+### Actividades filtradas por franja
+GET http://localhost:8787/temas/TEMA_ID/actividades?grupo_edad_id=GRUPO_EDAD_ID
+
+### ────────────────────────────────────────────
+### Administración: pasos CRECER
+### ────────────────────────────────────────────
+### Agregar paso a un tema
+POST http://localhost:8787/administracion/temas/TEMA_ID/pasos
+Content-Type: application/json
+X-Guest-User-Id: GUEST_ID
+
+{
+  "paso_id": "PASO_ID"
+}
+
+### ────────────────────────────────────────────
+### Actividades individuales
+### ────────────────────────────────────────────
+### @name activityDetail
+### Reemplaza ACTIVIDAD_ID con un id del listado
+GET http://localhost:8787/actividades/ACTIVIDAD_ID
+
+### Responder actividad (quiz)
+### @name answerActivity
+POST http://localhost:8787/actividades/ACTIVIDAD_ID/responder
+Content-Type: application/json
+X-Guest-User-Id: GUEST_ID
+
+{
+  "evento_id_cliente": "22222222-2222-4222-8222-222222222222",
+  "opcion_id_seleccionada": "OPCION_ID"
+}
+
+### ────────────────────────────────────────────
+### Progreso
+### ────────────────────────────────────────────
+### @name progressMe
+GET http://localhost:8787/progreso/mi
+X-Guest-User-Id: GUEST_ID
+
+### Enviar evento de progreso
+### @name progressEvent
+POST http://localhost:8787/progreso/eventos
+Content-Type: application/json
+X-Guest-User-Id: GUEST_ID
+
+{
+  "evento_id_cliente": "11111111-1111-4111-8111-111111111111",
+  "tipo_evento": "theme_started",
+  "tema_id": "TEMA_ID",
+  "xp_otorgada": 0,
+  "datos_payload": {}
+}
+
+### ────────────────────────────────────────────
+### Gamificación
+### ────────────────────────────────────────────
+### @name gamificationMe
+GET http://localhost:8787/gamificacion/mi
+X-Guest-User-Id: GUEST_ID
+
+### ────────────────────────────────────────────
+### Variables de entorno (reemplazar en pruebas)
+### ────────────────────────────────────────────
+### GUEST_ID        = id del usuario invitado
+### SENDA_ID        = id de una senda (query: senda_id)
+### TEMA_ID         = id de un tema (query: tema_id)
+### PASO_ID         = id de un paso (query: paso_id)
+### GRUPO_EDAD_ID   = id de una franja (query: grupo_edad_id)
+### ACTIVIDAD_ID    = id de una actividad (query: actividad_id)
+### OPCION_ID       = id de una opción de respuesta

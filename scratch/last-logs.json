@@ -1,0 +1,300 @@
+                "clientTcpRtt": 0,
+                "clientQuicRtt": 9,
+                "colo": "UIO",
+                "asn": 22724,
+                "asOrganization": "PuntoNet S.A.",
+                "country": "EC",
+                "isEUCountry": false,
+                "city": "Quito",
+                "continent": "SA",
+                "region": "Pichincha",
+                "regionCode": "P",
+                "timezone": "America/Guayaquil",
+                "longitude": "-78.52495",
+                "latitude": "-0.22985",
+                "postalCode": "170406",
+                "tlsVersion": "TLSv1.3",
+                "tlsCipher": "AEAD-AES128-GCM-SHA256",
+                "tlsClientRandom": "aViDwL9xkpY3PA8VEY+dZ4zEYeeXVq2CK/ZmFCUEdVE=",
+                "tlsClientCiphersSha1": "3HTt3+R/6BL3zeALJDSq0pR1yOQ=",
+                "tlsClientExtensionsSha1": "KhZwDcSZOTeUkwY/WQMyVFJ0o5s=",
+                "tlsClientExtensionsSha1Le": "4TBTuCRs4OF19hYtuWbauINnJs8=",
+                "tlsClientHelloLength": "1763",
+                "tlsClientAuth": {
+                    "certPresented": "0",
+                    "certVerified": "NONE",
+                    "certRevoked": "0",
+                    "certIssuerDN": "",
+                    "certSubjectDN": "",
+                    "certIssuerDNRFC2253": "",
+                    "certSubjectDNRFC2253": "",
+                    "certIssuerDNLegacy": "",
+                    "certSubjectDNLegacy": "",
+                    "certSerial": "",
+                    "certIssuerSerial": "",
+                    "certSKI": "",
+                    "certIssuerSKI": "",
+                    "certFingerprintSHA1": "",
+                    "certFingerprintSHA256": "",
+                    "certNotBefore": "",
+                    "certNotAfter": "",
+                    "certRFC9440": "",
+                    "certRFC9440TooLarge": false,
+                    "certChainRFC9440": "",
+                    "certChainRFC9440TooLarge": false
+                },
+                "verifiedBotCategory": "",
+                "edgeL4": {
+                    "deliveryRate": 158998
+                }
+            }
+        },
+        "response": {
+            "status": 401
+        }
+    }
+}
+{
+    "wallTime": 0,
+    "cpuTime": 0,
+    "truncated": false,
+    "executionModel": "stateless",
+    "outcome": "ok",
+    "scriptTags": [
+        "cf:service=api-semillas"
+    ],
+    "scriptVersion": {
+        "id": "a6389a30-4bfc-43b8-bff6-d832a60f3207"
+    },
+    "scriptName": "api-semillas",
+    "diagnosticsChannelEvents": [],
+    "exceptions": [],
+    "logs": [
+        {
+            "message": [
+                "<-- OPTIONS /perfil"
+            ],
+            "level": "log",
+            "timestamp": 1783997621819
+        },
+        {
+            "message": [
+                "--> OPTIONS /perfil \u001b[32m204\u001b[0m 0ms"
+            ],
+            "level": "log",
+            "timestamp": 1783997621819
+        }
+    ],
+    "eventTimestamp": 1783997621819,
+    "event": {
+        "request": {
+            "url": "https://api-semillas.andresalexander14.workers.dev/perfil",
+            "method": "OPTIONS",
+            "headers": {
+                "accept": "*/*",
+                "accept-encoding": "gzip, br",
+                "accept-language": "es-419,es;q=0.9",
+                "access-control-request-headers": "authorization,content-type",
+                "access-control-request-method": "GET",
+                "cf-connecting-ip": "181.78.207.155",
+                "cf-ipcountry": "EC",
+                "cf-ray": "a1ad3d105ad275b9",
+                "cf-visitor": "{\"scheme\":\"https\"}",
+                "connection": "Keep-Alive",
+                "host": "api-semillas.andresalexander14.workers.dev",
+                "origin": "https://semillas.pages.dev",
+                "priority": "u=1, i",
+                "referer": "https://semillas.pages.dev/",
+                "sec-fetch-dest": "empty",
+                "sec-fetch-mode": "cors",
+                "sec-fetch-site": "cross-site",
+                "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",
+                "x-forwarded-proto": "https",
+                "x-real-ip": "181.78.207.155"
+            },
+            "cf": {
+                "httpProtocol": "HTTP/3",
+                "clientAcceptEncoding": "gzip, deflate, br",
+                "requestPriority": "",
+                "edgeRequestKeepAliveStatus": 1,
+                "requestHeaderNames": {},
+                "clientTcpRtt": 0,
+                "clientQuicRtt": 62,
+                "colo": "GYE",
+                "asn": 52468,
+                "asOrganization": "NEGOCIOS Y TELEFONIA NEDETEL S.A.",
+                "country": "EC",
+                "isEUCountry": false,
+                "city": "Guayaquil",
+                "continent": "SA",
+                "region": "Guayas",
+                "regionCode": "G",
+                "timezone": "America/Guayaquil",
+                "longitude": "-79.88621",
+                "latitude": "-2.19616",
+                "postalCode": "090307",
+                "tlsVersion": "TLSv1.3",
+                "tlsCipher": "AEAD-AES128-GCM-SHA256",
+                "tlsClientRandom": "f/MsmoSjm8SmIEZ+ubVsQs+ZBOpR+KAczmV+Y506AaM=",
+                "tlsClientCiphersSha1": "3HTt3+R/6BL3zeALJDSq0pR1yOQ=",
+                "tlsClientExtensionsSha1": "q7Buk1eiBEPo6z5lvgjfG9D109s=",
+                "tlsClientExtensionsSha1Le": "ryr8IB4bxAai/Y6fuEsg2HJBKaQ=",
+                "tlsClientHelloLength": "2037",
+                "tlsClientAuth": {
+                    "certPresented": "0",
+                    "certVerified": "NONE",
+                    "certRevoked": "0",
+                    "certIssuerDN": "",
+                    "certSubjectDN": "",
+                    "certIssuerDNRFC2253": "",
+                    "certSubjectDNRFC2253": "",
+                    "certIssuerDNLegacy": "",
+                    "certSubjectDNLegacy": "",
+                    "certSerial": "",
+                    "certIssuerSerial": "",
+                    "certSKI": "",
+                    "certIssuerSKI": "",
+                    "certFingerprintSHA1": "",
+                    "certFingerprintSHA256": "",
+                    "certNotBefore": "",
+                    "certNotAfter": "",
+                    "certRFC9440": "",
+                    "certRFC9440TooLarge": false,
+                    "certChainRFC9440": "",
+                    "certChainRFC9440TooLarge": false
+                },
+                "verifiedBotCategory": "",
+                "edgeL4": {
+                    "deliveryRate": 392067
+                }
+            }
+        },
+        "response": {
+            "status": 204
+        }
+    }
+}
+{
+    "wallTime": 477,
+    "cpuTime": 9,
+    "truncated": false,
+    "executionModel": "stateless",
+    "outcome": "ok",
+    "scriptTags": [
+        "cf:service=api-semillas"
+    ],
+    "scriptVersion": {
+        "id": "a6389a30-4bfc-43b8-bff6-d832a60f3207"
+    },
+    "scriptName": "api-semillas",
+    "diagnosticsChannelEvents": [],
+    "exceptions": [],
+    "logs": [
+        {
+            "message": [
+                "<-- GET /perfil"
+            ],
+            "level": "log",
+            "timestamp": 1783997621888
+        },
+        {
+            "message": [
+                "--> GET /perfil \u001b[32m200\u001b[0m 470ms"
+            ],
+            "level": "log",
+            "timestamp": 1783997622358
+        }
+    ],
+    "eventTimestamp": 1783997621888,
+    "event": {
+        "request": {
+            "url": "https://api-semillas.andresalexander14.workers.dev/perfil",
+            "method": "GET",
+            "headers": {
+                "accept": "*/*",
+                "accept-encoding": "gzip, br",
+                "accept-language": "es-419,es;q=0.7",
+                "authorization": "REDACTED",
+                "cf-connecting-ip": "181.78.207.155",
+                "cf-ipcountry": "EC",
+                "cf-ray": "a1ad3d10cad475b9",
+                "cf-visitor": "{\"scheme\":\"https\"}",
+                "connection": "Keep-Alive",
+                "content-type": "application/json",
+                "host": "api-semillas.andresalexander14.workers.dev",
+                "origin": "https://semillas.pages.dev",
+                "priority": "u=1, i",
+                "referer": "https://semillas.pages.dev/",
+                "sec-ch-ua": "\"Not;A=Brand\";v=\"8\", \"Chromium\";v=\"150\", \"Brave\";v=\"150\"",
+                "sec-ch-ua-mobile": "?0",
+                "sec-ch-ua-platform": "\"macOS\"",
+                "sec-fetch-dest": "empty",
+                "sec-fetch-mode": "cors",
+                "sec-fetch-site": "cross-site",
+                "sec-gpc": "1",
+                "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36",
+                "x-forwarded-proto": "https",
+                "x-real-ip": "181.78.207.155"
+            },
+            "cf": {
+                "httpProtocol": "HTTP/3",
+                "clientAcceptEncoding": "gzip, deflate, br",
+                "requestPriority": "",
+                "edgeRequestKeepAliveStatus": 1,
+                "requestHeaderNames": {},
+                "clientTcpRtt": 0,
+                "clientQuicRtt": 57,
+                "colo": "GYE",
+                "asn": 52468,
+                "asOrganization": "NEGOCIOS Y TELEFONIA NEDETEL S.A.",
+                "country": "EC",
+                "isEUCountry": false,
+                "city": "Guayaquil",
+                "continent": "SA",
+                "region": "Guayas",
+                "regionCode": "G",
+                "timezone": "America/Guayaquil",
+                "longitude": "-79.88621",
+                "latitude": "-2.19616",
+                "postalCode": "090307",
+                "tlsVersion": "TLSv1.3",
+                "tlsCipher": "AEAD-AES128-GCM-SHA256",
+                "tlsClientRandom": "f/MsmoSjm8SmIEZ+ubVsQs+ZBOpR+KAczmV+Y506AaM=",
+                "tlsClientCiphersSha1": "3HTt3+R/6BL3zeALJDSq0pR1yOQ=",
+                "tlsClientExtensionsSha1": "q7Buk1eiBEPo6z5lvgjfG9D109s=",
+                "tlsClientExtensionsSha1Le": "ryr8IB4bxAai/Y6fuEsg2HJBKaQ=",
+                "tlsClientHelloLength": "2037",
+                "tlsClientAuth": {
+                    "certPresented": "0",
+                    "certVerified": "NONE",
+                    "certRevoked": "0",
+                    "certIssuerDN": "",
+                    "certSubjectDN": "",
+                    "certIssuerDNRFC2253": "",
+                    "certSubjectDNRFC2253": "",
+                    "certIssuerDNLegacy": "",
+                    "certSubjectDNLegacy": "",
+                    "certSerial": "",
+                    "certIssuerSerial": "",
+                    "certSKI": "",
+                    "certIssuerSKI": "",
+                    "certFingerprintSHA1": "",
+                    "certFingerprintSHA256": "",
+                    "certNotBefore": "",
+                    "certNotAfter": "",
+                    "certRFC9440": "",
+                    "certRFC9440TooLarge": false,
+                    "certChainRFC9440": "",
+                    "certChainRFC9440TooLarge": false
+                },
+                "verifiedBotCategory": "",
+                "edgeL4": {
+                    "deliveryRate": 392067
+                }
+            }
+        },
+        "response": {
+            "status": 200
+        }
+    }
+}

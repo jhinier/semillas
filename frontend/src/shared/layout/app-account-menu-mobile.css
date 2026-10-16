@@ -1,0 +1,121 @@
+/* ── Bottom-sheet de cuenta (móvil) ──────────────────────────── */
+
+/* Backdrop: overlay oscuro semi-transparente que cubre toda la pantalla */
+.account-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  animation: sheet-backdrop-in 0.2s ease-out forwards;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@keyframes sheet-backdrop-in {
+  to {
+    opacity: 1;
+  }
+}
+
+/* Contenedor del bottom sheet */
+.account-sheet {
+  position: relative;
+  width: 100%;
+  max-width: 28rem;
+  max-height: 80vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: #fff;
+  border-radius: 1.25rem 1.25rem 0 0;
+  padding: 1.25rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom));
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.12);
+  transform: translateY(100%);
+  animation: sheet-slide-up 0.25s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+}
+
+@keyframes sheet-slide-up {
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Barra de agarre decorativa */
+.account-sheet__handle {
+  width: 2.25rem;
+  height: 0.3rem;
+  margin: 0 auto 0.9rem;
+  border-radius: 9999px;
+  background: #d1d5db;
+}
+
+/* Lista de opciones */
+.account-sheet__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Cada opción del sheet */
+.account-sheet__action {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border: none;
+  border-radius: 0.75rem;
+  background: transparent;
+  color: #334155;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.account-sheet__action:hover,
+.account-sheet__action:focus-visible {
+  background: #f1f5f9;
+}
+
+.account-sheet__action.is-danger {
+  color: #be123c;
+}
+
+.account-sheet__action.is-danger:hover,
+.account-sheet__action.is-danger:focus-visible {
+  background: #fff1f2;
+}
+
+/* ── Subelementos ────────────────────────────────────────────── */
+
+.account-sheet__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: #172033;
+  text-align: center;
+}
+
+.account-sheet__icon {
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  background: #eef6f1;
+  color: #2e9e5b;
+  flex-shrink: 0;
+}
+
+.account-sheet__action.is-danger .account-sheet__icon {
+  background: #fee2e2;
+  color: #be123c;
+}

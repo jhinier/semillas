@@ -1,0 +1,55 @@
+name = "api-semillas"
+main = "src/index.ts"
+compatibility_date = "2026-07-08"
+compatibility_flags = ["nodejs_compat"]
+# Conserva variables de texto configuradas en el dashboard al desplegar manualmente.
+keep_vars = true
+
+[vars]
+APP_ENV = "production"
+CORS_BASE_DOMAIN = "semillas.pages.dev"
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
+
+# Las rutas custom domain se configuran desde el dashboard (Workers → Triggers)
+# routes = [
+#   { pattern = "api.semillas.org", custom_domain = true }
+# ]
+
+[env.production]
+vars = { APP_ENV = "production", CORS_BASE_DOMAIN = "semillas.pages.dev" }
+
+[[env.production.hyperdrive]]
+binding = "HYPERDRIVE"
+id = "3707787da26e4043bfe4818145749b9e"
+
+[env.staging]
+vars = { APP_ENV = "staging", CORS_BASE_DOMAIN = "semillas.pages.dev" }
+
+[[env.staging.hyperdrive]]
+binding = "HYPERDRIVE"
+id = "3707787da26e4043bfe4818145749b9e"
+
+[env.preview]
+vars = { APP_ENV = "preview", CORS_BASE_DOMAIN = "semillas.pages.dev" }
+
+[[env.preview.hyperdrive]]
+binding = "HYPERDRIVE"
+id = "3707787da26e4043bfe4818145749b9e"
+
+[[hyperdrive]]
+binding = "HYPERDRIVE"
+id = "3707787da26e4043bfe4818145749b9e"
+# Para desarrollo local, define CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE
+# en backend/.dev.vars (archivo ignorado). Nunca guardar la conexión en este archivo.
+
+# Secrets se configuran desde el dashboard (Workers → Settings → Variables)
+# SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/icons/icon-192.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+    <meta name="theme-color" content="#2E9E5B" />
+    <link rel="preload" as="image" href="/landing-hero-480.webp" imagesrcset="/landing-hero-480.webp 480w, /landing-hero.webp 900w" imagesizes="(max-width: 700px) 90vw, 48vw" fetchpriority="high" />
+    <meta name="description" content="Semillas - Aprende de Dios de forma divertida" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon-180.png" />
+    <title>Semillas</title>
+    <style>
+      .initial-shell { min-height: 100dvh; min-height: var(--app-height, 100dvh); display: grid; place-items: center; gap: 1rem; padding: 2rem; background: #f7f4ec; color: #123b2c; font-family: system-ui, sans-serif; text-align: center; }
+      .initial-shell__content { max-width: 32rem; }
+      .initial-shell h1 { margin: .75rem 0; font-size: clamp(2rem, 8vw, 4rem); line-height: 1.05; }
+      .initial-shell img { display: block; width: min(90vw, 28rem); height: auto; border-radius: 1.5rem; }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <section class="initial-shell" aria-label="Cargando Semillas">
+        <div class="initial-shell__content">
+          <strong>Semillas</strong>
+          <h1>Aprende la Palabra de Dios jugando</h1>
+          <p>Crecer en la Palabra, vivir Su verdad.</p>
+        </div>
+        <img src="/landing-hero-480.webp" width="480" height="343" alt="Jesús caminando con niños" fetchpriority="high" />
+      </section>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
