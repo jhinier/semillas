@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { AlertCircle, X } from "lucide-react";
 
 import {
   AdminMediaDetailPanel,
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/admin/medios")({
 function AdminMediosPage() {
   const {
     activeTab,
+    clearUploadErrors,
     countsByType,
     countsByUsage,
     detailQuery,
@@ -47,6 +49,7 @@ function AdminMediosPage() {
     setPorPagina,
     setSelectedId,
     totalResources,
+    uploadErrors,
     uploadProgress,
     usageFilter,
     viewMode,
@@ -68,6 +71,35 @@ function AdminMediosPage() {
         isUploading={isUploading}
         onSubirRecurso={() => inputArchivoRef.current?.click()}
       />
+
+      {uploadErrors.length > 0 ? (
+        <div
+          role="alert"
+          className="flex items-start justify-between gap-4 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 shadow-sm"
+        >
+          <div className="flex items-start gap-3">
+            <AlertCircle className="mt-0.5 shrink-0 text-rose-600" size={20} />
+            <div className="space-y-1">
+              <strong className="block font-black text-rose-900">
+                No se pudo completar la subida del archivo
+              </strong>
+              <ul className="list-disc pl-4 space-y-1 font-medium text-rose-700">
+                {uploadErrors.map((err, idx) => (
+                  <li key={idx}>{err}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={clearUploadErrors}
+            aria-label="Cerrar alerta de error"
+            className="rounded-lg p-1 text-rose-500 hover:bg-rose-100 hover:text-rose-800"
+          >
+            <X size={18} />
+          </button>
+        </div>
+      ) : null}
 
       <AdminMediaFilters
         searchValue={searchValue}

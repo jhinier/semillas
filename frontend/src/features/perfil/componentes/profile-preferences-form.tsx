@@ -16,7 +16,13 @@ import {
 import type { Perfil, Usuario } from "@/shared/api/api";
 import type { ActualizarPerfilDatos } from "../profile.api";
 import { toast } from "sonner";
-import { aplicarTamanoTexto, normalizarTamanoTexto } from "@/shared/accessibility/preferences";
+import {
+  aplicarContraste,
+  aplicarTamanoTexto,
+  aplicarTemaVisual,
+  normalizarTamanoTexto,
+  obtenerPinParental,
+} from "@/shared/accessibility/preferences";
 
 interface ProfilePreferencesFormProps {
   perfil: Perfil;
@@ -37,7 +43,6 @@ const textSizes = [
 
 function obtenerAlmacenLocal() {
   if (typeof localStorage === "undefined") return null;
-
   return localStorage;
 }
 
@@ -56,14 +61,11 @@ export function ProfilePreferencesForm({
   onSave,
   onCancel,
   onVincularGoogle,
-  onVincularCorreo,
   onLogout,
 }: ProfilePreferencesFormProps) {
-  // Ajustes de API
   const [audio, setAudio] = useState(Boolean(perfil.prefiere_audio));
   const [textSize, setTextSize] = useState(normalizarTamanoTexto(perfil.tamano_texto_preferido));
 
-  // Ajustes locales (localStorage)
   const [notificaciones, setNotificaciones] = useState(() => {
     return leerPreferenciaLocal("semillas-pref-notificaciones") !== "false";
   });
@@ -76,14 +78,15 @@ export function ProfilePreferencesForm({
   const [parental, setParental] = useState(() => {
     return leerPreferenciaLocal("semillas-pref-parental") === "true";
   });
+  const [pinParental, setPinParental] = useState(() => obtenerPinParental());
   const [tema, setTema] = useState<"sistema" | "claro" | "oscuro">(() => {
-    return (leerPreferenciaLocal("semillas-pref-tema") || "sistema") as "sistema" | "claro" | "oscuro";
+    return (leerPreferenciaLocal("semillas-pref-tema") || "claro") as "sistema" | "claro" | "oscuro";
   });
+  const [savedSnapshot, setSavedSnapshot] = useState(0);
 
   useEffect(() => {
     setAudio(Boolean(perfil.prefiere_audio));
     setTextSize(normalizarTamanoTexto(perfil.tamano_texto_preferido));
-    aplicarTamanoTexto(perfil.tamano_texto_preferido);
   }, [perfil.prefiere_audio, perfil.tamano_texto_preferido]);
 
   const hasApiChanges = useMemo(
@@ -94,63 +97,118 @@ export function ProfilePreferencesForm({
   );
 
   const hasLocalChanges = useMemo(() => {
+    void savedSnapshot;
     const prevNotif = leerPreferenciaLocal("semillas-pref-notificaciones") !== "false";
     const prevWifi = leerPreferenciaLocal("semillas-pref-wifi-only") === "true";
     const prevContraste = leerPreferenciaLocal("semillas-pref-contraste") === "alto";
     const prevParental = leerPreferenciaLocal("semillas-pref-parental") === "true";
-    const prevTema = leerPreferenciaLocal("semillas-pref-tema") || "sistema";
+    const prevPin = obtenerPinParental();
+    const prevTema = leerPreferenciaLocal("semillas-pref-tema") || "claro";
 
     return (
       notificaciones !== prevNotif ||
       wifiOnly !== prevWifi ||
       contraste !== prevContraste ||
       parental !== prevParental ||
+      pinParental !== prevPin ||
       tema !== prevTema
     );
-  }, [notificaciones, wifiOnly, contraste, parental, tema]);
+  }, [notificaciones, wifiOnly, contraste, parental, pinParental, tema, savedSnapshot]);
 
   const hasChanges = hasApiChanges || hasLocalChanges;
 
+  const handleToggleAudio = () => {
+    const next = !audio;
+    setAudio(next);
+    guardarPreferenciaLocal("semillas-prefiere-audio", String(next));
+  };
+
+  const handleSelectTextSize = (size: "pequeno" | "mediano" | "grande") => {
+    setTextSize(size);
+    guardarPreferenciaLocal("semillas-pref-text-size", size);
+    aplicarTamanoTexto(size);
+  };
+
+  const handleToggleNotificaciones = async () => {
+    const next = !notificaciones;
+    setNotificaciones(next);
+    guardarPreferenciaLocal("semillas-pref-notificaciones", String(next));
+    if (next && typeof window !== "undefined" && "Notification" in window) {
+      if (Notification.permission === "default") {
+        try {
+          const perm = await Notification.requestPermission();
+          if (perm === "granted") {
+            toast.success("Notificaciones del navegador activadas.");
+          }
+        } catch {
+          // continuar
+        }
+      }
+    }
+  };
+
+  const handleToggleWifiOnly = () => {
+    const next = !wifiOnly;
+    setWifiOnly(next);
+    guardarPreferenciaLocal("semillas-pref-wifi-only", String(next));
+  };
+
+  const handleToggleContraste = () => {
+    const next = !contraste;
+    setContraste(next);
+    guardarPreferenciaLocal("semillas-pref-contraste", next ? "alto" : "normal");
+    aplicarContraste(next);
+  };
+
+  const handleToggleParental = () => {
+    const next = !parental;
+    setParental(next);
+    guardarPreferenciaLocal("semillas-pref-parental", String(next));
+    if (next && !leerPreferenciaLocal("semillas-pref-parental-pin")) {
+      guardarPreferenciaLocal("semillas-pref-parental-pin", pinParental || "1234");
+    }
+  };
+
+  const handleSelectTema = (nuevoTema: "sistema" | "claro" | "oscuro") => {
+    setTema(nuevoTema);
+    guardarPreferenciaLocal("semillas-pref-tema", nuevoTema);
+    aplicarTemaVisual(nuevoTema);
+  };
+
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!hasChanges) return;
 
-    // Guardar cambios locales
+    guardarPreferenciaLocal("semillas-prefiere-audio", String(audio));
     guardarPreferenciaLocal("semillas-pref-notificaciones", String(notificaciones));
     guardarPreferenciaLocal("semillas-pref-wifi-only", String(wifiOnly));
     guardarPreferenciaLocal("semillas-pref-contraste", contraste ? "alto" : "normal");
     guardarPreferenciaLocal("semillas-pref-parental", String(parental));
+    guardarPreferenciaLocal("semillas-pref-parental-pin", pinParental.trim() || "1234");
     guardarPreferenciaLocal("semillas-pref-tema", tema);
     guardarPreferenciaLocal("semillas-pref-text-size", textSize);
+
     aplicarTamanoTexto(textSize);
+    aplicarContraste(contraste);
+    aplicarTemaVisual(tema);
+    setSavedSnapshot((s) => s + 1);
 
-    // Aplicar contraste al DOM
-    if (contraste) {
-      document.documentElement.classList.add("alto-contraste");
+    if (hasApiChanges) {
+      onSave({ prefiere_audio: audio, tamano_texto_preferido: textSize });
     } else {
-      document.documentElement.classList.remove("alto-contraste");
+      toast.success("Preferencias guardadas y aplicadas correctamente.");
+      onCancel();
     }
-
-    // Aplicar tema al DOM
-    let esOscuro = false;
-    if (tema === "oscuro") {
-      esOscuro = true;
-    } else if (tema === "sistema") {
-      esOscuro = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    }
-    if (esOscuro) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-
-    // Guardar cambios de API
-    onSave({ prefiere_audio: audio, tamano_texto_preferido: textSize });
-
-    toast.success("Preferencias guardadas correctamente.");
   }
 
   const handleDeleteAccount = () => {
+    if (parental) {
+      const pin = window.prompt("Control parental activo. Ingresa el PIN de adulto para continuar:");
+      if (pin !== (pinParental.trim() || "1234")) {
+        toast.error("PIN de control parental incorrecto.");
+        return;
+      }
+    }
+
     const confirmText =
       usuario?.proveedor === "invitado"
         ? "¿Seguro que deseas eliminar tus datos locales? Perderás todo el progreso acumulado como invitado."
@@ -188,14 +246,14 @@ export function ProfilePreferencesForm({
           </span>
           <div className="profile-setting-row__copy">
             <h2>Audio de apoyo</h2>
-            <p>Permite narraciones, sonidos y ayudas auditivas dentro de las actividades.</p>
+            <p>Permite narraciones en voz alta, sonidos y ayudas auditivas dentro de las actividades.</p>
           </div>
           <button
             type="button"
             role="switch"
             aria-checked={audio}
             className={`profile-switch ${audio ? "is-on" : ""}`}
-            onClick={() => setAudio((current) => !current)}
+            onClick={handleToggleAudio}
           >
             <span aria-hidden="true" />
             <span className="sr-only">{audio ? "Desactivar audio" : "Activar audio"}</span>
@@ -209,7 +267,7 @@ export function ProfilePreferencesForm({
             </span>
             <div>
               <h2>Tamaño del texto</h2>
-              <p>Ajusta el tamaño de la letra para facilitar la lectura.</p>
+              <p>Ajusta el tamaño de la letra para facilitar la lectura en toda la plataforma.</p>
             </div>
           </div>
 
@@ -223,7 +281,7 @@ export function ProfilePreferencesForm({
                   role="radio"
                   aria-checked={selected}
                   className={`profile-text-size-option is-${option.value} ${selected ? "is-selected" : ""}`}
-                  onClick={() => setTextSize(option.value)}
+                  onClick={() => handleSelectTextSize(option.value)}
                 >
                   <span aria-hidden="true">{option.example}</span>
                   <strong>{option.label}</strong>
@@ -259,7 +317,7 @@ export function ProfilePreferencesForm({
             role="switch"
             aria-checked={notificaciones}
             className={`profile-switch ${notificaciones ? "is-on" : ""}`}
-            onClick={() => setNotificaciones((current) => !current)}
+            onClick={() => void handleToggleNotificaciones()}
           >
             <span aria-hidden="true" />
           </button>
@@ -279,7 +337,7 @@ export function ProfilePreferencesForm({
             role="switch"
             aria-checked={wifiOnly}
             className={`profile-switch ${wifiOnly ? "is-on" : ""}`}
-            onClick={() => setWifiOnly((current) => !current)}
+            onClick={handleToggleWifiOnly}
           >
             <span aria-hidden="true" />
           </button>
@@ -299,7 +357,7 @@ export function ProfilePreferencesForm({
             role="switch"
             aria-checked={contraste}
             className={`profile-switch ${contraste ? "is-on" : ""}`}
-            onClick={() => setContraste((current) => !current)}
+            onClick={handleToggleContraste}
           >
             <span aria-hidden="true" />
           </button>
@@ -312,23 +370,48 @@ export function ProfilePreferencesForm({
           </span>
           <div className="profile-setting-row__copy">
             <h2>Controles parentales</h2>
-            <p>Bloquea la edición de perfiles o salida de clubes mediante una clave de adulto.</p>
+            <p>Bloquea la edición de perfiles o desvinculación de cuenta mediante una clave de adulto.</p>
           </div>
           <button
             type="button"
             role="switch"
             aria-checked={parental}
             className={`profile-switch ${parental ? "is-on" : ""}`}
-            onClick={() => setParental((current) => !current)}
+            onClick={handleToggleParental}
           >
             <span aria-hidden="true" />
           </button>
         </div>
 
+        {parental ? (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <strong className="text-xs font-bold text-amber-900">PIN de Control Parental</strong>
+              <p className="text-xs text-amber-700">
+                Se solicitará esta clave al editar el perfil o desvincular la cuenta.
+              </p>
+            </div>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              value={pinParental}
+              onChange={(e) => {
+                const limpio = e.target.value.replace(/\D/g, "").slice(0, 6);
+                setPinParental(limpio);
+                guardarPreferenciaLocal("semillas-pref-parental-pin", limpio || "1234");
+              }}
+              placeholder="1234"
+              aria-label="PIN de control parental"
+              className="w-28 rounded-xl border border-amber-300 bg-white px-3 py-2 text-center font-bold text-slate-800"
+            />
+          </div>
+        ) : null}
+
         {/* Selección de Tema Visual */}
         <div className="profile-text-setting mt-2">
           <div className="profile-text-setting__heading">
-            <span className="profile-setting-row__icon bg-sky-50 text-sky-600 rounded-xl animate-spin-slow" aria-hidden="true">
+            <span className="profile-setting-row__icon bg-sky-50 text-sky-600 rounded-xl" aria-hidden="true">
               <SunMoon size={22} />
             </span>
             <div>
@@ -347,7 +430,7 @@ export function ProfilePreferencesForm({
                   role="radio"
                   aria-checked={selected}
                   className={`profile-text-size-option is-mediano ${selected ? "is-selected" : ""}`}
-                  onClick={() => setTema(option)}
+                  onClick={() => handleSelectTema(option)}
                 >
                   <strong className="capitalize">{option}</strong>
                 </button>
@@ -425,10 +508,10 @@ export function ProfilePreferencesForm({
           <button
             type="submit"
             className="profile-primary-button bg-verde-brote text-white font-bold"
-            disabled={!hasChanges || isSaving}
+            disabled={isSaving}
           >
             {isSaving ? <LoaderCircle className="animate-spin" size={18} /> : <Save size={18} />}
-            {isSaving ? "Guardando..." : hasChanges ? "Guardar preferencias" : "Sin cambios"}
+            {isSaving ? "Guardando..." : hasChanges ? "Guardar preferencias" : "Guardar y aplicar"}
           </button>
         </div>
       </div>

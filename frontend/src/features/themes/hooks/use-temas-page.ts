@@ -3,6 +3,7 @@ import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { obtenerTemas } from "@/features/themes/themes.api";
 import { obtenerMiProgreso } from "@/features/progress/progress.api";
+import { obtenerMiPerfil } from "@/features/perfil/profile.api";
 import { usePortadasFirmadas } from "@/features/themes/hooks/usePortadasFirmadas";
 import { normalizarSenda } from "@/features/themes/componentes/senda-filter-row";
 import { leerFavoritos, guardarFavoritos, mapearTema } from "@/features/themes/utils/temas-favorites.utils";
@@ -21,16 +22,42 @@ export function useTemasPage({ searchSenda }: UseTemasPageOptions = {}) {
   const [busqueda, setBusqueda] = useState("");
   const [favoritosLocales, setFavoritosLocales] = useState<Record<string, boolean>>(leerFavoritos);
 
+  const meQuery = useQuery({
+    queryKey: ["me"],
+    queryFn: obtenerMiPerfil,
+    staleTime: 1000 * 60 * 3,
+  });
+
+  const grupoEdadId = meQuery.data?.perfil?.grupo_edad_id ?? undefined;
+  const grupoEdadActivo = useMemo(() => {
+    const grupos = meQuery.data?.grupos_edad ?? [];
+    const encontrado = grupos.find((g) => g.id === grupoEdadId);
+    if (encontrado) {
+      return {
+        id: encontrado.id,
+        codigo: encontrado.codigo,
+        nombre: encontrado.nombre,
+        rango: `${encontrado.edad_minima} a ${encontrado.edad_maxima} años`,
+      };
+    }
+    return {
+      id: grupoEdadId ?? "semillas",
+      codigo: "semillas",
+      nombre: "Semillas",
+      rango: "5 a 8 años",
+    };
+  }, [grupoEdadId, meQuery.data?.grupos_edad]);
+
   const { data: temasApi, isLoading, isError } = useQuery({
-    queryKey: ["temas"],
-    queryFn: () => obtenerTemas(),
-    staleTime: 1000 * 60 * 5,
+    queryKey: ["temas", grupoEdadId ?? "all"],
+    queryFn: () => obtenerTemas({ grupo_edad_id: grupoEdadId }),
+    staleTime: 1000 * 60 * 3,
   });
 
   const { data: progressApi } = useQuery({
     queryKey: ["progress"],
     queryFn: obtenerMiProgreso,
-    staleTime: 1000 * 60 * 3,
+    staleTime: 1000 * 60 * 2,
   });
 
   const toggleFavorito = useCallback((slug: string) => {
@@ -115,6 +142,7 @@ export function useTemasPage({ searchSenda }: UseTemasPageOptions = {}) {
     stats,
     temaParaContinuar,
     temaRecomendado,
+    grupoEdadActivo,
     isLoading,
     isError,
     filtroTab,

@@ -1,14 +1,14 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Boton } from "@/componentes/ui/boton";
-import { Heart, Play, ShieldCheck, Smile, Sprout } from "lucide-react";
-import { esIOS, estaInstaladaComoPWA } from "@/shared/utils/pwa";
+import { BookOpen, Compass, Heart, Play, ShieldCheck, Smile, Sprout, UserCheck } from "lucide-react";
+import { estaInstaladaComoPWA } from "@/shared/utils/pwa";
 const landingImg = "/landing-hero.webp";
 
 const badges = [
   { icon: ShieldCheck, text: "Contenido seguro" },
-  { icon: Smile, text: "Para niños de 5 a 14 años" },
-  { icon: Heart, text: "Basada en la Biblia" },
+  { icon: Smile, text: "Para niños y adolescentes de 5 a 17 años" },
+  { icon: Heart, text: "Basada en la Biblia (Padres, Hijo y Espíritu Santo)" },
 ];
 
 function isMobileDevice(): boolean {
@@ -27,11 +27,6 @@ export function HeroSection() {
     const isInstalled = estaInstaladaComoPWA();
     setEsMovil(isMobile);
     setYaInstalada(isInstalled);
-
-    console.log("[HeroSection] URL:", window.location.href);
-    console.log("[HeroSection] isMobile:", isMobile);
-    console.log("[HeroSection] isInstalled:", isInstalled);
-    console.log("[HeroSection] standalone:", window.matchMedia("(display-mode: standalone)").matches);
   }, []);
 
   const handleComenzarClick = (e: React.MouseEvent) => {
@@ -53,11 +48,25 @@ export function HeroSection() {
         </h1>
 
         <p>
-          Semillas es una plataforma cristiana para niños que enseña el evangelio de
-          forma lúdica, interactiva y confiable.
+          Semillas es una plataforma cristiana gratuita para niños, preadolescentes y
+          adolescentes que enseña el evangelio de Jesucristo de forma lúdica, interactiva y
+          accesible incluso sin conexión.
         </p>
 
-        <div className="hero__buttons">
+        <blockquote
+          className="my-3 rounded-2xl border border-emerald-200/80 bg-emerald-50/80 px-4 py-3 text-sm font-semibold text-emerald-950 shadow-xs"
+          aria-label="Versículo base del proyecto"
+        >
+          <span className="inline-flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-emerald-700">
+            <BookOpen size={14} aria-hidden="true" />
+            Versículo base · Marcos 16:15
+          </span>
+          <p className="m-0 mt-1 italic text-emerald-950">
+            “Id por todo el mundo y predicad el evangelio a toda criatura.” — Marcos 16:15
+          </p>
+        </blockquote>
+
+        <div className="hero__buttons flex flex-wrap items-center gap-3">
           <Boton
             asChild
             className="landing-button landing-button--primary landing-button--large h-auto rounded-full px-6 py-3"
@@ -68,9 +77,28 @@ export function HeroSection() {
               onClick={handleComenzarClick}
             >
               <Play size={18} fill="currentColor" aria-hidden="true" />
-              <span>Comenzar ahora</span>
+              <span>Iniciar sesión</span>
             </Link>
           </Boton>
+
+          <Boton
+            asChild
+            variante="contorno"
+            className="h-auto rounded-full border-emerald-600/30 bg-white/90 px-5 py-3 font-bold text-emerald-900 hover:bg-emerald-50"
+          >
+            <Link to="/onboarding">
+              <UserCheck size={18} aria-hidden="true" />
+              <span>Jugar como invitado</span>
+            </Link>
+          </Boton>
+
+          <a
+            href="#funcionalidades"
+            className="inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-bold text-emerald-800 hover:bg-emerald-100/60"
+          >
+            <Compass size={17} aria-hidden="true" />
+            <span>Explorar funcionalidades</span>
+          </a>
         </div>
 
         <div className="hero__badges" aria-label="Beneficios clave de la plataforma">

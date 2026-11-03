@@ -7,26 +7,26 @@ import { obtenerMiPerfil } from "../features/perfil/profile.api";
 import { sessionStorageApi } from "../shared/api/session";
 import { resolverAccesoAdmin } from "../shared/auth/admin-access";
 import { queryClient } from "../app/query-client";
+import "./app.css";
+import "./admin-content-studio.css";
 
 export const Route = createFileRoute("/admin")({
   beforeLoad: async ({ location }) => {
     try {
-      const { usuario } = await queryClient.ensureQueryData({
+      const { usuario } = await queryClient.fetchQuery({
         queryKey: ["me"],
         queryFn: obtenerMiPerfil,
       });
       const acceso = resolverAccesoAdmin(usuario);
 
       if (!acceso.permitido) {
-        if (acceso.redireccion === "/login") {
+        if (acceso.redireccion === "/login" || usuario.rol === "invitado") {
           throw redirect({ to: "/login", search: { redirect: location.href } });
         }
         throw redirect({ to: "/acceso-denegado" });
       }
     } catch (error) {
       if (isRedirect(error)) throw error;
-      sessionStorageApi.clearGuestSession();
-      sessionStorageApi.clearAccessToken();
       throw redirect({
         to: "/login",
         search: { redirect: location.href, reason: "backend_unavailable" },
@@ -37,10 +37,6 @@ export const Route = createFileRoute("/admin")({
 });
 
 function AdminLayout() {
-  useEffect(() => {
-    void Promise.all([import("./app.css"), import("./admin-content-studio.css")]);
-  }, []);
-
   const { sidebarOpen, closeSidebar, openSidebar, handleLogout, pageHeader, activePage } = useAdminLayout();
 
   useEffect(() => {

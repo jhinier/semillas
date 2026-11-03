@@ -6,13 +6,14 @@ import {
   Medal,
   RefreshCw,
   Settings,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 
 import { Boton } from "@/componentes/ui/boton";
 
 type OpcionCuenta = {
-  to: "/app/perfil" | "/app/logros" | "/app/descargas" | "/app/sincronizacion" | "/login";
+  to: "/app/perfil" | "/app/logros" | "/app/descargas" | "/app/sincronizacion" | "/login" | "/admin";
   label: string;
   Icono: LucideIcon;
   search?: { seccion: "ajustes" };
@@ -42,12 +43,19 @@ export function AppAccountMenuMobile({
   visible,
   onCerrar,
   onCerrarSesion,
+  rol,
 }: {
   visible: boolean;
   onCerrar: () => void;
   onCerrarSesion: () => void | Promise<void>;
+  rol?: string;
 }) {
   if (!visible) return null;
+
+  const opciones: OpcionCuenta[] =
+    rol === "administrador"
+      ? [{ to: "/admin" as const, label: "Panel Administrador", Icono: ShieldCheck }, ...OPCIONES_CUENTA_MOVIL]
+      : OPCIONES_CUENTA_MOVIL;
 
   const renderIcono = (Icono: LucideIcon) => <Icono size={20} aria-hidden="true" />;
 
@@ -71,7 +79,7 @@ export function AppAccountMenuMobile({
         <div className="account-sheet__handle" aria-hidden="true" />
 
         <div className="account-sheet__list">
-          {OPCIONES_CUENTA_MOVIL.map((opcion) => {
+          {opciones.map((opcion) => {
             const contenidoIcono = renderIcono(opcion.Icono);
             return opcion.cerrarSesion ? (
               <button

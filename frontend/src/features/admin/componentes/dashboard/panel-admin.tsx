@@ -68,12 +68,13 @@ export function PanelAdministracion() {
   }
 
   if (resumenQuery.isError || !resumenQuery.data) {
+    const errorMsg = resumenQuery.error instanceof Error ? resumenQuery.error.message : "Comprueba la conexión con el backend y vuelve a intentarlo.";
     return (
       <DashboardState
         icon={<LayoutDashboard />}
         title="No se pudo cargar el panel"
-        description="Comprueba la conexión con el backend y vuelve a intentarlo."
-        action={<button type="button" onClick={() => resumenQuery.refetch()} className="admin-primary-button"><RefreshCw size={17} /> Reintentar</button>}
+        description={errorMsg}
+        action={<button type="button" onClick={() => resumenQuery.refetch()} className="admin-primary-button bg-violet-600 text-white hover:bg-violet-700 cursor-pointer shadow-md"><RefreshCw size={17} /> Reintentar</button>}
       />
     );
   }

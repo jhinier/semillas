@@ -3,6 +3,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import type { GrupoEdad } from "@/shared/api/api";
 import { obtenerGruposEdad } from "@/features/catalog/catalog.api";
+import { crearSesionInvitado } from "@/features/auth/auth.api";
+import { hasSession } from "@/shared/api/auth-guard";
+import { sessionStorageApi } from "@/shared/api/session";
 import imagenSemillas from "@/assets/images/Ilustraciones/Semilla.webp";
 import imagenExploradores from "@/assets/images/Ilustraciones/Exploradores.webp";
 import imagenEmbajadores from "@/assets/images/Ilustraciones/Embajadores.webp";
@@ -50,6 +53,16 @@ export function useOnboardingPage() {
   const navigate = useNavigate();
   const [selectedGroupId, setSelectedGroupId] = useState("");
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+
+  // Si el usuario entra a /onboarding sin sesión (por ejemplo desde Jugar como invitado), inicializar sesión de invitado
+  useEffect(() => {
+    if (!hasSession()) {
+      void crearSesionInvitado({ apodo: "Semillero" }).then((res) => {
+        sessionStorageApi.setGuestUserId(res.autenticacion.valor);
+        sessionStorageApi.setGuestToken(res.autenticacion.token);
+      });
+    }
+  }, []);
 
   const ageGroupsQuery = useQuery({
     queryKey: ["catalog", "age-groups"],

@@ -1,6 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import { env } from "../config/env";
 import { queryClient } from "../../app/query-client";
+import { sessionStorageApi } from "../api/session";
+import { stopAutoSync } from "@/lib/offline/syncEngine";
 import {
   cerrarSesionAutenticadaConCliente,
   escucharCambiosAutenticacionConCliente,
@@ -10,6 +12,7 @@ import {
   registrarConCorreoConCliente,
   vincularGoogleConCliente,
   sincronizarSesionAutenticadaConCliente,
+  renovarSesionAutenticadaConCliente,
 } from "./supabase.helpers";
 import { limpiarDatosSesionOffline } from "./logout-cleanup";
 import { obtenerScopeOffline } from "@/lib/offline/user-scope";
@@ -25,6 +28,10 @@ export const supabase = createClient(env.supabaseUrl, env.supabaseAnonKey, {
 
 export async function sincronizarSesionAutenticada() {
   return sincronizarSesionAutenticadaConCliente(supabase);
+}
+
+export async function renovarSesionAutenticada() {
+  return renovarSesionAutenticadaConCliente(supabase);
 }
 
 export function escucharCambiosAutenticacion(onCambio?: Parameters<typeof escucharCambiosAutenticacionConCliente>[1]) {
@@ -44,16 +51,22 @@ export async function vincularGoogle() {
 }
 
 export async function cerrarSesionAutenticada() {
-  const scopeId = await obtenerScopeOffline();
+  stopAutoSync();
+  const scopeId = await obtenerScopeOffline().catch(() => null);
+  sessionStorageApi.clearAllSession();
+  await queryClient.cancelQueries().catch(() => undefined);
   await cerrarSesionAutenticadaConCliente(supabase);
   // Los datos offline permanecen asociados a su scope para que el usuario
   // pueda continuar después; al cambiar de cuenta nunca se reutilizan.
   await limpiarDatosSesionOffline({
-    clearOfflineTables: scopeId ? [() => limpiarCacheClubesScope(scopeId)] : [],
+    clearOfflineTables: scopeId ? [() => limpiarCacheClubesScope(scopeId).catch(() => undefined)] : [],
     listCacheNames: typeof caches === "undefined" ? undefined : () => caches.keys(),
     deleteCache: typeof caches === "undefined" ? undefined : (nombre) => caches.delete(nombre),
     clearQueries: () => queryClient.clear(),
+  }).catch(() => {
+    queryClient.clear();
   });
+  sessionStorageApi.clearAllSession();
 }
 
 export async function registrarConCorreo(email: string, password: string) {

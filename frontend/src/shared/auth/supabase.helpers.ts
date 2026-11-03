@@ -38,6 +38,7 @@ export type ClienteSupabaseAuth = {
       error: Error | null;
     }>;
     getSession: () => Promise<{ data: { session: Session | null }; error: Error | null }>;
+    refreshSession?: () => Promise<{ data: { session: Session | null }; error: Error | null }>;
     onAuthStateChange: (
       callback: (_event: string, session: Session | null) => void,
     ) => { data: { subscription: { unsubscribe: () => void } } };
@@ -45,10 +46,16 @@ export type ClienteSupabaseAuth = {
   };
 };
 
-function sincronizarTokenSesion(session: Session | null) {
+function sincronizarTokenSesion(session: Session | null, permitirLimpiar = true) {
   if (session?.access_token) {
     sessionStorageApi.setAccessToken(session.access_token);
     if (session.user?.id) sessionStorageApi.setAuthUserId(session.user.id);
+    sessionStorageApi.clearGuestSession();
+    return;
+  }
+
+  // Nunca borrar la sesión guardada si el usuario está sin conexión al recargar la página (salvo cierre explícito)
+  if (!permitirLimpiar) {
     return;
   }
 
@@ -57,23 +64,57 @@ function sincronizarTokenSesion(session: Session | null) {
 }
 
 export async function sincronizarSesionAutenticadaConCliente(cliente: ClienteSupabaseAuth) {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    return null;
+  }
+
   const { data, error } = await cliente.auth.getSession();
 
   if (error) {
-    sessionStorageApi.clearAccessToken();
+    // Si falla por falta de red, conservar el token local para uso offline
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      return null;
+    }
     throw error;
   }
 
-  sincronizarTokenSesion(data.session);
+  sincronizarTokenSesion(data.session, false);
   return data.session;
+}
+
+export async function renovarSesionAutenticadaConCliente(cliente: ClienteSupabaseAuth) {
+  try {
+    if (typeof cliente.auth.refreshSession === "function") {
+      const { data, error } = await cliente.auth.refreshSession();
+      if (!error && data?.session?.access_token) {
+        sincronizarTokenSesion(data.session, false);
+        return data.session.access_token;
+      }
+    }
+  } catch {
+    // Si falla el refresh directo, intentar getSession
+  }
+
+  try {
+    const { data } = await cliente.auth.getSession();
+    if (data?.session?.access_token) {
+      sincronizarTokenSesion(data.session, false);
+      return data.session.access_token;
+    }
+  } catch {
+    // continuar
+  }
+
+  return null;
 }
 
 export function escucharCambiosAutenticacionConCliente(
   cliente: ClienteSupabaseAuth,
   onCambio?: (session: Session | null) => void | Promise<void>,
 ) {
-  const { data } = cliente.auth.onAuthStateChange((_event, session) => {
-    sincronizarTokenSesion(session);
+  const { data } = cliente.auth.onAuthStateChange((event, session) => {
+    const permitirLimpiar = event === "SIGNED_OUT";
+    sincronizarTokenSesion(session, permitirLimpiar);
     void onCambio?.(session);
   });
 
@@ -131,7 +172,16 @@ export async function vincularGoogleConCliente(cliente: ClienteSupabaseAuth) {
 }
 
 export async function cerrarSesionAutenticadaConCliente(cliente: ClienteSupabaseAuth) {
-  await cliente.auth.signOut();
+  sessionStorageApi.clearAccessToken();
+  sessionStorageApi.clearAuthUserId();
+  try {
+    await Promise.race([
+      cliente.auth.signOut(),
+      new Promise((resolve) => setTimeout(resolve, 800)),
+    ]);
+  } catch {
+    // Ignorar error de red al cerrar sesión sin conexión
+  }
   sessionStorageApi.clearAccessToken();
   sessionStorageApi.clearAuthUserId();
 }

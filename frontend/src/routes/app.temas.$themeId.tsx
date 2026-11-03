@@ -16,6 +16,7 @@ import {
 import { StateView } from "@/componentes/ui/state-view";
 import { FASES_CRECER } from "@/features/crecer/crecer-fases";
 import { useTemaDetalle } from "@/features/themes/hooks/use-tema-detalle";
+import { useResolvedMediaUrl, obtenerIlustracionFallback } from "@/features/media/use-resolved-media-url";
 import "./theme-detail.css";
 
 export const Route = createFileRoute("/app/temas/$themeId")({
@@ -30,7 +31,17 @@ function ThemeDetailPage() {
   const detalle = useTemaDetalle(themeId);
   const theme = detalle.theme;
   const isLoading = detalle.themeQuery.isLoading || detalle.meQuery.isLoading;
-  const isError = detalle.themeQuery.isError || detalle.meQuery.isError;
+  const isError = detalle.themeQuery.isError && !theme;
+
+  const fallbackHint = `${theme?.titulo ?? ""} ${theme?.senda?.nombre ?? ""}`;
+  const coverMedia = useResolvedMediaUrl({
+    resourceId: theme?.portada_recurso_id ?? theme?.portada_recurso?.id ?? null,
+    rawUrl: detalle.portadaQuery.data?.url ?? theme?.portada_recurso?.url_publica ?? null,
+    fallbackHint,
+    useFallbackOnError: true,
+  });
+
+  const coverUrl = coverMedia.src || obtenerIlustracionFallback(fallbackHint);
 
   return (
     <StateView
@@ -47,20 +58,14 @@ function ThemeDetailPage() {
 
         <section className="theme-detail__hero">
           <div className="theme-detail__media">
-            {detalle.portadaQuery.data?.url ? (
-              <img
-                src={detalle.portadaQuery.data.url}
-                alt={theme?.portada_recurso?.texto_alternativo || `Portada de ${theme?.titulo || "tema"}`}
-                loading="eager"
-                fetchPriority="high"
-                decoding="async"
-              />
-            ) : (
-              <div className="theme-detail__media-empty">
-                <BookOpenCheck aria-hidden="true" />
-                <span>Portada no disponible</span>
-              </div>
-            )}
+            <img
+              src={coverUrl}
+              alt={theme?.portada_recurso?.texto_alternativo || `Portada de ${theme?.titulo || "tema"}`}
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
+              onError={() => void coverMedia.handleImageError()}
+            />
             {detalle.temaDescargado ? (
               <span className="theme-detail__offline-badge">
                 <Check size={15} aria-hidden="true" /> Disponible sin conexión

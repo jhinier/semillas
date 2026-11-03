@@ -39,6 +39,9 @@ export function useLoginPage({ redirectTo }: UseLoginPageOptions) {
 
   const handleEmailSuccess = async () => {
     await sincronizarSesionAutenticada();
+    // Limpiamos explícitamente el guest id del storage para que no contamine al usuario autenticado
+    sessionStorageApi.clearGuestSession();
+    queryClient.removeQueries({ queryKey: ["me"] });
     try {
       await migrarInvitadoSiCorresponde({
         guestUserId: sessionStorageApi.getGuestUserId(),
@@ -48,15 +51,18 @@ export function useLoginPage({ redirectTo }: UseLoginPageOptions) {
       });
     } catch (e) {
       console.warn("No se pudo migrar la cuenta de invitado:", e);
-      // Limpiamos la sesión de invitado para que no bloquee futuros inicios de sesión
       sessionStorageApi.clearGuestSession();
     }
-    const perfilRespuesta = await queryClient.ensureQueryData({
+    const perfilRespuesta = await queryClient.fetchQuery({
       queryKey: ["me"],
       queryFn: obtenerMiPerfil,
     });
     const rutaPostLogin = obtenerRutaPostLogin(perfilRespuesta.perfil, perfilRespuesta.usuario);
-    navigate({ to: redirectTo === "/onboarding" ? rutaPostLogin : redirectTo });
+    const destino =
+      perfilRespuesta.usuario?.rol === "administrador"
+        ? (redirectTo.startsWith("/admin") ? redirectTo : "/admin")
+        : (redirectTo === "/onboarding" ? rutaPostLogin : redirectTo);
+    navigate({ to: destino });
   };
 
   return {

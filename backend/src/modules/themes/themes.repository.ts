@@ -14,32 +14,70 @@ export type TemaListadoRepo = {
 
 export function crearThemesRepository(db: DbClient) {
   return {
-    async listarTemasPublicos(sendaId?: string): Promise<TemaListadoRepo[]> {
-      if (sendaId) {
-        return db
-          .select({
-            tema: schema.tema,
-            senda: schema.senda,
-            portada: schema.recursoMultimedia
-          })
-          .from(schema.tema)
-          .leftJoin(schema.senda, eq(schema.tema.sendaId, schema.senda.id))
-          .leftJoin(schema.recursoMultimedia, eq(schema.tema.portadaRecursoId, schema.recursoMultimedia.id))
-          .where(and(eq(schema.tema.estado, "publicado"), eq(schema.tema.sendaId, sendaId)))
-          .orderBy(asc(schema.tema.publicadoEn)) as never;
+    async listarTemasPublicos(sendaId?: string, grupoEdadId?: string): Promise<TemaListadoRepo[]> {
+      const filas = sendaId
+        ? ((await db
+            .select({
+              tema: schema.tema,
+              senda: schema.senda,
+              portada: schema.recursoMultimedia,
+            })
+            .from(schema.tema)
+            .leftJoin(schema.senda, eq(schema.tema.sendaId, schema.senda.id))
+            .leftJoin(
+              schema.recursoMultimedia,
+              eq(schema.tema.portadaRecursoId, schema.recursoMultimedia.id),
+            )
+            .where(and(eq(schema.tema.estado, "publicado"), eq(schema.tema.sendaId, sendaId)))
+            .orderBy(asc(schema.tema.publicadoEn))) as TemaListadoRepo[])
+        : ((await db
+            .select({
+              tema: schema.tema,
+              senda: schema.senda,
+              portada: schema.recursoMultimedia,
+            })
+            .from(schema.tema)
+            .leftJoin(schema.senda, eq(schema.tema.sendaId, schema.senda.id))
+            .leftJoin(
+              schema.recursoMultimedia,
+              eq(schema.tema.portadaRecursoId, schema.recursoMultimedia.id),
+            )
+            .where(eq(schema.tema.estado, "publicado"))
+            .orderBy(asc(schema.tema.publicadoEn))) as TemaListadoRepo[]);
+
+      if (!grupoEdadId || filas.length === 0) {
+        return filas;
       }
 
-      return db
+      const relacionesEdad = await db
         .select({
-          tema: schema.tema,
-          senda: schema.senda,
-          portada: schema.recursoMultimedia
+          temaId: schema.temaGrupoEdad.temaId,
+          grupoEdadId: schema.temaGrupoEdad.grupoEdadId,
         })
-        .from(schema.tema)
-        .leftJoin(schema.senda, eq(schema.tema.sendaId, schema.senda.id))
-        .leftJoin(schema.recursoMultimedia, eq(schema.tema.portadaRecursoId, schema.recursoMultimedia.id))
-        .where(eq(schema.tema.estado, "publicado"))
-        .orderBy(asc(schema.tema.publicadoEn)) as never;
+        .from(schema.temaGrupoEdad)
+        .where(
+          inArray(
+            schema.temaGrupoEdad.temaId,
+            filas.map((f) => f.tema.id),
+          ),
+        );
+
+      const gruposPorTema = new Map<string, Set<string>>();
+      for (const rel of relacionesEdad) {
+        if (!gruposPorTema.has(rel.temaId)) {
+          gruposPorTema.set(rel.temaId, new Set());
+        }
+        gruposPorTema.get(rel.temaId)!.add(rel.grupoEdadId);
+      }
+
+      const filtrados = filas.filter((fila) => {
+        const grupos = gruposPorTema.get(fila.tema.id);
+        // Si el tema no tiene restricción explícita en tema_grupo_edad o incluye la franja actual, se muestra
+        if (!grupos || grupos.size === 0) return true;
+        return grupos.has(grupoEdadId);
+      });
+
+      return filtrados.length > 0 ? filtrados : filas;
     },
 
     async obtenerTemaPublico(temaId: string): Promise<TemaListadoRepo | null> {
@@ -47,11 +85,14 @@ export function crearThemesRepository(db: DbClient) {
         .select({
           tema: schema.tema,
           senda: schema.senda,
-          portada: schema.recursoMultimedia
+          portada: schema.recursoMultimedia,
         })
         .from(schema.tema)
         .leftJoin(schema.senda, eq(schema.tema.sendaId, schema.senda.id))
-        .leftJoin(schema.recursoMultimedia, eq(schema.tema.portadaRecursoId, schema.recursoMultimedia.id))
+        .leftJoin(
+          schema.recursoMultimedia,
+          eq(schema.tema.portadaRecursoId, schema.recursoMultimedia.id),
+        )
         .where(and(eq(schema.tema.id, temaId), eq(schema.tema.estado, "publicado")))
         .limit(1);
 
@@ -62,10 +103,13 @@ export function crearThemesRepository(db: DbClient) {
       const [tema] = await db
         .select({
           estado: schema.tema.estado,
-          portada: schema.recursoMultimedia
+          portada: schema.recursoMultimedia,
         })
         .from(schema.tema)
-        .leftJoin(schema.recursoMultimedia, eq(schema.tema.portadaRecursoId, schema.recursoMultimedia.id))
+        .leftJoin(
+          schema.recursoMultimedia,
+          eq(schema.tema.portadaRecursoId, schema.recursoMultimedia.id),
+        )
         .where(and(eq(schema.tema.id, temaId), eq(schema.tema.estado, "publicado")))
         .limit(1);
 
@@ -94,31 +138,57 @@ export function crearThemesRepository(db: DbClient) {
             .where(eq(schema.preguntaReflexion.pasoId, registro.paso.id));
 
           if (grupoEdadId) {
-            contenidos = contenidos.filter((contenido) => contenido.grupoEdadId === grupoEdadId);
-            preguntas = preguntas.filter((pregunta) => pregunta.grupoEdadId === grupoEdadId);
+            const contenidosPorGrupo = contenidos.filter(
+              (contenido) => contenido.grupoEdadId === grupoEdadId,
+            );
+            if (contenidosPorGrupo.length > 0) {
+              contenidos = contenidosPorGrupo;
+            }
+            const preguntasPorGrupo = preguntas.filter(
+              (pregunta) => pregunta.grupoEdadId === grupoEdadId,
+            );
+            if (preguntasPorGrupo.length > 0) {
+              preguntas = preguntasPorGrupo;
+            }
           }
 
           return { paso: registro.paso, tipoPaso: registro.tipoPaso, contenidos, preguntas };
-        })
+        }),
       );
     },
 
     async listarActividadesTema(temaId: string, grupoEdadId?: string) {
-      const actividades = grupoEdadId
+      let actividades = grupoEdadId
         ? await db
             .select({ actividad: schema.actividad, tipoActividad: schema.tipoActividad })
             .from(schema.actividad)
-            .leftJoin(schema.tipoActividad, eq(schema.actividad.tipoActividadId, schema.tipoActividad.id))
+            .leftJoin(
+              schema.tipoActividad,
+              eq(schema.actividad.tipoActividadId, schema.tipoActividad.id),
+            )
             .innerJoin(schema.tema, eq(schema.actividad.temaId, schema.tema.id))
-            .where(and(eq(schema.actividad.temaId, temaId), eq(schema.actividad.grupoEdadId, grupoEdadId), eq(schema.tema.estado, "publicado")))
+            .where(
+              and(
+                eq(schema.actividad.temaId, temaId),
+                eq(schema.actividad.grupoEdadId, grupoEdadId),
+                eq(schema.tema.estado, "publicado"),
+              ),
+            )
             .orderBy(asc(schema.actividad.orden))
-        : await db
-            .select({ actividad: schema.actividad, tipoActividad: schema.tipoActividad })
-            .from(schema.actividad)
-            .leftJoin(schema.tipoActividad, eq(schema.actividad.tipoActividadId, schema.tipoActividad.id))
-            .innerJoin(schema.tema, eq(schema.actividad.temaId, schema.tema.id))
-            .where(and(eq(schema.actividad.temaId, temaId), eq(schema.tema.estado, "publicado")))
-            .orderBy(asc(schema.actividad.orden));
+        : [];
+
+      if (actividades.length === 0) {
+        actividades = await db
+          .select({ actividad: schema.actividad, tipoActividad: schema.tipoActividad })
+          .from(schema.actividad)
+          .leftJoin(
+            schema.tipoActividad,
+            eq(schema.actividad.tipoActividadId, schema.tipoActividad.id),
+          )
+          .innerJoin(schema.tema, eq(schema.actividad.temaId, schema.tema.id))
+          .where(and(eq(schema.actividad.temaId, temaId), eq(schema.tema.estado, "publicado")))
+          .orderBy(asc(schema.actividad.orden));
+      }
 
       return Promise.all(
         actividades.map(async (registro) => {
@@ -127,8 +197,12 @@ export function crearThemesRepository(db: DbClient) {
             .from(schema.opcionActividad)
             .where(eq(schema.opcionActividad.actividadId, registro.actividad.id));
 
-          return { actividad: registro.actividad, tipoActividad: registro.tipoActividad, opciones };
-        })
+          return {
+            actividad: registro.actividad,
+            tipoActividad: registro.tipoActividad,
+            opciones,
+          };
+        }),
       );
     },
 
@@ -143,14 +217,24 @@ export function crearThemesRepository(db: DbClient) {
     },
 
     async temaDisponibleParaGrupo(temaId: string, grupoEdadId: string) {
-      const [temaGrupo] = await db
-        .select({ temaId: schema.temaGrupoEdad.temaId })
+      const relaciones = await db
+        .select({ grupoEdadId: schema.temaGrupoEdad.grupoEdadId })
         .from(schema.temaGrupoEdad)
         .innerJoin(schema.tema, eq(schema.temaGrupoEdad.temaId, schema.tema.id))
-        .where(and(eq(schema.temaGrupoEdad.temaId, temaId), eq(schema.temaGrupoEdad.grupoEdadId, grupoEdadId), eq(schema.tema.estado, "publicado")))
-        .limit(1);
+        .where(
+          and(eq(schema.temaGrupoEdad.temaId, temaId), eq(schema.tema.estado, "publicado")),
+        );
 
-      return Boolean(temaGrupo);
+      if (relaciones.length === 0) {
+        const [tema] = await db
+          .select({ id: schema.tema.id })
+          .from(schema.tema)
+          .where(and(eq(schema.tema.id, temaId), eq(schema.tema.estado, "publicado")))
+          .limit(1);
+        return Boolean(tema);
+      }
+
+      return relaciones.some((rel) => rel.grupoEdadId === grupoEdadId);
     },
 
     async listarRecursosPorIds(ids: string[]) {
@@ -166,7 +250,12 @@ export function crearThemesRepository(db: DbClient) {
       const [paquete] = await db
         .select()
         .from(schema.paqueteSinConexion)
-        .where(and(eq(schema.paqueteSinConexion.temaId, temaId), eq(schema.paqueteSinConexion.versionContenido, versionContenido)))
+        .where(
+          and(
+            eq(schema.paqueteSinConexion.temaId, temaId),
+            eq(schema.paqueteSinConexion.versionContenido, versionContenido),
+          ),
+        )
         .limit(1);
 
       return paquete ?? null;
@@ -208,10 +297,13 @@ export function crearThemesRepository(db: DbClient) {
           ultimoAbiertoEn: null,
         })
         .onConflictDoUpdate({
-          target: [schema.descargaSinConexionUsuario.usuarioId, schema.descargaSinConexionUsuario.paqueteId],
+          target: [
+            schema.descargaSinConexionUsuario.usuarioId,
+            schema.descargaSinConexionUsuario.paqueteId,
+          ],
           set: { descargadoEn: new Date() },
         });
-    }
+    },
   };
 }
 

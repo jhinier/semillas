@@ -1,6 +1,10 @@
 import { useMemo, useState } from "react";
 import { Trash2, Upload } from "lucide-react";
 import type { RecursoMultimedia } from "../../../media/media.api";
+import {
+  useResolvedMediaUrl,
+  obtenerIlustracionFallback,
+} from "../../../media/use-resolved-media-url";
 import { MediaGalleryDialog } from "../medios/media-gallery-dialog";
 import type { ConfiguracionActividad } from "./activity-config-utils";
 
@@ -39,6 +43,13 @@ export function SelectorMedioBiblioteca({
     [recursos, valorUrl],
   );
 
+  const resolved = useResolvedMediaUrl({
+    resourceId: recursoSeleccionado?.id ?? null,
+    rawUrl: recursoSeleccionado?.url_publica ?? (valorUrl || null),
+    fallbackHint: recursoSeleccionado?.titulo || titulo,
+    useFallbackOnError: tipo === "imagen" && Boolean(recursoSeleccionado || valorUrl),
+  });
+
   const actualizar = (recurso: RecursoMultimedia | null) => {
     onChange({
       ...configuracion,
@@ -46,6 +57,11 @@ export function SelectorMedioBiblioteca({
       [`${claveBase}_recurso_id`]: recurso?.id ?? null,
     });
   };
+
+  const previewImgSrc =
+    tipo === "imagen" && (recursoSeleccionado || valorUrl)
+      ? resolved.src || obtenerIlustracionFallback(recursoSeleccionado?.titulo || titulo)
+      : null;
 
   return (
     <div className="admin-media-picker">
@@ -55,10 +71,11 @@ export function SelectorMedioBiblioteca({
         onClick={() => setAbierto(true)}
       >
         <div className="admin-media-slot__preview">
-          {recursoSeleccionado?.url_publica ? (
+          {previewImgSrc ? (
             <img
-              src={recursoSeleccionado.url_publica}
-              alt={recursoSeleccionado.titulo ?? undefined}
+              src={previewImgSrc}
+              alt={recursoSeleccionado?.titulo ?? undefined}
+              onError={() => void resolved.handleImageError()}
             />
           ) : (
             icono

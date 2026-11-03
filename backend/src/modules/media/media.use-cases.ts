@@ -15,6 +15,14 @@ import { registrarAuditoriaSegura, snapshotRecurso } from "./media.audit";
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SIGNED_URL_EXPIRES_IN_SECONDS = 300;
 
+function normalizarClaveAlmacenamiento(clave: string, bucket = "media"): string {
+  let limpia = clave.trim().replace(/^\/+/, "");
+  if (limpia.startsWith(`${bucket}/`)) {
+    limpia = limpia.slice(bucket.length + 1);
+  }
+  return limpia;
+}
+
 function validarUuid(id: string) {
   if (UUID_REGEX.test(id)) return null;
   return {
@@ -29,6 +37,31 @@ function validarUuid(id: string) {
 export function crearCasosUsoMedia(
   repositorio: ReturnType<typeof crearMediaRepository>,
 ) {
+  async function resolverUrlFirmadaSegura(recurso: {
+    url_publica: string;
+    clave_almacenamiento: string | null;
+    bucket_almacenamiento: string | null;
+  }): Promise<string> {
+    if (!recurso.clave_almacenamiento || typeof repositorio.crearURLFirmada !== 'function') return recurso.url_publica;
+    const bucket = recurso.bucket_almacenamiento ?? repositorio.bucket;
+    const claveNormalizada = normalizarClaveAlmacenamiento(recurso.clave_almacenamiento, bucket);
+    const { data } = await repositorio.crearURLFirmada(
+      bucket,
+      claveNormalizada,
+      SIGNED_URL_EXPIRES_IN_SECONDS,
+    );
+    if (data?.signedUrl) return data.signedUrl;
+    if (claveNormalizada !== recurso.clave_almacenamiento) {
+      const fallback = await repositorio.crearURLFirmada(
+        bucket,
+        recurso.clave_almacenamiento,
+        SIGNED_URL_EXPIRES_IN_SECONDS,
+      );
+      if (fallback.data?.signedUrl) return fallback.data.signedUrl;
+    }
+    return recurso.url_publica;
+  }
+
   return {
     async subir({
       archivo,
@@ -88,7 +121,7 @@ export function crearCasosUsoMedia(
       if (uploadError) {
         return {
           error: {
-            mensaje: "Error al subir el archivo al almacenamiento",
+            mensaje: `Error al subir el archivo al almacenamiento (${uploadError.message || "Storage error"})`,
             codigo: "STORAGE_ERROR",
             estado: 500,
           },
@@ -117,13 +150,19 @@ export function crearCasosUsoMedia(
           creado.id,
           `/media/${creado.id}/url`,
         );
+        const urlFirmada = await resolverUrlFirmadaSegura(recurso);
         await registrarAuditoriaSegura(repositorio, {
           actorUsuarioId: userId,
           accion: "crear",
           entidadId: creado.id,
           datosDespues: snapshotRecurso(recurso as unknown as Record<string, unknown>),
         });
-        return { recurso } as const;
+        return {
+          recurso: {
+            ...recurso,
+            url_publica: urlFirmada,
+          },
+        } as const;
       } catch (error) {
         await repositorio.eliminarArchivo(repositorio.bucket, storagePath);
         if (recursoCreadoId) await repositorio.eliminarRegistro(recursoCreadoId);
@@ -139,9 +178,10 @@ export function crearCasosUsoMedia(
         throw new NotFoundError("Recurso multimedia no encontrado");
       }
       const bucket = recurso.bucket_almacenamiento ?? repositorio.bucket;
+      const claveNormalizada = normalizarClaveAlmacenamiento(recurso.clave_almacenamiento, bucket);
       const { data, error } = await repositorio.crearURLFirmada(
         bucket,
-        recurso.clave_almacenamiento,
+        claveNormalizada,
         SIGNED_URL_EXPIRES_IN_SECONDS,
       );
       if (error || !data?.signedUrl) {
@@ -166,16 +206,7 @@ export function crearCasosUsoMedia(
       ]);
       return Promise.all(
         recursos.map(async (recurso) => {
-          let url = recurso.url_publica;
-          if (recurso.clave_almacenamiento) {
-            const bucket = recurso.bucket_almacenamiento ?? repositorio.bucket;
-            const { data } = await repositorio.crearURLFirmada(
-              bucket,
-              recurso.clave_almacenamiento,
-              SIGNED_URL_EXPIRES_IN_SECONDS,
-            );
-            url = data?.signedUrl ?? url;
-          }
+          const url = await resolverUrlFirmadaSegura(recurso);
           return {
             ...recurso,
             url_publica: url,
@@ -196,16 +227,7 @@ export function crearCasosUsoMedia(
         repositorio.obtenerCreador(recurso.creado_por),
       ]);
       const usos = construirUsosRecurso(id, fuentes);
-      let url = recurso.url_publica;
-      if (recurso.clave_almacenamiento) {
-        const bucket = recurso.bucket_almacenamiento ?? repositorio.bucket;
-        const { data } = await repositorio.crearURLFirmada(
-          bucket,
-          recurso.clave_almacenamiento,
-          SIGNED_URL_EXPIRES_IN_SECONDS,
-        );
-        url = data?.signedUrl ?? url;
-      }
+      const url = await resolverUrlFirmadaSegura(recurso);
 
       return {
         ...recurso,
@@ -241,6 +263,7 @@ export function crearCasosUsoMedia(
         titulo: parsed.data.titulo,
         texto_alternativo: parsed.data.textoAlternativo,
       });
+      const urlFirmada = await resolverUrlFirmadaSegura(actualizado);
       await registrarAuditoriaSegura(repositorio, {
         actorUsuarioId,
         accion: "actualizar_metadatos",
@@ -248,7 +271,12 @@ export function crearCasosUsoMedia(
         datosAntes: snapshotRecurso(existente as unknown as Record<string, unknown>),
         datosDespues: snapshotRecurso(actualizado as unknown as Record<string, unknown>),
       });
-      return { recurso: actualizado } as const;
+      return {
+        recurso: {
+          ...actualizado,
+          url_publica: urlFirmada,
+        },
+      } as const;
     },
 
     async reemplazar({
@@ -298,7 +326,7 @@ export function crearCasosUsoMedia(
       if (uploadError) {
         return {
           error: {
-            mensaje: "No se pudo subir el archivo de reemplazo",
+            mensaje: `No se pudo subir el archivo de reemplazo (${uploadError.message || "Storage error"})`,
             codigo: "STORAGE_ERROR",
             estado: 500,
           },
@@ -325,6 +353,7 @@ export function crearCasosUsoMedia(
         if (existente.clave_almacenamiento) {
           await repositorio.eliminarArchivo(bucket, existente.clave_almacenamiento);
         }
+        const urlFirmada = await resolverUrlFirmadaSegura(actualizado);
         await registrarAuditoriaSegura(repositorio, {
           actorUsuarioId,
           accion: "reemplazar_archivo",
@@ -332,7 +361,12 @@ export function crearCasosUsoMedia(
           datosAntes: snapshotRecurso(existente as unknown as Record<string, unknown>),
           datosDespues: snapshotRecurso(actualizado as unknown as Record<string, unknown>),
         });
-        return { recurso: actualizado } as const;
+        return {
+          recurso: {
+            ...actualizado,
+            url_publica: urlFirmada,
+          },
+        } as const;
       } catch (error) {
         await repositorio.eliminarArchivo(bucket, nuevaClave);
         throw error;

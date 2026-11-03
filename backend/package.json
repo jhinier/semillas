@@ -3,6 +3,7 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
+    "dev:proxy": "bun run dev-proxy.ts",
     "deploy": "wrangler deploy",
     "build": "tsc --noEmit",
     "lint": "tsc --noEmit",

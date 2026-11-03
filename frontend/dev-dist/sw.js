@@ -67,7 +67,7 @@ if (!self.define) {
     });
   };
 }
-define(['./workbox-50595c2f'], (function (workbox) { 'use strict';
+define(['./workbox-44b68aef'], (function (workbox) { 'use strict';
 
   self.skipWaiting();
   workbox.clientsClaim();
@@ -81,17 +81,38 @@ define(['./workbox-50595c2f'], (function (workbox) { 'use strict';
     "revision": "3ca0b8505b4bec776b69afdba2768812"
   }, {
     "url": "/index.html",
-    "revision": "0.37l2cq7vk8g"
+    "revision": "0.chl1bnmh1a"
   }], {});
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("/index.html"), {
-    allowlist: [/^\/$/]
+    allowlist: [/^\/.*$/]
   }));
   workbox.registerRoute(({
     url
   }) => url.pathname.startsWith("/__offline_media/"), new workbox.CacheOnly({
     "cacheName": "semillas-offline-media-v1",
     plugins: []
+  }), 'GET');
+  workbox.registerRoute(({
+    request
+  }) => request.mode === "navigate", new workbox.NetworkFirst({
+    "cacheName": "semillas-navigation-shell-v1",
+    "networkTimeoutSeconds": 2,
+    plugins: [new workbox.CacheableResponsePlugin({
+      statuses: [0, 200]
+    })]
+  }), 'GET');
+  workbox.registerRoute(({
+    request,
+    url
+  }) => request.destination === "script" || request.destination === "style" || request.destination === "worker" || url.pathname.startsWith("/src/") || url.pathname.startsWith("/node_modules/") || url.pathname.startsWith("/@"), new workbox.StaleWhileRevalidate({
+    "cacheName": "semillas-app-code-v1",
+    plugins: [new workbox.ExpirationPlugin({
+      maxEntries: 500,
+      maxAgeSeconds: 2592000
+    }), new workbox.CacheableResponsePlugin({
+      statuses: [0, 200]
+    })]
   }), 'GET');
   workbox.registerRoute(({
     request
@@ -131,7 +152,7 @@ define(['./workbox-50595c2f'], (function (workbox) { 'use strict';
     request
   }) => request.method === "GET" && !url.pathname.includes("/administracion/") && !url.pathname.includes("/admin/") && /\/(temas|sendas|catalogo)(\/|$)/.test(url.pathname), new workbox.NetworkFirst({
     "cacheName": "semillas-public-api-v1",
-    "networkTimeoutSeconds": 4,
+    "networkTimeoutSeconds": 3,
     plugins: [new workbox.ExpirationPlugin({
       maxEntries: 80,
       maxAgeSeconds: 86400
@@ -144,7 +165,7 @@ define(['./workbox-50595c2f'], (function (workbox) { 'use strict';
     request
   }) => request.method === "GET" && !url.pathname.includes("/administracion/") && !url.pathname.includes("/admin/") && /\/(perfil|progreso|gamificacion|actividades|clubes)(\/|$)/.test(url.pathname), new workbox.NetworkFirst({
     "cacheName": "semillas-user-api-v1",
-    "networkTimeoutSeconds": 4,
+    "networkTimeoutSeconds": 3,
     plugins: [new workbox.ExpirationPlugin({
       maxEntries: 40,
       maxAgeSeconds: 86400

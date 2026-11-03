@@ -24,6 +24,8 @@ function CConectarPage() {
       isLoading={fase.isLoading}
       isError={fase.isError}
       activityCount={fase.actividadesFase.length}
+      completedActivityCount={fase.completedActivityCount}
+      canContinue={fase.allActivitiesCompleted}
       isSavingProgress={fase.isSavingProgress}
       progressError={fase.progressError}
       onCompleteStep={fase.completeStep}

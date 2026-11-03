@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { playSound } from "../../../lib/audio";
 import type { Actividad } from "../../../shared/api/schemas/temas.schema";
 
@@ -8,8 +8,16 @@ interface PreguntaQuiz {
   respuesta_correcta: number;
 }
 
+interface OpcionConfig {
+  texto: string;
+  correcta?: boolean;
+  esCorrecta?: boolean;
+}
+
 interface QuizConfiguracion {
   preguntas?: PreguntaQuiz[];
+  opciones?: OpcionConfig[];
+  pregunta?: string;
 }
 
 interface UseQuizProps {
@@ -22,8 +30,39 @@ export function useQuiz({ actividad, onComplete }: UseQuizProps) {
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [completed, setCompleted] = useState(false);
 
-  const configuracion = actividad.configuracion as QuizConfiguracion;
-  const preguntas: PreguntaQuiz[] = configuracion.preguntas || [];
+  const preguntas: PreguntaQuiz[] = useMemo(() => {
+    const configuracion = (actividad.configuracion ?? {}) as QuizConfiguracion;
+    if (Array.isArray(configuracion.preguntas) && configuracion.preguntas.length > 0) {
+      return configuracion.preguntas;
+    }
+
+    if (Array.isArray(configuracion.opciones) && configuracion.opciones.length > 0) {
+      const idxCorrecta = configuracion.opciones.findIndex(
+        (o) => Boolean(o.correcta ?? o.esCorrecta),
+      );
+      return [
+        {
+          pregunta: configuracion.pregunta || actividad.consigna || actividad.titulo || "Selecciona la respuesta correcta",
+          opciones: configuracion.opciones.map((o) => o.texto),
+          respuesta_correcta: idxCorrecta >= 0 ? idxCorrecta : 0,
+        },
+      ];
+    }
+
+    if (Array.isArray(actividad.opciones) && actividad.opciones.length > 0) {
+      const idxCorrecta = actividad.opciones.findIndex((o) => Boolean(o.correcta));
+      return [
+        {
+          pregunta: actividad.consigna || actividad.titulo || "Selecciona la respuesta correcta",
+          opciones: actividad.opciones.map((o) => o.texto),
+          respuesta_correcta: idxCorrecta >= 0 ? idxCorrecta : 0,
+        },
+      ];
+    }
+
+    return [];
+  }, [actividad]);
+
   const currentQuestion = preguntas[currentQuestionIndex];
 
   const selectedOption = answers[currentQuestionIndex] !== undefined ? answers[currentQuestionIndex] : null;
@@ -35,9 +74,9 @@ export function useQuiz({ actividad, onComplete }: UseQuizProps) {
     const correct = index === currentQuestion.respuesta_correcta;
 
     if (correct) {
-      playSound("acertado");
+      void playSound("acertado");
     } else {
-      playSound("error");
+      void playSound("error");
     }
   };
 

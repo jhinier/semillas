@@ -19,14 +19,54 @@ export function OpcionMultipleServidor({ actividad, onComplete }: Props) {
   const [seleccionada, setSeleccionada] = useState<string | null>(null);
   const [resultado, setResultado] = useState<ResultadoRespuesta | null>(null);
 
+  const evaluarLocalmente = (opcionId: string): ResultadoRespuesta | null => {
+    const tieneInfoCorrecta = actividad.opciones.some((o) => typeof o.correcta === "boolean");
+    if (!tieneInfoCorrecta) return null;
+
+    const opcionElegida = actividad.opciones.find((o) => o.id === opcionId);
+    const opcionCorrecta = actividad.opciones.find((o) => o.correcta) ?? actividad.opciones[0];
+    const esCorrecta = Boolean(opcionElegida?.correcta);
+    const xp = esCorrecta ? (actividad.xp_recompensa ?? 10) : 0;
+
+    return {
+      Intento: {
+        id: randomUUID(),
+        actividad_id: actividad.id,
+        usuario_id: "local",
+        opcion_id: opcionId,
+        es_correcta: esCorrecta,
+        xp_otorgada: xp,
+        respondido_en: new Date().toISOString(),
+      },
+      resultado: {
+        correcta: esCorrecta,
+        xp_otorgada: xp,
+        opcion_correcta_id: opcionCorrecta?.id ?? opcionId,
+        retroalimentacion:
+          opcionElegida?.retroalimentacion ??
+          actividad.retroalimentacion ??
+          (esCorrecta
+            ? "¡Excelente respuesta!"
+            : "Esa no es la respuesta correcta. ¡Inténtalo de nuevo!"),
+      },
+    } as unknown as ResultadoRespuesta;
+  };
+
   const respuestaMutation = useMutation({
-    mutationFn: (opcionId: string) =>
-      responderActividad(actividad.id, {
-        evento_id_cliente: randomUUID(),
-        opcion_id_seleccionada: opcionId,
-        ocurrido_en_cliente: new Date().toISOString(),
-        dispositivo_id: "web",
-      }),
+    mutationFn: async (opcionId: string) => {
+      try {
+        return await responderActividad(actividad.id, {
+          evento_id_cliente: randomUUID(),
+          opcion_id_seleccionada: opcionId,
+          ocurrido_en_cliente: new Date().toISOString(),
+          dispositivo_id: "web",
+        });
+      } catch (err) {
+        const fallbackLocal = evaluarLocalmente(opcionId);
+        if (fallbackLocal) return fallbackLocal;
+        throw err;
+      }
+    },
     onSuccess(data) {
       setResultado(data);
       playSound(data.resultado.correcta ? "acertado" : "error");
@@ -35,8 +75,9 @@ export function OpcionMultipleServidor({ actividad, onComplete }: Props) {
         onComplete(actividad.id, data.resultado.xp_otorgada);
       }
 
-      queryClient.invalidateQueries({ queryKey: ["gamification", "me"] });
-      queryClient.invalidateQueries({ queryKey: ["progress"] });
+      void queryClient.invalidateQueries({ queryKey: ["gamification", "me"] });
+      void queryClient.invalidateQueries({ queryKey: ["progress"] });
+      void queryClient.invalidateQueries({ queryKey: ["temas"] });
     },
   });
 
@@ -56,7 +97,9 @@ export function OpcionMultipleServidor({ actividad, onComplete }: Props) {
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-3">
       {actividad.opciones.map((opcion) => {
         const esSeleccionada = seleccionada === opcion.id;
-        const esCorrecta = resultado?.resultado.opcion_correcta_id === opcion.id;
+        const esCorrecta =
+          resultado?.resultado.opcion_correcta_id === opcion.id ||
+          ( Boolean(resultado) && Boolean(opcion.correcta) );
         const respondida = Boolean(resultado);
 
         let clases = "border-slate-200 bg-white hover:border-violet-300 hover:bg-violet-50/40";
@@ -84,11 +127,16 @@ export function OpcionMultipleServidor({ actividad, onComplete }: Props) {
       })}
 
       {respuestaMutation.isError ? (
-        <p className="rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-700">
-          {respuestaMutation.error instanceof Error
-            ? respuestaMutation.error.message
-            : "No se pudo verificar la respuesta."}
-        </p>
+        <div className="rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-700 flex items-center justify-between gap-3">
+          <span>
+            {respuestaMutation.error instanceof Error
+              ? respuestaMutation.error.message
+              : "No se pudo verificar la respuesta."}
+          </span>
+          <Boton variante="contorno" tamano="pequeno" onClick={reintentar}>
+            <RotateCcw size={15} /> Reintentar
+          </Boton>
+        </div>
       ) : null}
 
       {resultado ? (

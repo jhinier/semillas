@@ -1,4 +1,5 @@
 import { obtenerApiUrlPublica } from "../../shared/config/env";
+import { asegurarSesionInvitadoRemota } from "../../shared/api/api";
 import { sessionStorageApi } from "../../shared/api/session";
 import { db } from "./db";
 import {
@@ -103,6 +104,7 @@ export async function pushPendingEvents(): Promise<{
   const logrosDesbloqueados = new Map<string, LogroSincronizado>();
 
   try {
+    await asegurarSesionInvitadoRemota(false);
     const eventos = await getEventosPendientes();
     const batches = chunkArray(eventos, PUSH_BATCH_SIZE);
 
@@ -180,6 +182,7 @@ export async function pushPendingEvents(): Promise<{
 export async function pullCambios(): Promise<void> {
   const scopeId = await obtenerScopeOffline();
   if (!scopeId) throw new Error("No hay una sesión offline activa");
+  await asegurarSesionInvitadoRemota(false);
   const syncState = await db.syncState.get(claveSyncState(scopeId));
   const params = new URLSearchParams();
   if (syncState?.lastSyncTimestamp) params.set("since", syncState.lastSyncTimestamp);
@@ -318,6 +321,8 @@ export async function syncFull(): Promise<SyncResult> {
     return { exito: false, procesados: 0, errores: 0, logrosDesbloqueados: [], timestamp: new Date().toISOString() };
   }
 
+  const pendientesAntes = await getPendingCount();
+
   try {
     const pushResult = await pushPendingEvents();
     await pullCambios();
@@ -329,14 +334,16 @@ export async function syncFull(): Promise<SyncResult> {
       logrosDesbloqueados: pushResult.logrosDesbloqueados,
       timestamp: new Date().toISOString(),
     };
-  } catch (error) {
+  } catch {
     await actualizarEstadoSync(false);
     programarReintento();
-    notificarFalloSincronizacion("No pudimos sincronizar tu progreso en segundo plano.");
+    if (pendientesAntes > 0) {
+      notificarFalloSincronizacion("No pudimos sincronizar tu progreso en segundo plano.");
+    }
     return {
       exito: false,
       procesados: 0,
-      errores: 1,
+      errores: pendientesAntes > 0 ? 1 : 0,
       logrosDesbloqueados: [],
       timestamp: new Date().toISOString(),
     };

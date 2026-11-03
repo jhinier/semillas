@@ -1,4 +1,5 @@
 /* Activity studio v2 — desktop-first admin workspace. */
+:root,
 .admin-activity-studio-page,
 .activity-library-v2 {
   --activity-ink: #102036;
@@ -43,9 +44,9 @@
 }
 
 .admin-primary-button {
-  border: 1px solid var(--activity-purple);
-  background: var(--activity-purple);
-  color: #fff;
+  border: 1px solid var(--activity-purple, #6c35ed);
+  background: var(--activity-purple, #6c35ed) !important;
+  color: #ffffff !important;
   box-shadow: 0 10px 24px rgba(108, 53, 237, .18);
 }
 
@@ -139,7 +140,7 @@
   place-items: center;
   border-radius: 16px;
   background: #0b4638;
-  color: #fff;
+  color: #ffffff !important;
   box-shadow: 0 10px 22px rgba(11, 70, 56, .2);
 }
 
@@ -784,7 +785,8 @@
 .activity-theme-picker__empty { display: flex; min-height: 150px; flex-direction: column; align-items: center; justify-content: center; color: #8996a8; font-size: 11px; }
 
 @media (max-width: 1180px) {
-  .admin-activity-studio-page,
+  :root,
+.admin-activity-studio-page,
   .activity-library-v2 { padding-inline: 22px; }
   .activity-library-filter-grid { grid-template-columns: minmax(240px, 1fr) repeat(2, minmax(150px, .65fr)); }
   .activity-editor-workspace__layout { grid-template-columns: minmax(0, 1fr) 245px; }

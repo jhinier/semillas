@@ -77,8 +77,10 @@ function AdminThemeLibrary() {
   const edadesQuery = useQuery({ queryKey: ["catalog", "age-groups"], queryFn: obtenerGruposEdad });
 
   const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ["admin", "themes"] });
-    queryClient.invalidateQueries({ queryKey: ["admin", "dashboard"] });
+    void queryClient.invalidateQueries({ queryKey: ["admin", "themes"] });
+    void queryClient.invalidateQueries({ queryKey: ["admin", "dashboard"] });
+    void queryClient.invalidateQueries({ queryKey: ["temas"] });
+    void queryClient.invalidateQueries({ queryKey: ["theme"] });
   };
   const mutation = useMutation({
     mutationFn: async ({ id, action }: { id: string; action: "publicar" | "borrador" | "archivar" | "duplicar" }) => {
@@ -144,7 +146,9 @@ function AdminThemeLibrary() {
               portadaFirmada={portadasFirmadas.get(tema.id) ?? null}
               menuOpen={openMenu === tema.id}
               onToggleMenu={() => setOpenMenu(openMenu === tema.id ? null : tema.id)}
+              onCloseMenu={() => setOpenMenu(null)}
               onNavigate={(destination) => {
+                setOpenMenu(null);
                 const routes = {
                   detalle: "/admin/temas/$themeId/detalle",
                   editar: "/admin/temas/$themeId/edit",
@@ -173,11 +177,12 @@ function AdminThemeLibrary() {
   );
 }
 
-function ThemeLibraryRow({ tema, portadaFirmada, menuOpen, onToggleMenu, onNavigate, onAction, actionPending }: {
+function ThemeLibraryRow({ tema, portadaFirmada, menuOpen, onToggleMenu, onCloseMenu, onNavigate, onAction, actionPending }: {
   tema: TemaListadoAdmin;
   portadaFirmada: string | null;
   menuOpen: boolean;
   onToggleMenu: () => void;
+  onCloseMenu: () => void;
   onNavigate: (destination: "detalle" | "editar" | "crecer" | "actividades" | "preview") => void;
   onAction: (action: "publicar" | "borrador" | "archivar" | "duplicar") => void;
   actionPending: boolean;
@@ -191,7 +196,7 @@ function ThemeLibraryRow({ tema, portadaFirmada, menuOpen, onToggleMenu, onNavig
   const stateLabel = estados.find((item) => item.id === tema.estado)?.label ?? tema.estado;
 
   return (
-    <article className="admin-theme-row">
+    <article className={`admin-theme-row ${menuOpen ? "admin-theme-row--menu-open" : ""}`}>
       <img className="admin-theme-row__cover" src={cover} alt="" loading="lazy" />
       <button type="button" className="admin-theme-row__identity text-left" onClick={() => onNavigate("detalle")}>
         <strong>{tema.titulo}</strong><p>{tema.resumen || tema.objetivo}</p>
@@ -204,14 +209,59 @@ function ThemeLibraryRow({ tema, portadaFirmada, menuOpen, onToggleMenu, onNavig
         <button type="button" className="admin-icon-button" title="Editar información" onClick={() => onNavigate("editar")}><FilePenLine size={17} /></button>
         <button type="button" className="admin-icon-button" title="Editor CRECER" onClick={() => onNavigate("crecer")}><Layers3 size={17} /></button>
         <button type="button" className="admin-icon-button" title="Actividades" onClick={() => onNavigate("actividades")}><Gamepad2 size={17} /></button>
-        <button type="button" className="admin-icon-button" title="Más acciones" onClick={onToggleMenu}>{actionPending ? <Loader2 className="animate-spin" size={17} /> : <MoreHorizontal size={18} />}</button>
+        <button
+          type="button"
+          className={`admin-icon-button ${menuOpen ? "bg-slate-100 text-slate-900 border-slate-300" : ""}`}
+          title="Más acciones"
+          aria-expanded={menuOpen}
+          aria-haspopup="menu"
+          onClick={onToggleMenu}
+        >
+          {actionPending ? <Loader2 className="animate-spin" size={17} /> : <MoreHorizontal size={18} />}
+        </button>
         {menuOpen ? (
-          <div className="absolute right-0 top-full z-30 mt-2 grid min-w-48 gap-1 rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
-            <button type="button" onClick={() => onNavigate("preview")} className="flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-bold text-slate-600 hover:bg-slate-50"><Eye size={15} /> Vista previa</button>
-            <button type="button" onClick={() => onAction("duplicar")} className="flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-bold text-slate-600 hover:bg-slate-50"><Copy size={15} /> Duplicar completo</button>
-            {tema.estado === "publicado" ? <button type="button" onClick={() => onAction("borrador")} className="flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-bold text-amber-700 hover:bg-amber-50"><FilePenLine size={15} /> Pasar a borrador</button> : <button type="button" disabled={!tema.completitud.listo_para_revision || tema.estado !== "aprobado"} onClick={() => onAction("publicar")} className="flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-bold text-emerald-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-40"><Send size={15} /> {tema.estado === "aprobado" ? "Publicar" : "Requiere aprobación"}</button>}
-            <button type="button" onClick={() => onAction("archivar")} className="flex items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-bold text-red-600 hover:bg-red-50"><Archive size={15} /> Archivar</button>
-          </div>
+          <>
+            <div className="fixed inset-0 z-40" onClick={onCloseMenu} aria-hidden="true" />
+            <div role="menu" className="admin-theme-dropdown">
+              <button type="button" role="menuitem" onClick={() => onNavigate("preview")} className="admin-theme-dropdown__item">
+                <Eye size={15} />
+                <span>Vista previa</span>
+              </button>
+              <button type="button" role="menuitem" onClick={() => onNavigate("crecer")} className="admin-theme-dropdown__item">
+                <Layers3 size={15} />
+                <span>Editor CRECER</span>
+              </button>
+              <button type="button" role="menuitem" onClick={() => onNavigate("actividades")} className="admin-theme-dropdown__item">
+                <Gamepad2 size={15} />
+                <span>Actividades</span>
+              </button>
+              <button type="button" role="menuitem" onClick={() => onAction("duplicar")} className="admin-theme-dropdown__item">
+                <Copy size={15} />
+                <span>Duplicar completo</span>
+              </button>
+              {tema.estado === "publicado" ? (
+                <button type="button" role="menuitem" onClick={() => onAction("borrador")} className="admin-theme-dropdown__item is-warning">
+                  <FilePenLine size={15} />
+                  <span>Pasar a borrador</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  role="menuitem"
+                  disabled={!tema.completitud.listo_para_revision || tema.estado !== "aprobado"}
+                  onClick={() => onAction("publicar")}
+                  className="admin-theme-dropdown__item is-success"
+                >
+                  <Send size={15} />
+                  <span>{tema.estado === "aprobado" ? "Publicar" : "Requiere aprobación"}</span>
+                </button>
+              )}
+              <button type="button" role="menuitem" onClick={() => onAction("archivar")} className="admin-theme-dropdown__item is-danger">
+                <Archive size={15} />
+                <span>Archivar</span>
+              </button>
+            </div>
+          </>
         ) : null}
       </div>
     </article>

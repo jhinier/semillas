@@ -16,6 +16,7 @@ import {
   obtenerUrlFirmadaRecurso,
   reemplazarArchivoRecurso,
   subirArchivo,
+  validarArchivoMultimediaCliente,
   type DetalleRecursoMultimedia,
   type MetadataTecnicaArchivo,
   type RecursoMultimedia,
@@ -47,6 +48,8 @@ interface UseAdminMediaPageReturn {
   isUploading: boolean;
   isMutating: boolean;
   uploadProgress: UploadProgress | null;
+  uploadErrors: string[];
+  clearUploadErrors: () => void;
   mediaQuery: UseQueryResult<RecursoMultimedia[]>;
   detailQuery: UseQueryResult<DetalleRecursoMultimedia>;
   totalResources: number;
@@ -117,6 +120,10 @@ function inferMediaType(file: File): TipoRecursoMultimedia {
   if (file.type.startsWith("image/")) return "imagen";
   if (file.type.startsWith("audio/")) return "audio";
   if (file.type.startsWith("video/")) return "video";
+  const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+  if (["mp4", "webm", "mov", "avi", "mkv"].includes(ext)) return "video";
+  if (["mp3", "aac", "ogg", "wav", "m4a"].includes(ext)) return "audio";
+  if (["jpg", "jpeg", "png", "webp", "gif"].includes(ext)) return "imagen";
   return "documento";
 }
 
@@ -175,6 +182,7 @@ export function useAdminMediaPage(): UseAdminMediaPageReturn {
   const [paginaActual, setPaginaActual] = useState(1);
   const [porPagina, setPorPagina] = useState(12);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
+  const [uploadErrors, setUploadErrors] = useState<string[]>([]);
   const [isMutating, setIsMutating] = useState(false);
 
   const mediaQuery = useQuery({
@@ -287,6 +295,7 @@ export function useAdminMediaPage(): UseAdminMediaPageReturn {
 
   const refresh = async (id?: string) => {
     await queryClient.invalidateQueries({ queryKey: ["admin", "media"] });
+    await queryClient.invalidateQueries({ queryKey: ["media", "resources"] });
     if (id) {
       await queryClient.invalidateQueries({ queryKey: ["admin", "media", id] });
     }
@@ -396,32 +405,52 @@ export function useAdminMediaPage(): UseAdminMediaPageReturn {
     event.target.value = "";
     if (!files.length) return;
 
+    setUploadErrors([]);
     let uploaded = 0;
     let lastResourceId = "";
+    const nuevosErrores: string[] = [];
 
     for (const [index, file] of files.entries()) {
       setUploadProgress({ actual: index + 1, total: files.length, nombre: file.name });
+      const tipo = inferMediaType(file);
+
+      const errorPrevio = validarArchivoMultimediaCliente(file, tipo);
+      if (errorPrevio) {
+        nuevosErrores.push(errorPrevio);
+        toast.error(errorPrevio, { duration: 8000 });
+        continue;
+      }
 
       try {
         const title = file.name.replace(/\.[^.]+$/, "").trim();
         const metadata = await readMediaMetadata(file);
+        const textoAltDefault =
+          tipo === "imagen"
+            ? `Ilustración: ${title.length >= 2 ? title : file.name}`
+            : `Recurso ${tipo}: ${title.length >= 2 ? title : file.name}`;
         const resource = await subirArchivo(
           file,
-          inferMediaType(file),
-          undefined,
+          tipo,
+          textoAltDefault,
           title.length >= 2 ? title : undefined,
           metadata,
         );
         uploaded += 1;
         lastResourceId = resource.id;
       } catch (error) {
-        toast.error(
-          `${file.name}: ${error instanceof Error ? error.message : "no se pudo subir"}`,
-        );
+        const motivo =
+          error instanceof Error
+            ? error.message
+            : `No se pudo subir el archivo «${file.name}».`;
+        nuevosErrores.push(motivo);
+        toast.error(motivo, { duration: 8000 });
       }
     }
 
     setUploadProgress(null);
+    if (nuevosErrores.length > 0) {
+      setUploadErrors(nuevosErrores);
+    }
     await refresh();
 
     if (lastResourceId) {
@@ -453,6 +482,8 @@ export function useAdminMediaPage(): UseAdminMediaPageReturn {
     isUploading: uploadProgress !== null,
     isMutating,
     uploadProgress,
+    uploadErrors,
+    clearUploadErrors: () => setUploadErrors([]),
     mediaQuery,
     detailQuery,
     totalResources: mappedMedia.length,

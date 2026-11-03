@@ -17,7 +17,7 @@ import { PwaLifecycle } from "@/componentes/ui/pwa-lifecycle";
 import { clasificarErrorVinculacion, resolverRedireccionBootstrap } from "./bootstrap";
 import { publicarConflictoVinculacion } from "@/shared/auth/conflicto-vinculacion";
 import { migrarInvitadoSiCorresponde } from "../features/auth/migracion-invitado";
-import { aplicarTamanoTexto } from "../shared/accessibility/preferences";
+import { aplicarPreferenciasDispositivo } from "../shared/accessibility/preferences";
 import { useVisualViewport } from "@/shared/hooks/visual-viewport";
 
 async function vincularCuentaPendiente() {
@@ -34,6 +34,7 @@ async function vincularCuentaPendiente() {
 }
 
 async function redirigirSegunOnboarding() {
+  if (sessionStorageApi.isExplicitlyLoggedOut()) return;
   const perfilRespuesta = await queryClient.ensureQueryData({
     queryKey: ["me"],
     queryFn: obtenerMiPerfil,
@@ -47,28 +48,16 @@ async function redirigirSegunOnboarding() {
 }
 
 function AuthBootstrap({ children }: { children: ReactNode }) {
-  // Las rutas públicas no deben esperar a una consulta de sesión remota para
-  // pintar el shell. Las rutas protegidas mantienen su guardia propia.
   useAutoSync(true);
   useVisualViewport();
 
   useEffect(() => {
-    // 1. Aplicar Alto Contraste
-    const contraste = localStorage.getItem("semillas-pref-contraste") === "alto";
-    if (contraste) {
-      document.documentElement.classList.add("alto-contraste");
-    } else {
-      document.documentElement.classList.remove("alto-contraste");
-    }
-
-    aplicarTamanoTexto(localStorage.getItem("semillas-pref-text-size"));
-
-    // 2. Aplicar Tema (Modo Oscuro) temporalmente deshabilitado
-    document.documentElement.classList.remove("dark");
+    aplicarPreferenciasDispositivo();
   }, []);
 
   useEffect(() => {
     async function intentarVinculacion() {
+      if (sessionStorageApi.isExplicitlyLoggedOut()) return;
       try {
         await vincularCuentaPendiente();
         await redirigirSegunOnboarding();
@@ -85,6 +74,7 @@ function AuthBootstrap({ children }: { children: ReactNode }) {
     }
 
     const detenerEscucha = escucharCambiosAutenticacion((session) => {
+      if (!session || sessionStorageApi.isExplicitlyLoggedOut()) return;
       guardarNombreSugeridoDeGoogle(session);
       void intentarVinculacion();
     });
@@ -93,7 +83,7 @@ function AuthBootstrap({ children }: { children: ReactNode }) {
       .then((session) => {
         guardarNombreSugeridoDeGoogle(session);
 
-        if (!session) {
+        if (!session || sessionStorageApi.isExplicitlyLoggedOut()) {
           return undefined;
         }
 

@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle, LoaderCircle, RefreshCcw } from "lucide-react";
 import { toast } from "sonner";
-import { obtenerGruposEdad } from "@/features/catalog/catalog.api";
+import { obtenerGruposEdad, GRUPOS_EDAD_OFFLINE } from "@/features/catalog/catalog.api";
+import { crearGamificacionOffline } from "@/features/gamification/gamification.api";
 import {
   actualizarPerfil,
   obtenerMiGamificacion,
@@ -72,8 +73,14 @@ function ProfilePage() {
               }
             : actual,
       );
-      await queryClient.invalidateQueries({ queryKey: ["me"] });
-      toast.success("Perfil actualizado");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["me"] }),
+        queryClient.invalidateQueries({ queryKey: ["temas"] }),
+        queryClient.invalidateQueries({ queryKey: ["theme"] }),
+        queryClient.invalidateQueries({ queryKey: ["progress"] }),
+        queryClient.invalidateQueries({ queryKey: ["gamification", "me"] }),
+      ]);
+      toast.success("Perfil actualizado correctamente");
       void navigate({ search: { seccion: undefined }, replace: true });
     },
     onError: (error) => {
@@ -83,16 +90,8 @@ function ProfilePage() {
 
   const usuario = meQuery.data?.usuario;
   const perfil = meQuery.data?.perfil;
-  const estaCargando =
-    meQuery.isLoading ||
-    gamificacionQuery.isLoading ||
-    progresoQuery.isLoading ||
-    gruposEdadQuery.isLoading;
-  const tieneError =
-    (meQuery.isError && !meQuery.data) ||
-    (gamificacionQuery.isError && !gamificacionQuery.data) ||
-    (progresoQuery.isError && !progresoQuery.data) ||
-    (gruposEdadQuery.isError && !gruposEdadQuery.data);
+  const estaCargando = meQuery.isLoading && !meQuery.data;
+  const tieneError = meQuery.isError && !meQuery.data;
   const esInvitado = usuario?.proveedor === "invitado";
 
   function cambiarSeccion(seccion: ProfileSection) {
@@ -155,9 +154,15 @@ function ProfilePage() {
     <ProfileDashboard
       usuario={usuario}
       perfil={perfil}
-      gamificacion={gamificacionQuery.data}
-      progreso={progresoQuery.data}
-      gruposEdad={gruposEdadQuery.data ?? []}
+      gamificacion={gamificacionQuery.data ?? crearGamificacionOffline()}
+      progreso={progresoQuery.data ?? { progresos_tema: [], progresos_actividad: [] }}
+      gruposEdad={
+        gruposEdadQuery.data?.length
+          ? gruposEdadQuery.data
+          : meQuery.data?.grupos_edad?.length
+            ? meQuery.data.grupos_edad
+            : GRUPOS_EDAD_OFFLINE
+      }
       activeSection={normalizarSeccion(search.seccion)}
       isSaving={actualizarMutation.isPending}
       onSectionChange={cambiarSeccion}

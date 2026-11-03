@@ -220,7 +220,7 @@ export interface DescargaJobLocal {
   updatedAt: string;
 }
 
-class SemillasDatabase extends Dexie {
+export class SemillasDatabase extends Dexie {
   temas!: EntityTable<TemaLocal, "localId">;
   pasos!: EntityTable<PasoLocal, "localId">;
   actividades!: EntityTable<ActividadLocal, "localId">;

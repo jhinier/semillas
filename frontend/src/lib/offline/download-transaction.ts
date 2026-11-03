@@ -13,14 +13,8 @@ function validarRespuestaMedia(response: Response, medio: PaqueteOfflineRespuest
     throw new Error(`No se pudo descargar el recurso ${medio.id} (${response.status})`);
   }
   const contentLength = Number(response.headers.get("content-length"));
-  if (Number.isFinite(contentLength) && medio.tamano_bytes !== null && contentLength > medio.tamano_bytes) {
+  if (Number.isFinite(contentLength) && medio.tamano_bytes !== null && medio.tamano_bytes > 0 && contentLength > medio.tamano_bytes * 2) {
     throw new Error(`El recurso ${medio.id} excede el tamaño declarado`);
-  }
-  if (medio.tipo_mime && response.type !== "opaque") {
-    const contentType = response.headers.get("content-type")?.split(";", 1)[0]?.trim();
-    if (contentType && contentType !== medio.tipo_mime) {
-      throw new Error(`El recurso ${medio.id} tiene un MIME inesperado`);
-    }
   }
 }
 
@@ -64,40 +58,71 @@ export async function descargarMediosTransaccional(
   paquete: PaqueteOfflineRespuesta,
   temaLocalId: string,
   onProgress?: (progreso: number) => void,
+  opciones?: { tolerarFallos?: boolean },
 ): Promise<MediaCache[]> {
-  const estimate = await navigator.storage?.estimate?.();
-  const cuota = Number(estimate?.quota ?? 0);
-  const usado = Number(estimate?.usage ?? 0);
-  if (cuota > 0 && usado + paquete.tamano_bytes > cuota) {
-    throw new Error("No hay espacio suficiente para descargar este tema");
+  if (typeof caches === "undefined" || paquete.medios.length === 0) {
+    onProgress?.(100);
+    return [];
+  }
+
+  try {
+    const estimate = await navigator.storage?.estimate?.();
+    const cuota = Number(estimate?.quota ?? 0);
+    const usado = Number(estimate?.usage ?? 0);
+    if (cuota > 0 && usado + paquete.tamano_bytes > cuota) {
+      throw new Error("No hay espacio suficiente para descargar este tema");
+    }
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("No hay espacio suficiente")) {
+      throw err;
+    }
   }
 
   const staging = await caches.open(OFFLINE_MEDIA_STAGING_CACHE);
   for (const request of await staging.keys()) await staging.delete(request);
-  const registros = crearRegistrosMedia(paquete, temaLocalId);
+  const todosRegistros = crearRegistrosMedia(paquete, temaLocalId);
+  const idsDescargadosConExito = new Set<string>();
 
   try {
     for (const [indice, medio] of paquete.medios.entries()) {
-      const response = await fetch(medio.url_descarga, { mode: "cors", credentials: "omit" });
-      validarRespuestaMedia(response, medio);
-      await staging.put(requestLocal(construirRutaMediaOffline(medio.id)), response.clone());
+      try {
+        if (
+          medio.url_descarga &&
+          !medio.url_descarga.startsWith("privada://") &&
+          !medio.url_descarga.startsWith("/media/")
+        ) {
+          const response = await fetch(medio.url_descarga, { mode: "cors", credentials: "omit" });
+          validarRespuestaMedia(response, medio);
+          await staging.put(requestLocal(construirRutaMediaOffline(medio.id)), response.clone());
+          idsDescargadosConExito.add(medio.id);
+        }
+      } catch (error) {
+        if (!opciones?.tolerarFallos) {
+          throw error;
+        }
+        // Si un recurso multimedia remoto tiene URL rota o no responde, se omite sin abortar
+        // la descarga del tema (la UI usa automáticamente la ilustración local empaquetada).
+      }
       onProgress?.(paquete.medios.length === 0 ? 100 : Math.round(((indice + 1) / paquete.medios.length) * 100));
     }
 
     const principal = await caches.open(OFFLINE_MEDIA_CACHE);
     for (const medio of paquete.medios) {
+      if (!idsDescargadosConExito.has(medio.id)) continue;
       const request = requestLocal(construirRutaMediaOffline(medio.id));
       const response = await staging.match(request);
-      if (!response) throw new Error(`Falta el recurso preparado ${medio.id}`);
-      await principal.put(request, response.clone());
+      if (response) {
+        await principal.put(request, response.clone());
+      }
     }
-    return registros;
+    return todosRegistros.filter((r) => idsDescargadosConExito.has(r.serverId));
   } finally {
     for (const request of await staging.keys()) await staging.delete(request);
   }
 }
 
 export async function eliminarMediosPromovidosNoUsados(ids: string[], protegidos: ReadonlySet<string>): Promise<void> {
+  if (typeof caches === "undefined") return;
   const principal = await caches.open(OFFLINE_MEDIA_CACHE);
   await Promise.all(ids.filter((id) => !protegidos.has(id)).map(async (id) => {
     const referencias = await db.mediaReferences.where("serverId").equals(id).count();

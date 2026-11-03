@@ -107,6 +107,7 @@ export type TemaDetalle = z.infer<typeof TemaDetalleSchema>;
 // --- Paso contenido ---
 export const PasoContenidoSchema = z.object({
   id: z.string().uuid(),
+  paso_id: z.string().optional(),
   grupo_edad_id: z.string().uuid(),
   titulo: z.string(),
   cuerpo: z.string(),
@@ -117,8 +118,12 @@ export const PasoContenidoSchema = z.object({
 });
 
 // --- Paso pregunta ---
+export type PasoContenido = z.infer<typeof PasoContenidoSchema>;
+export type ContenidoPaso = PasoContenido;
+
 export const PasoPreguntaSchema = z.object({
   id: z.string().uuid(),
+  paso_id: z.string().optional(),
   grupo_edad_id: z.string().uuid(),
   pregunta: z.string(),
   orden: z.number(),

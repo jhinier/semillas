@@ -1,5 +1,7 @@
 import * as React from "react";
 import { CheckCircle2, Gift, LockKeyhole, Sparkles, Share2, Loader2 } from "lucide-react";
+import in1Img from "@/assets/images/Ilustraciones/in1.webp";
+import in2Img from "@/assets/images/Ilustraciones/in2.webp";
 
 export interface InsigniaCardItemProps {
   id: string;
@@ -20,6 +22,7 @@ export interface InsigniaCardItemProps {
 
 export const InsigniaCardItem: React.FC<InsigniaCardItemProps> = ({
   id,
+  codigo,
   nombre,
   descripcion,
   criterio,
@@ -33,6 +36,12 @@ export const InsigniaCardItem: React.FC<InsigniaCardItemProps> = ({
   onCompartir,
 }) => {
   const [compartiendo, setCompartiendo] = React.useState(false);
+  const fallbackImg = codigo === "primera_leccion" || codigo === "insignia_1" ? in1Img : in2Img;
+  const [imgSrc, setImgSrc] = React.useState(imagen || fallbackImg);
+
+  React.useEffect(() => {
+    setImgSrc(imagen || fallbackImg);
+  }, [imagen, fallbackImg]);
 
   const handleReclamar = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -52,7 +61,6 @@ export const InsigniaCardItem: React.FC<InsigniaCardItemProps> = ({
     }
   };
 
-  // Estado visual: pendiente de reclamar > obtenido > bloqueado
   const claseEstado = pendienteReclamar
     ? "is-claimable"
     : obtenido
@@ -62,7 +70,16 @@ export const InsigniaCardItem: React.FC<InsigniaCardItemProps> = ({
   return (
     <article className={`logro-card ${claseEstado}`}>
       <div className="logro-card__visual">
-        <img src={imagen} alt="" aria-hidden="true" loading="lazy" decoding="async" />
+        <img
+          src={imgSrc}
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          decoding="async"
+          onError={() => {
+            if (imgSrc !== fallbackImg) setImgSrc(fallbackImg);
+          }}
+        />
         <span className="logro-card__state-icon" aria-hidden="true">
           {pendienteReclamar
             ? <Gift size={18} className="logro-card__state-icon--claimable" />
@@ -89,7 +106,6 @@ export const InsigniaCardItem: React.FC<InsigniaCardItemProps> = ({
 
         <div className="logro-card__footer">
           {pendienteReclamar ? (
-            // Logro desbloqueado, pendiente de reclamar
             <button
               type="button"
               className="logro-card__reclamar-btn"
@@ -110,17 +126,20 @@ export const InsigniaCardItem: React.FC<InsigniaCardItemProps> = ({
               )}
             </button>
           ) : (
-            // Logro bloqueado o ya reclamado
             <span className={`logro-card__status ${obtenido ? "is-earned" : ""}`}>
               {obtenido ? "Obtenida" : "Por obtener"}
             </span>
           )}
 
           {obtenido && !pendienteReclamar && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
               {ganadoEn && (
                 <time dateTime={ganadoEn} className="logro-card__date">
-                  {new Intl.DateTimeFormat("es-EC", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(ganadoEn))}
+                  {new Intl.DateTimeFormat("es-EC", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  }).format(new Date(ganadoEn))}
                 </time>
               )}
               {onCompartir && (
@@ -131,10 +150,17 @@ export const InsigniaCardItem: React.FC<InsigniaCardItemProps> = ({
                   disabled={compartiendo}
                   aria-label={`Compartir insignia: ${nombre}`}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: '0.35rem',
-                    background: 'transparent', border: 'none', color: '#16a34a',
-                    fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
-                    padding: '0.2rem 0.5rem', borderRadius: '4px',
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.35rem",
+                    background: "transparent",
+                    border: "none",
+                    color: "#16a34a",
+                    fontSize: "0.8rem",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    padding: "0.2rem 0.5rem",
+                    borderRadius: "4px",
                   }}
                 >
                   {compartiendo ? <Loader2 size={14} className="animate-spin" /> : <Share2 size={14} />}

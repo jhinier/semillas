@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { actualizarPerfil } from "@/features/perfil/profile.api";
 import { limpiarNombreSugeridoDeGoogle, leerNombreSugeridoDeGoogle } from "@/shared/auth/google-profile";
 
 export function useCustomizePage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [grupoEdadId, setGrupoEdadId] = useState<string>("");
-  const [nickname, setNickname] = useState<string>(() => leerNombreSugeridoDeGoogle());
+  const [nickname, setNickname] = useState<string>(() => leerNombreSugeridoDeGoogle() || "Semillero");
   const [selectedAvatar, setSelectedAvatar] = useState<number>(1);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
@@ -20,18 +21,16 @@ export function useCustomizePage() {
     mutationFn: actualizarPerfil,
     onSuccess() {
       limpiarNombreSugeridoDeGoogle();
-      localStorage.removeItem("onboarding_grupo_edad_id");
+      void queryClient.invalidateQueries({ queryKey: ["me"] });
+      void queryClient.invalidateQueries({ queryKey: ["temas"] });
       navigate({ to: "/app" });
     },
   });
 
-  const isUuid = (str: string) =>
-    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(str);
-
   const handleFinish = () => {
     actualizarPerfilMutation.mutate({
-      grupo_edad_id: isUuid(grupoEdadId) ? grupoEdadId : null,
-      apodo: nickname.trim(),
+      grupo_edad_id: grupoEdadId || "semillas",
+      apodo: nickname.trim() || "Semillero",
       clave_avatar: String(selectedAvatar),
     });
   };

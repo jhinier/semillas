@@ -56,9 +56,16 @@ export function useAppLayout() {
   }, []);
 
   const handleLogout = async () => {
-    await cerrarSesionAutenticada();
-    sessionStorageApi.clearGuestSession();
-    navigate({ to: "/login", search: { redirect: "/onboarding" } });
+    sessionStorageApi.clearAllSession();
+    try {
+      await Promise.race([
+        cerrarSesionAutenticada(),
+        new Promise((resolve) => setTimeout(resolve, 600)),
+      ]);
+    } catch {
+      sessionStorageApi.clearAllSession();
+    }
+    window.location.assign("/login");
   };
 
   const navegacionMovil = useMemo(() => obtenerNavegacionMovil(), []);

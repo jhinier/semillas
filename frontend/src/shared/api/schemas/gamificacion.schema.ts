@@ -31,6 +31,7 @@ export const NivelSchema = z.object({
 export const MiGamificacionSchema = z.object({
   nivel: NivelSchema.nullable(),
   logros: z.array(LogroUsuarioSchema),
+  catalogo_logros: z.array(LogroSchema).optional(),
   pendientes_reclamar: z.number(),
 });
 

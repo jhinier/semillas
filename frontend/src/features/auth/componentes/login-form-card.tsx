@@ -1,6 +1,7 @@
 import * as React from "react";
 import { BookOpen, LockKeyhole, ShieldCheck, Sparkles } from "lucide-react";
 import { EmailAuthForm } from "./email-auth-form";
+import { sessionStorageApi } from "@/shared/api/session";
 import { SocialLoginButton } from "./social-login-button";
 import googleIcon from "@/assets/images/icons/google.webp";
 import facebookIcon from "@/assets/images/icons/facebook.webp";
@@ -130,6 +131,23 @@ export const LoginFormCard: React.FC<LoginFormCardProps> = ({
             Basada en la Biblia
           </span>
         </div>
+
+        {import.meta.env.DEV && (
+          <div className="mt-4 pt-3 border-t border-dashed border-violet-200 text-center">
+            <button
+              type="button"
+              onClick={() => {
+                sessionStorageApi.setAccessToken("dev-admin-token");
+                sessionStorageApi.setAuthUserId("aff4c70c-086c-43f3-8501-b55bb13807b2");
+                sessionStorageApi.clearGuestSession();
+                window.location.assign("/admin");
+              }}
+              className="text-xs text-violet-700 hover:text-violet-900 font-semibold underline inline-flex items-center gap-1 cursor-pointer"
+            >
+              Acceso de prueba Administrador (Dev)
+            </button>
+          </div>
+        )}
 
         <p className="login-mobile-privacy">
           <LockKeyhole size={16} aria-hidden="true" />

@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   AlertTriangle,
   Check,
@@ -6,10 +5,13 @@ import {
   FileText,
   FileVideo,
   Image as ImageIcon,
-  ImageOff,
 } from "lucide-react";
 
 import { Paginacion } from "@/componentes/ui/paginacion";
+import {
+  useResolvedMediaUrl,
+  obtenerIlustracionFallback,
+} from "@/features/media/use-resolved-media-url";
 import type { MediaCardItem, MediaViewMode } from "../../admin-media.types";
 import { MediaTypeBadge } from "./media-type-badge";
 
@@ -256,23 +258,21 @@ function MediaPreview({
 }
 
 function ImageResourcePreview({ item }: { item: MediaCardItem }) {
-  const [failed, setFailed] = useState(false);
+  const resolved = useResolvedMediaUrl({
+    resourceId: item.id,
+    rawUrl: item.imgUrl,
+    fallbackHint: item.nombre || item.altText,
+    useFallbackOnError: true,
+  });
 
-  if (failed || !item.imgUrl) {
-    return (
-      <span className="flex h-full w-full flex-col items-center justify-center gap-2 bg-slate-100 text-slate-400">
-        <ImageOff size={28} aria-hidden="true" />
-        <small className="text-[10px] font-bold">Vista previa no disponible</small>
-      </span>
-    );
-  }
+  const src = resolved.src || obtenerIlustracionFallback(item.nombre || item.altText);
 
   return (
     <img
-      src={item.imgUrl}
+      src={src}
       alt=""
       loading="lazy"
-      onError={() => setFailed(true)}
+      onError={() => void resolved.handleImageError()}
       className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
     />
   );

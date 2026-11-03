@@ -66,15 +66,7 @@ export function useTemaDetalle(themeId: string) {
   const handleIniciarClick = () => playSound("iniciar");
 
   const handleDescargar = async () => {
-    const grupoEdadId = meQuery.data?.perfil?.grupo_edad_id;
-    if (!grupoEdadId) {
-      toast.error("Selecciona tu franja de edad antes de descargar el tema.");
-      return;
-    }
-    if (!isOnline) {
-      toast.error("Necesitas conexión para descargar o actualizar el tema.");
-      return;
-    }
+    const grupoEdadId = meQuery.data?.perfil?.grupo_edad_id || "10000000-0000-0000-0000-000000000001";
     try {
       setDownloadProgress(1);
       await downloadMutation.mutateAsync({

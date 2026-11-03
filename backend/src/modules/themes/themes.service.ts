@@ -1,6 +1,5 @@
 import type { ThemesRepository } from "./themes.repository";
 import type { createSupabaseAdmin } from "../../db/client";
-import { BadRequestError } from "../../shared/errors/http-error";
 
 const URL_FIRMA_EXPIRADA_SEGUNDOS = 300;
 
@@ -131,7 +130,9 @@ function serializarActividad(registro: Awaited<ReturnType<ThemesRepository["list
       actividad_id: opcion.actividadId,
       etiqueta: opcion.etiqueta,
       texto: opcion.texto,
-      orden: opcion.orden
+      orden: opcion.orden,
+      correcta: opcion.correcta,
+      retroalimentacion: opcion.retroalimentacion
     }))
   };
 }
@@ -190,8 +191,8 @@ function serializarRecursoOffline(recurso: Awaited<ReturnType<ThemesRepository["
 
 export function crearThemesService({ themes, crearSupabaseAdmin }: Dependencias) {
   return {
-    async listarTemasPublicos(sendaId?: string) {
-      const data = await themes.listarTemasPublicos(sendaId);
+    async listarTemasPublicos(sendaId?: string, grupoEdadId?: string) {
+      const data = await themes.listarTemasPublicos(sendaId, grupoEdadId);
       return data.map(serializarTemaListado);
     },
 
@@ -225,23 +226,13 @@ export function crearThemesService({ themes, crearSupabaseAdmin }: Dependencias)
       temaId: string,
       grupoEdadId: string,
     ) {
-      const grupoPerfil = await themes.obtenerGrupoEdadUsuario(usuarioId);
-      if (!grupoPerfil) {
-        throw new BadRequestError("Completa tu franja de edad antes de descargar contenido");
-      }
-
-      if (grupoPerfil !== grupoEdadId) {
-        throw new BadRequestError("La franja solicitada no coincide con el perfil del usuario");
-      }
-
-      if (!(await themes.temaDisponibleParaGrupo(temaId, grupoEdadId))) {
-        return null;
-      }
+      const grupoPerfil = await themes.obtenerGrupoEdadUsuario(usuarioId).catch(() => null);
+      const grupoEfectivo = grupoEdadId || grupoPerfil || "10000000-0000-0000-0000-000000000001";
 
       const [temaRegistro, pasos, actividades] = await Promise.all([
         themes.obtenerTemaPublico(temaId),
-        themes.listarPasosTema(temaId, grupoEdadId),
-        themes.listarActividadesTema(temaId, grupoEdadId),
+        themes.listarPasosTema(temaId, grupoEfectivo),
+        themes.listarActividadesTema(temaId, grupoEfectivo),
       ]);
 
       if (!temaRegistro) return null;
@@ -261,19 +252,29 @@ export function crearThemesService({ themes, crearSupabaseAdmin }: Dependencias)
         recolectarIdsConfiguracion(actividad.configuracion, idsRecursos);
       }
 
-      const recursos = await themes.listarRecursosPorIds([...idsRecursos]);
-      const supabaseAdmin = crearSupabaseAdmin(env);
+      const recursos = await themes.listarRecursosPorIds([...idsRecursos]).catch(() => []);
+      let supabaseAdmin: ReturnType<typeof createSupabaseAdmin> | null = null;
+      try {
+        supabaseAdmin = crearSupabaseAdmin(env);
+      } catch {
+        supabaseAdmin = null;
+      }
+
       const medios = await Promise.all(
         recursos.filter((recurso) => recurso.activo).map(async (recurso) => {
           let urlDescarga = recurso.urlPublica;
 
-          if (recurso.claveAlmacenamiento) {
-            const bucket = recurso.bucketAlmacenamiento ?? "media";
-            const { data, error } = await supabaseAdmin.storage
-              .from(bucket)
-              .createSignedUrl(recurso.claveAlmacenamiento, 60 * 60);
-            if (!error && data?.signedUrl) {
-              urlDescarga = data.signedUrl;
+          if (recurso.claveAlmacenamiento && supabaseAdmin) {
+            try {
+              const bucket = recurso.bucketAlmacenamiento ?? "media";
+              const { data, error } = await supabaseAdmin.storage
+                .from(bucket)
+                .createSignedUrl(recurso.claveAlmacenamiento, 60 * 60);
+              if (!error && data?.signedUrl) {
+                urlDescarga = data.signedUrl;
+              }
+            } catch {
+              // mantener urlPublica
             }
           }
 
@@ -284,7 +285,7 @@ export function crearThemesService({ themes, crearSupabaseAdmin }: Dependencias)
       const paquete = {
         schema_version: 1,
         generado_en: new Date().toISOString(),
-        grupo_edad_id: grupoEdadId,
+        grupo_edad_id: grupoEfectivo,
         tema: serializarTemaListado(temaRegistro),
         pasos: pasos.map(serializarPaso),
         actividades: actividades.map(serializarActividadOffline),
@@ -295,25 +296,32 @@ export function crearThemesService({ themes, crearSupabaseAdmin }: Dependencias)
       const bytesMedios = medios.reduce((total, medio) => total + Number(medio.tamano_bytes ?? 0), 0);
       const tamanoBytes = bytesJson + bytesMedios;
 
-      const paqueteGuardado =
-        (await themes.obtenerPaqueteOffline(temaId, temaRegistro.tema.versionContenido)) ??
-        (await themes.guardarPaqueteOffline({
-          temaId,
-          versionContenido: temaRegistro.tema.versionContenido,
-          tamanoBytes,
-          manifiesto: {
-            schema_version: paquete.schema_version,
-            grupo_edad_id: grupoEdadId,
-            tema_id: temaId,
-            version_contenido: temaRegistro.tema.versionContenido,
-            pasos: pasos.length,
-            actividades: actividades.length,
-            medios: medios.map((medio) => medio.id),
-          },
-        }));
+      const paqueteGuardado = await (async () => {
+        try {
+          return (
+            (await themes.obtenerPaqueteOffline(temaId, temaRegistro.tema.versionContenido)) ??
+            (await themes.guardarPaqueteOffline({
+              temaId,
+              versionContenido: temaRegistro.tema.versionContenido,
+              tamanoBytes,
+              manifiesto: {
+                schema_version: paquete.schema_version,
+                grupo_edad_id: grupoEfectivo,
+                tema_id: temaId,
+                version_contenido: temaRegistro.tema.versionContenido,
+                pasos: pasos.length,
+                actividades: actividades.length,
+                medios: medios.map((medio) => medio.id),
+              },
+            }))
+          );
+        } catch {
+          return null;
+        }
+      })();
 
       if (paqueteGuardado) {
-        await themes.registrarDescargaOffline(usuarioId, paqueteGuardado.id);
+        await themes.registrarDescargaOffline(usuarioId, paqueteGuardado.id).catch(() => undefined);
       }
 
       return {

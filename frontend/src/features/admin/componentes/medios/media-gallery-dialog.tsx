@@ -22,6 +22,10 @@ import {
 } from "lucide-react";
 
 import type { RecursoMultimedia } from "../../../media/media.api";
+import {
+  useResolvedMediaUrl,
+  obtenerIlustracionFallback,
+} from "../../../media/use-resolved-media-url";
 
 type TipoSeleccionable = "imagen" | "audio" | "video";
 type TipoFiltro = TipoSeleccionable | "todos";
@@ -259,14 +263,16 @@ export function MediaGalleryDialog({
 
     const fileType = getSelectableFileType(selectedFile);
     if (!fileType || !acceptedTypes.includes(fileType)) {
-      setUploadError("El formato del archivo no es compatible con este campo.");
+      setUploadError(
+        `El formato del archivo «${selectedFile.name}» no es compatible con este campo. Usa ${getAcceptedTypesHelp(acceptedTypes)}.`,
+      );
       resetSelectedFileOnly();
       return;
     }
 
     if (selectedFile.size > maxFileSizeByType[fileType]) {
       setUploadError(
-        `El archivo supera el límite de ${formatBytes(maxFileSizeByType[fileType])}.`,
+        `El archivo «${selectedFile.name}» (${formatBytes(selectedFile.size)}) supera el límite máximo permitido de ${formatBytes(maxFileSizeByType[fileType])}.`,
       );
       resetSelectedFileOnly();
       return;
@@ -294,14 +300,19 @@ export function MediaGalleryDialog({
     if (!file || !canUpload) return;
 
     try {
+      setUploadError(null);
       await onUpload(file, {
         titulo: uploadTitle.trim(),
         textoAlternativo: textoAlternativo.trim(),
       });
       resetUpload();
       closeRef.current();
-    } catch {
-      // La mutación informa el error y conserva el formulario para reintentar.
+    } catch (error) {
+      setUploadError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo subir el recurso. Verifica el tamaño y formato del archivo.",
+      );
     }
   };
 
@@ -660,8 +671,10 @@ function ResourceDetails({
     <section className="media-library-details">
       <div className="media-library-details__preview">
         <MediaPreview
+          resourceId={resource.id}
           tipo={resource.tipo}
           url={resource.url_publica}
+          fallbackHint={resource.titulo}
           alt={resource.texto_alternativo || resource.titulo || "Recurso multimedia"}
           onExpand={onExpand}
         />
@@ -891,23 +904,40 @@ function LocalFilePreview({
 }
 
 function MediaPreview({
+  resourceId,
   tipo,
   url,
+  fallbackHint,
   alt,
   onExpand,
 }: {
+  resourceId?: string | null;
   tipo: RecursoMultimedia["tipo"];
   url: string;
+  fallbackHint?: string | null;
   alt: string;
   onExpand: (url: string) => void;
 }) {
+  const resolved = useResolvedMediaUrl({
+    resourceId: resourceId ?? null,
+    rawUrl: url,
+    fallbackHint: fallbackHint || alt,
+    useFallbackOnError: tipo === "imagen",
+  });
+
+  const finalUrl = resolved.src || (tipo === "imagen" ? obtenerIlustracionFallback(fallbackHint || alt) : url);
+
   if (tipo === "imagen") {
     return (
       <div className="media-library-preview media-library-preview--image">
-        <img src={url} alt={alt} />
+        <img
+          src={finalUrl}
+          alt={alt}
+          onError={() => void resolved.handleImageError()}
+        />
         <button
           type="button"
-          onClick={() => onExpand(url)}
+          onClick={() => onExpand(finalUrl)}
           aria-label="Ampliar imagen"
         >
           <Expand size={15} /> Ampliar
@@ -919,7 +949,7 @@ function MediaPreview({
   if (tipo === "video") {
     return (
       <video
-        src={url}
+        src={finalUrl}
         controls
         preload="metadata"
         className="media-library-preview media-library-preview--video"
@@ -932,7 +962,7 @@ function MediaPreview({
       <span>
         <FileAudio size={28} />
       </span>
-      <audio src={url} controls preload="metadata" />
+      <audio src={finalUrl} controls preload="metadata" />
     </div>
   );
 }
@@ -968,10 +998,25 @@ function ImageViewer({ url, onClose }: { url: string; onClose: () => void }) {
 }
 
 function MediaThumbnail({ resource }: { resource: RecursoMultimedia }) {
+  const resolved = useResolvedMediaUrl({
+    resourceId: resource.id,
+    rawUrl: resource.url_publica,
+    fallbackHint: resource.titulo || resource.texto_alternativo,
+    useFallbackOnError: resource.tipo === "imagen",
+  });
+
   if (resource.tipo === "imagen") {
+    const thumbSrc =
+      resolved.src ||
+      obtenerIlustracionFallback(resource.titulo || resource.texto_alternativo);
     return (
       <span className="media-library-card__thumbnail">
-        <img src={resource.url_publica} alt="" loading="lazy" />
+        <img
+          src={thumbSrc}
+          alt=""
+          loading="lazy"
+          onError={() => void resolved.handleImageError()}
+        />
       </span>
     );
   }

@@ -43,6 +43,7 @@ function crearRepo(): RepoFalso {
     async obtenerRachaUsuario() {
       return { actual: 3, mejor: 5 };
     },
+    async listarCatalogoLogrosActivos() { return []; },
     async reclamarLogro() {
       return null;
     },

@@ -17,8 +17,8 @@ function AdminRequiredPage() {
   const handleLogout = async () => {
     setIsPending(true);
     try {
+      sessionStorageApi.clearAllSession();
       await cerrarSesionAutenticada();
-      sessionStorageApi.clearGuestSession();
       toast.success("Sesión cerrada correctamente.");
       void navigate({ to: "/login", search: { redirect: "/onboarding" } });
     } catch (error) {

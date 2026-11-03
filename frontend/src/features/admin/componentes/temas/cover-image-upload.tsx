@@ -1,6 +1,10 @@
 import { useMemo, useState } from "react";
 
 import type { RecursoMultimedia } from "../../../media/media.api";
+import {
+  useResolvedMediaUrl,
+  obtenerIlustracionFallback,
+} from "../../../media/use-resolved-media-url";
 import { MediaGalleryDialog } from "../medios/media-gallery-dialog";
 
 type CoverImageUploadProps = {
@@ -32,6 +36,13 @@ export function CoverImageUpload(props: CoverImageUploadProps = {}) {
   const cover = props.cover ?? null;
 
   const selectedResourceId = useMemo(() => cover?.id ?? null, [cover]);
+
+  const resolvedCover = useResolvedMediaUrl({
+    resourceId: cover?.id ?? null,
+    rawUrl: cover?.url_publica ?? null,
+    fallbackHint: cover?.titulo || props.themeTitle,
+    useFallbackOnError: Boolean(cover),
+  });
 
   if (!modoInteractivo) {
     return (
@@ -76,13 +87,21 @@ export function CoverImageUpload(props: CoverImageUploadProps = {}) {
   }
 
   const tituloDialogo = props.themeTitle ? `Portada de ${props.themeTitle}` : "Portada del tema";
+  const coverSrc =
+    cover
+      ? resolvedCover.src || obtenerIlustracionFallback(cover.titulo || props.themeTitle)
+      : null;
 
   return (
     <div className="flex flex-col gap-3">
       <div className="admin-media-slot">
         <div className="admin-media-slot__preview">
-          {cover?.url_publica ? (
-            <img src={cover.url_publica} alt={`Portada de ${props.themeTitle ?? "tema"}`} />
+          {coverSrc ? (
+            <img
+              src={coverSrc}
+              alt={`Portada de ${props.themeTitle ?? "tema"}`}
+              onError={() => void resolvedCover.handleImageError()}
+            />
           ) : (
             <i className="fa-regular fa-image text-3xl text-slate-300" />
           )}

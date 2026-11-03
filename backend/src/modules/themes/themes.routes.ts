@@ -33,7 +33,8 @@ export function crearModuloThemes({
 
   themesRoutes.get("/", async (c) => {
     const sendaId = c.req.query("senda_id") ?? undefined;
-    return responderExito(await obtenerServicio(c).listarTemasPublicos(sendaId));
+    const grupoEdadId = c.req.query("grupo_edad_id") ?? undefined;
+    return responderExito(await obtenerServicio(c).listarTemasPublicos(sendaId, grupoEdadId));
   });
 
   themesRoutes.post("/:tema_id/paquete-offline", middlewareAutenticacion, async (c) => {

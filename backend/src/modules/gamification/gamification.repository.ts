@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import type { DbClient } from "../../db/client";
 import { schema } from "../../db/client";
 import { reclamarLogro } from "./gamification-awards";
@@ -50,6 +50,14 @@ export function crearGamificationRepository(db: DbClient) {
         .from(schema.logroUsuario)
         .leftJoin(schema.logro, eq(schema.logroUsuario.logroId, schema.logro.id))
         .where(eq(schema.logroUsuario.usuarioId, usuarioId));
+    },
+
+    async listarCatalogoLogrosActivos() {
+      return db
+        .select()
+        .from(schema.logro)
+        .where(eq(schema.logro.activo, true))
+        .orderBy(asc(schema.logro.creadoEn));
     },
 
     async reclamarLogro(usuarioId: string, logroId: string) {

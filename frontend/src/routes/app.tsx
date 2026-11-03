@@ -19,6 +19,8 @@ import { router } from "@/router";
 import { DialogoConflictoVinculacion } from "@/componentes/ui/dialogo-conflicto-vinculacion";
 import { obtenerMiPerfil } from "@/features/perfil/profile.api";
 import { obtenerGamificacionPropia } from "@/features/gamification/gamification.api";
+import { aplicarPreferenciasDispositivo, aplicarTamanoTexto } from "@/shared/accessibility/preferences";
+import "./app.css";
 
 export const Route = createFileRoute("/app")({
   beforeLoad: () => {
@@ -29,10 +31,6 @@ export const Route = createFileRoute("/app")({
 });
 
 function AppLayout() {
-  useEffect(() => {
-    void import("./app.css");
-  }, []);
-
   const {
     isOffline,
     handleLogout,
@@ -62,25 +60,21 @@ function AppLayout() {
   const logrosBadge = (gamificacionQuery.data?.pendientes_reclamar ?? 0) > 0;
 
   useEffect(() => {
-    const rawSize = meQuery.data?.perfil?.tamano_texto_preferido;
-    const normalizedSize = rawSize === "grande" ? "grande" : rawSize === "pequeno" || rawSize === "pequeño" ? "pequeno" : "mediano";
-    document.documentElement.dataset.semillasTextSize = normalizedSize;
+    const rawSize =
+      meQuery.data?.perfil?.tamano_texto_preferido ||
+      window.localStorage.getItem("semillas-pref-text-size");
+    aplicarTamanoTexto(rawSize);
 
     const prefersAudio = meQuery.data?.perfil?.prefiere_audio;
     if (typeof prefersAudio === "boolean") {
       window.localStorage.setItem("semillas-prefiere-audio", String(prefersAudio));
     }
-
-    return () => {
-      delete document.documentElement.dataset.semillasTextSize;
-    };
   }, [meQuery.data?.perfil?.prefiere_audio, meQuery.data?.perfil?.tamano_texto_preferido]);
 
   const [mensajeConflicto, setMensajeConflicto] = useState<string | null>(null);
 
   useEffect(() => {
-    // Tema oscuro temporalmente deshabilitado
-    document.documentElement.setAttribute("data-theme", "app-light");
+    aplicarPreferenciasDispositivo();
   }, []);
 
   useEffect(() => {
@@ -131,14 +125,18 @@ function AppLayout() {
     await router.navigate({ to: "/login", search: { redirect: "/app" } });
   };
 
-  const avatarGuardado = meQuery.data?.perfil?.url_avatar || meQuery.data?.perfil?.clave_avatar || "1";
+  const avatarGuardado =
+    meQuery.data?.perfil?.clave_avatar || meQuery.data?.perfil?.url_avatar || "1";
   const cuenta = {
     nombre: meQuery.data?.perfil?.apodo || "Semillero",
     nivelTexto:
       meQuery.data?.usuario?.proveedor === "invitado"
         ? "Invitado"
-        : "Cuenta registrada",
+        : meQuery.data?.usuario?.rol === "administrador"
+          ? "Administrador"
+          : "Cuenta registrada",
     avatarUrl: resolverAvatar(avatarGuardado),
+    rol: meQuery.data?.usuario?.rol,
   };
 
   return (
@@ -168,6 +166,7 @@ function AppLayout() {
               onLogout={handleLogout}
               isOffline={isOffline}
               esInicio={esInicio}
+              rol={cuenta.rol}
             />
           ) : null}
 

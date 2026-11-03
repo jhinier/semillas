@@ -21,6 +21,10 @@ import type {
   TipoRecursoMultimedia,
   UsoRecursoMultimedia,
 } from "../../../media/media.api";
+import {
+  useResolvedMediaUrl,
+  obtenerIlustracionFallback,
+} from "../../../media/use-resolved-media-url";
 import { MediaTypeBadge } from "./media-type-badge";
 
 type Props = {
@@ -202,7 +206,7 @@ export function AdminMediaDetailPanel({
           ) : null}
         </div>
 
-          <footer className="border-t border-slate-200 bg-white p-3">
+        <footer className="border-t border-slate-200 bg-white p-3">
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
@@ -541,12 +545,26 @@ function DetailSkeleton() {
 }
 
 function ResourcePreview({ resource }: { resource: MediaCardItem }) {
+  const resolved = useResolvedMediaUrl({
+    resourceId: resource.id,
+    rawUrl: resource.imgUrl,
+    fallbackHint: resource.nombre || resource.altText,
+    useFallbackOnError: resource.tipo === "imagen",
+  });
+
+  const finalSrc =
+    resolved.src ||
+    (resource.tipo === "imagen"
+      ? obtenerIlustracionFallback(resource.nombre || resource.altText)
+      : resource.imgUrl);
+
   if (resource.tipo === "imagen") {
     return (
       <div className="flex h-48 max-h-[240px] items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
         <img
-          src={resource.imgUrl}
+          src={finalSrc}
           alt={resource.altText ?? resource.nombre}
+          onError={() => void resolved.handleImageError()}
           className="h-full w-full object-contain"
         />
       </div>
@@ -555,7 +573,7 @@ function ResourcePreview({ resource }: { resource: MediaCardItem }) {
   if (resource.tipo === "video") {
     return (
       <video
-        src={resource.imgUrl}
+        src={finalSrc}
         controls
         preload="metadata"
         className="h-48 max-h-[240px] w-full rounded-2xl border border-slate-200 bg-slate-950 object-contain"
@@ -566,7 +584,7 @@ function ResourcePreview({ resource }: { resource: MediaCardItem }) {
     return (
       <div className="flex h-40 max-h-[240px] flex-col items-center justify-center gap-4 rounded-2xl border border-violet-100 bg-violet-50 px-4 text-violet-700">
         <FileAudio size={36} aria-hidden="true" />
-        <audio src={resource.imgUrl} controls preload="metadata" className="w-full" />
+        <audio src={finalSrc} controls preload="metadata" className="w-full" />
       </div>
     );
   }

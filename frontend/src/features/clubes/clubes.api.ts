@@ -4,12 +4,12 @@ import { obtenerScopeOffline } from "@/lib/offline/user-scope";
 import { estaCacheSocialExpirada } from "./club-cache";
 export { CLUB_CACHE_TTL_MS, estaCacheSocialExpirada } from "./club-cache";
 
-async function readCache<T>(key: string): Promise<T | null> {
+async function readCache<T>(key: string, ignoreExpiry = false): Promise<T | null> {
   const scope = await obtenerScopeOffline();
   if (!scope) return null;
   const entry = await db.clubsCache.get(`${scope}:${key}`);
   if (!entry) return null;
-  if (estaCacheSocialExpirada(entry.timestamp)) {
+  if (!ignoreExpiry && estaCacheSocialExpirada(entry.timestamp)) {
     await db.clubsCache.delete(entry.key);
     return null;
   }
@@ -21,10 +21,11 @@ async function writeCache<T>(key: string, value: T): Promise<void> {
   await db.clubsCache.put({ key: `${scope}:${key}`, data: value, timestamp: Date.now() });
 }
 
-async function cachedRequest<T>(key: string, request: () => Promise<T>): Promise<T> {
-  if (!navigator.onLine) {
-    const cached = await readCache<T>(key);
-    if (cached) return cached;
+async function cachedRequest<T>(key: string, request: () => Promise<T>, fallbackOffline?: T): Promise<T> {
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    const cached = await readCache<T>(key, true);
+    if (cached !== null) return cached;
+    if (fallbackOffline !== undefined) return fallbackOffline;
     throw new Error("Conéctate a internet una vez para cargar tus clubes.");
   }
   try {
@@ -32,8 +33,9 @@ async function cachedRequest<T>(key: string, request: () => Promise<T>): Promise
     await writeCache(key, data);
     return data;
   } catch (error) {
-    const cached = await readCache<T>(key);
-    if (cached) return cached;
+    const cached = await readCache<T>(key, true);
+    if (cached !== null) return cached;
+    if (fallbackOffline !== undefined) return fallbackOffline;
     throw error;
   }
 }
@@ -107,7 +109,7 @@ export function listarClubes() {
 }
 
 export function listarMisClubes() {
-  return cachedRequest("mine", () => peticion<Club[]>(RUTAS_API.CLUBES.MIOS));
+  return cachedRequest("mine", () => peticion<Club[]>(RUTAS_API.CLUBES.MIOS), []);
 }
 
 export function obtenerClub(idClub: string) {
@@ -161,11 +163,11 @@ export function transferirLiderazgoClub(idClub: string, miembroToken: string) {
 }
 
 export function obtenerRankingClub(idClub: string) {
-  return cachedRequest(`ranking:${idClub}`, () => peticion<MiembroRankingClub[]>(RUTAS_API.CLUBES.RANKING(idClub)));
+  return cachedRequest(`ranking:${idClub}`, () => peticion<MiembroRankingClub[]>(RUTAS_API.CLUBES.RANKING(idClub)), []);
 }
 
 export function listarRetosClub(idClub: string) {
-  return cachedRequest(`challenges:${idClub}`, () => peticion<RetoCooperativo[]>(RUTAS_API.CLUBES.RETOS(idClub)));
+  return cachedRequest(`challenges:${idClub}`, () => peticion<RetoCooperativo[]>(RUTAS_API.CLUBES.RETOS(idClub)), []);
 }
 
 export function crearRetoCooperativo(

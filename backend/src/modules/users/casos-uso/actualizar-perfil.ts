@@ -15,11 +15,14 @@ type EntradaActualizarPerfil = {
 
 export function crearCasoActualizarPerfil({ usuarios }: Dependencias) {
   return async function actualizarPerfil(usuarioId: string, entrada: EntradaActualizarPerfil) {
+    const avatarValor = entrada.url_avatar ?? entrada.clave_avatar;
+    const claveValor = entrada.clave_avatar ?? entrada.url_avatar;
+
     return usuarios.actualizarPerfilPorUsuarioId(usuarioId, {
       apodo: entrada.apodo,
       grupoEdadId: entrada.grupo_edad_id,
-      urlAvatar: entrada.url_avatar,
-      claveAvatar: entrada.clave_avatar,
+      urlAvatar: avatarValor,
+      claveAvatar: claveValor,
       prefiereAudio: entrada.prefiere_audio,
       tamanoTextoPreferido: entrada.tamano_texto_preferido
     });

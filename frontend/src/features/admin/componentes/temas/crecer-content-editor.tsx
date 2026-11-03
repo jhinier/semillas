@@ -9,6 +9,10 @@ import {
   Trash2,
 } from "lucide-react";
 import type { RecursoMultimedia } from "../../../media/media.api";
+import {
+  useResolvedMediaUrl,
+  obtenerIlustracionFallback,
+} from "../../../media/use-resolved-media-url";
 import type { ReflectionQuestion } from "../../hooks/use-theme-crecer-page";
 import { EditorMarkdown } from "./editor-markdown";
 import { MediaGalleryDialog } from "../medios/media-gallery-dialog";
@@ -140,7 +144,20 @@ export function CrecerContentEditor(props: CrecerContentEditorProps) {
 }
 
 function Field({ label, help, wide, children }: { label: string; help: string; wide?: boolean; children: ReactNode }) { return <div className={`admin-field ${wide ? "admin-field--wide" : ""}`}><span>{label}</span>{children}<small>{help}</small></div>; }
+
 function MediaSlot({ icon, resource, emptyText, onChoose, onRemove }: { icon: ReactNode; resource: RecursoMultimedia | null; emptyText: string; onChoose: () => void; onRemove: () => void }) {
+  const resolved = useResolvedMediaUrl({
+    resourceId: resource?.id ?? null,
+    rawUrl: resource?.url_publica ?? null,
+    fallbackHint: resource?.titulo,
+    useFallbackOnError: resource?.tipo === "imagen",
+  });
+
+  const imgSrc =
+    resource?.tipo === "imagen"
+      ? resolved.src || obtenerIlustracionFallback(resource.titulo)
+      : null;
+
   return (
     <div
       className="admin-media-slot"
@@ -149,16 +166,27 @@ function MediaSlot({ icon, resource, emptyText, onChoose, onRemove }: { icon: Re
       onClick={onChoose}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onChoose(); } }}
     >
-      <div className="admin-media-slot__preview">{resource?.tipo === "imagen" ? <img src={resource.url_publica} alt="" /> : icon}</div>
+      <div className="admin-media-slot__preview">
+        {imgSrc ? (
+          <img
+            src={imgSrc}
+            alt=""
+            onError={() => void resolved.handleImageError()}
+          />
+        ) : (
+          icon
+        )}
+      </div>
       <div className="admin-media-slot__content">
         <strong title={resource?.titulo ?? undefined}>{resource?.titulo ?? emptyText}</strong>
         <small>{resource ? `${resource.tipo} · ${formatBytes(resource.tamano_bytes)}` : "Selecciona un recurso de la biblioteca o sube uno nuevo."}</small>
         <div className="flex flex-wrap gap-3">
-          <button type="button" onClick={(e) => e.stopPropagation()}>{resource ? "Cambiar recurso" : "Elegir recurso"}</button>
+          <button type="button" onClick={(e) => { e.stopPropagation(); onChoose(); }}>{resource ? "Cambiar recurso" : "Elegir recurso"}</button>
           {resource ? <button type="button" onClick={(e) => { e.stopPropagation(); onRemove(); }} className="!text-red-600">Quitar</button> : null}
         </div>
       </div>
     </div>
   );
 }
+
 function formatBytes(bytes: number | null) { if (!bytes) return "0 KB"; const units = ["B", "KB", "MB", "GB"]; const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1); return `${(bytes / 1024 ** index).toFixed(index ? 1 : 0)} ${units[index]}`; }

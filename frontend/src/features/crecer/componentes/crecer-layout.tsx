@@ -3,22 +3,38 @@ import { useNavigate } from "@tanstack/react-router";
 import {
   ArrowLeft,
   ArrowRight,
+  BookOpen,
   Check,
   CloudOff,
+  Lock,
+  Sparkles,
   Volume2,
   VolumeX,
   X,
 } from "lucide-react";
 import { StateView } from "@/componentes/ui/state-view";
 import { FASES_CRECER, type FaseCrecerConfig } from "../crecer-fases";
+import type { DetalleSendaEdad } from "../hooks/use-crecer-fase";
 import { NarradorPaso } from "./narrador-paso";
+import {
+  useResolvedMediaUrl,
+  sendaPadreImg,
+  sendaHijoImg,
+  sendaEspirituImg,
+  obtenerIlustracionFallback,
+} from "@/features/media/use-resolved-media-url";
 import "./crecer-focus.css";
 
 interface ContenidoPaso {
   titulo?: string;
   cuerpo?: string;
   instruccion_corta?: string | null;
+  recurso_id?: string | null;
   recurso_audio_id?: string | null;
+  datos_extra?: Record<string, unknown> | null;
+  detalle_senda?: DetalleSendaEdad;
+  cita_biblica?: string;
+  versiculo_clave?: string;
 }
 
 interface RutaAccion {
@@ -46,8 +62,16 @@ interface CrecerLayoutProps {
   isSavingProgress?: boolean;
   progressError?: unknown;
   activityCount?: number;
+  completedActivityCount?: number;
+  canContinue?: boolean;
   emptyMessage?: string;
 }
+
+const IMAGEN_PILAR: Record<"padre" | "hijo" | "espiritu", string> = {
+  padre: sendaPadreImg,
+  hijo: sendaHijoImg,
+  espiritu: sendaEspirituImg,
+};
 
 export function CrecerLayout({
   fase,
@@ -62,6 +86,8 @@ export function CrecerLayout({
   isSavingProgress = false,
   progressError,
   activityCount = 0,
+  completedActivityCount = 0,
+  canContinue = true,
   emptyMessage = "No hay contenido ni actividades disponibles para esta fase.",
 }: CrecerLayoutProps) {
   const navigate = useNavigate();
@@ -71,6 +97,11 @@ export function CrecerLayout({
     return window.localStorage.getItem("semillas-prefiere-audio") !== "false";
   });
   const [isOnline, setIsOnline] = useState(() => navigator.onLine);
+  const [visualImgSrc, setVisualImgSrc] = useState(fase.imagenSrc);
+
+  useEffect(() => {
+    setVisualImgSrc(fase.imagenSrc);
+  }, [fase.imagenSrc]);
 
   useEffect(() => {
     const onOnline = () => setIsOnline(true);
@@ -83,10 +114,60 @@ export function CrecerLayout({
     };
   }, []);
 
+  const recursoPasoMedia = useResolvedMediaUrl({
+    resourceId: paso?.recurso_id ?? null,
+    fallbackHint: paso?.titulo || fase.codigo,
+    useFallbackOnError: false,
+  });
+
   const nextPhase = useMemo(
     () => FASES_CRECER.find((item) => item.numero === fase.numero + 1),
     [fase.numero],
   );
+
+  const detalleSenda = useMemo<DetalleSendaEdad | null>(() => {
+    if (paso?.detalle_senda) return paso.detalle_senda;
+    const extra = paso?.datos_extra?.detalle_senda;
+    if (extra && typeof extra === "object" && "pilares" in (extra as Record<string, unknown>)) {
+      return extra as DetalleSendaEdad;
+    }
+    return null;
+  }, [paso]);
+
+  const citaBiblica =
+    paso?.cita_biblica ??
+    (typeof paso?.datos_extra?.cita_biblica === "string"
+      ? paso.datos_extra.cita_biblica
+      : detalleSenda?.citaBiblica);
+
+  const versiculoClave =
+    paso?.versiculo_clave ??
+    (typeof paso?.datos_extra?.versiculo_clave === "string"
+      ? paso.datos_extra.versiculo_clave
+      : detalleSenda?.versiculoClave);
+
+  const textoNarracion = useMemo(() => {
+    if (!paso) return null;
+    const partes = [
+      paso.titulo,
+      paso.instruccion_corta,
+      paso.cuerpo,
+      ...(versiculoClave && (fase.codigo === "relatar" || fase.codigo === "ensenar")
+        ? [`Versículo clave: ${versiculoClave}`]
+        : []),
+      ...(detalleSenda
+        ? [
+            detalleSenda.resumenSenda,
+            ...detalleSenda.pilares.map(
+              (p) => `${p.titulo}. ${p.versiculo}. ${p.descripcion}`,
+            ),
+          ]
+        : []),
+    ].filter((item): item is string => Boolean(item && item.trim()));
+    return partes.length > 0 ? partes.join(". ") : null;
+  }, [paso, detalleSenda, versiculoClave, fase.codigo]);
+
+  const bloqueadoPorActividades = activityCount > 0 && !canContinue;
 
   const toggleAudio = () => {
     const next = !audioEnabled;
@@ -103,6 +184,12 @@ export function CrecerLayout({
   };
 
   const handleContinue = async () => {
+    if (bloqueadoPorActividades) {
+      setActionError(
+        `Debes completar todas las actividades de este paso antes de continuar (${completedActivityCount}/${activityCount}).`,
+      );
+      return;
+    }
     setActionError(null);
     try {
       await onCompleteStep?.();
@@ -174,7 +261,18 @@ export function CrecerLayout({
 
       <main className="crecer-focus__main">
         <section className="crecer-focus__visual" aria-label={`Ilustración de ${fase.nombre}`}>
-          <img src={fase.imagenSrc} alt="" aria-hidden="true" />
+          <img
+            src={recursoPasoMedia.src || visualImgSrc}
+            alt=""
+            aria-hidden="true"
+            onError={() => {
+              if (recursoPasoMedia.src) {
+                void recursoPasoMedia.handleImageError();
+              } else {
+                setVisualImgSrc(obtenerIlustracionFallback(fase.codigo));
+              }
+            }}
+          />
           <div className="crecer-focus__visual-overlay" />
           <div className="crecer-focus__visual-copy">
             <span>CRECER · {fase.numero}/6</span>
@@ -200,7 +298,8 @@ export function CrecerLayout({
                 </div>
                 {activityCount > 0 ? (
                   <span className="crecer-focus__activity-count">
-                    {activityCount} {activityCount === 1 ? "actividad" : "actividades"}
+                    {completedActivityCount}/{activityCount}{" "}
+                    {activityCount === 1 ? "actividad" : "actividades"}
                   </span>
                 ) : null}
               </div>
@@ -209,11 +308,78 @@ export function CrecerLayout({
                 <p className="crecer-focus__instruction">{paso.instruccion_corta}</p>
               ) : null}
 
+              <NarradorPaso
+                recursoAudioId={paso?.recurso_audio_id}
+                textoNarracion={textoNarracion}
+                tituloPaso={
+                  fase.codigo === "relatar"
+                    ? "Escuchar el relato de la historia"
+                    : "Escucha este paso"
+                }
+                habilitado={audioEnabled}
+              />
+
               {paso?.cuerpo ? (
                 <div className="crecer-focus__reading">{paso.cuerpo}</div>
               ) : null}
 
-              <NarradorPaso recursoAudioId={paso?.recurso_audio_id} habilitado={audioEnabled} />
+              {versiculoClave && (fase.codigo === "relatar" || fase.codigo === "ensenar") ? (
+                <blockquote
+                  className="my-2 rounded-2xl border border-emerald-200 bg-emerald-50/75 p-4 text-sm text-emerald-950"
+                  aria-label="Cita bíblica y versículo clave"
+                >
+                  <div className="mb-1 flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-emerald-700">
+                    <BookOpen size={15} aria-hidden="true" />
+                    <span>Cita bíblica y versículo clave · {citaBiblica || "TLA"}</span>
+                  </div>
+                  <p className="m-0 font-semibold italic leading-relaxed text-emerald-950">
+                    {versiculoClave}
+                  </p>
+                </blockquote>
+              ) : null}
+
+              {detalleSenda ? (
+                <section
+                  className="crecer-trinidad"
+                  aria-label={`Pilares de ${detalleSenda.nombreSenda} para ${detalleSenda.etiquetaEdad}`}
+                >
+                  <div className="crecer-trinidad__banner">
+                    <div className="crecer-trinidad__badge">
+                      <Sparkles size={16} aria-hidden="true" />
+                      <span>
+                        {detalleSenda.nombreSenda} · Franja <strong>{detalleSenda.etiquetaEdad}</strong> ({detalleSenda.rangoEdad}) · Cita base: <strong>{detalleSenda.citaBiblica}</strong>
+                      </span>
+                    </div>
+                    <p>{detalleSenda.resumenSenda}</p>
+                  </div>
+
+                  <div className="crecer-trinidad__grid">
+                    {detalleSenda.pilares.map((pilar, index) => (
+                      <article
+                        key={`${pilar.clave}-${index}`}
+                        className={`crecer-trinidad__card is-${pilar.clave}`}
+                      >
+                        <div className="crecer-trinidad__card-media">
+                          <img
+                            src={IMAGEN_PILAR[pilar.clave]}
+                            alt={pilar.senda}
+                            loading="lazy"
+                          />
+                          <span className="crecer-trinidad__senda-pill">{pilar.senda}</span>
+                        </div>
+                        <div className="crecer-trinidad__card-body">
+                          <h3>{pilar.titulo}</h3>
+                          <p className="crecer-trinidad__verse">{pilar.versiculo}</p>
+                          <p className="crecer-trinidad__desc">{pilar.descripcion}</p>
+                          <div className="crecer-trinidad__apply">
+                            <strong>En tu vida:</strong> {pilar.aplicacion}
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
 
               {children ? (
                 <div className="crecer-focus__activities">{children}</div>
@@ -222,7 +388,7 @@ export function CrecerLayout({
               ) : (
                 <div className="crecer-focus__reading-tip">
                   <Check size={18} aria-hidden="true" />
-                  Cuando termines de leer, continúa al siguiente paso.
+                  Cuando termines de leer o escuchar, continúa al siguiente paso.
                 </div>
               )}
             </div>
@@ -246,18 +412,39 @@ export function CrecerLayout({
               <p className="crecer-focus__action-error" role="alert">
                 {actionError || "No pudimos guardar tu avance. Intenta nuevamente."}
               </p>
+            ) : bloqueadoPorActividades ? (
+              <p className="crecer-focus__action-hint" role="status">
+                Completa las actividades para habilitar el botón de continuar ({completedActivityCount}/{activityCount}).
+              </p>
             ) : null}
             <button
               type="button"
               className="crecer-focus__next"
-              disabled={isSavingProgress}
+              disabled={isSavingProgress || bloqueadoPorActividades}
+              aria-disabled={isSavingProgress || bloqueadoPorActividades}
               onClick={handleContinue}
             >
               <span className="crecer-focus__next-copy">
-                <small>{nextPhase ? `Siguiente: ${nextPhase.nombre}` : "Tema completado"}</small>
-                <strong>{isSavingProgress ? "Guardando..." : botonesAccion.siguiente.label || "Continuar"}</strong>
+                <small>
+                  {bloqueadoPorActividades
+                    ? `Actividades completadas: ${completedActivityCount} de ${activityCount}`
+                    : nextPhase
+                      ? `Siguiente: ${nextPhase.nombre}`
+                      : "Senda completada"}
+                </small>
+                <strong>
+                  {isSavingProgress
+                    ? "Guardando..."
+                    : bloqueadoPorActividades
+                      ? "Completa las actividades para continuar"
+                      : botonesAccion.siguiente.label || "Continuar"}
+                </strong>
               </span>
-              <ArrowRight aria-hidden="true" />
+              {bloqueadoPorActividades ? (
+                <Lock aria-hidden="true" />
+              ) : (
+                <ArrowRight aria-hidden="true" />
+              )}
             </button>
           </div>
         </footer>

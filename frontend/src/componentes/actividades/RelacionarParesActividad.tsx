@@ -9,10 +9,19 @@ export interface Par {
   id: string;
 }
 
+interface ParConfigRaw {
+  izquierda?: string;
+  derecha?: string;
+  concepto?: string;
+  definicion?: string;
+  texto?: string;
+}
+
 interface RelacionarParesActividadProps {
   actividad: {
     id: string;
-    configuracion?: { pares?: Array<{ izquierda: string; derecha: string }> };
+    configuracion?: { pares?: ParConfigRaw[] };
+    opciones?: Array<{ texto: string; retroalimentacion?: string | null }>;
     xp_recompensa?: number;
     retroalimentacion?: string;
   };
@@ -31,19 +40,44 @@ export function RelacionarParesActividad({
 
   const [matchedPairs, setMatchedPairs] = useState<string[]>([]);
   const [errorPair, setErrorPair] = useState<{ left: number; right: number } | null>(
-    null
+    null,
   );
   const [completed, setCompleted] = useState(false);
 
   useEffect(() => {
-    const configuracionPares = actividad.configuracion?.pares || [];
+    setCompleted(false);
+    setMatchedPairs([]);
+    setSelectedLeft(null);
+    setSelectedRight(null);
 
-    const paresConId = configuracionPares.map(
-      (p: { izquierda: string; derecha: string }, index: number) => ({
-        ...p,
-        id: `par_${index}`,
-      })
-    );
+    const configuracionPares = Array.isArray(actividad.configuracion?.pares)
+      ? actividad.configuracion!.pares!
+      : [];
+
+    let normalizados: Array<{ izquierda: string; derecha: string }> = [];
+
+    if (configuracionPares.length > 0) {
+      normalizados = configuracionPares.map((p, idx) => ({
+        izquierda: p.izquierda ?? p.concepto ?? p.texto ?? `Concepto ${idx + 1}`,
+        derecha: p.derecha ?? p.definicion ?? p.texto ?? `Definición ${idx + 1}`,
+      }));
+    } else if (Array.isArray(actividad.opciones) && actividad.opciones.length > 0) {
+      normalizados = actividad.opciones.map((o, idx) => ({
+        izquierda: o.texto || `Concepto ${idx + 1}`,
+        derecha: o.retroalimentacion || o.texto || `Definición ${idx + 1}`,
+      }));
+    } else {
+      normalizados = [
+        { izquierda: "Dios Padre", derecha: "Creador que nos ama siempre" },
+        { izquierda: "Jesús el Hijo", derecha: "Salvador enviado por amor (Juan 3:16)" },
+        { izquierda: "Espíritu Santo", derecha: "Consolador que habita en nosotros" },
+      ];
+    }
+
+    const paresConId = normalizados.map((p, index) => ({
+      ...p,
+      id: `par_${index}`,
+    }));
 
     setParesIzquierda([...paresConId]);
 
@@ -53,13 +87,13 @@ export function RelacionarParesActividad({
 
   const handleLeftClick = (index: number, parId: string) => {
     if (matchedPairs.includes(parId) || completed || errorPair) return;
-    playSound("iniciar");
+    void playSound("iniciar");
     setSelectedLeft(index === selectedLeft ? null : index);
   };
 
   const handleRightClick = (index: number, parId: string) => {
     if (matchedPairs.includes(parId) || completed || errorPair) return;
-    playSound("iniciar");
+    void playSound("iniciar");
 
     if (selectedLeft !== null) {
       setSelectedRight(index);
@@ -68,7 +102,7 @@ export function RelacionarParesActividad({
       const rightId = paresDerecha[index]!.id;
 
       if (leftId === rightId) {
-        playSound("acertado");
+        void playSound("acertado");
         const newMatched = [...matchedPairs, leftId];
         setMatchedPairs(newMatched);
         setSelectedLeft(null);
@@ -77,12 +111,12 @@ export function RelacionarParesActividad({
         if (newMatched.length === paresIzquierda.length) {
           setTimeout(() => {
             setCompleted(true);
-            playSound("insignia");
+            void playSound("insignia");
             onComplete(actividad.id, actividad.xp_recompensa || 0);
           }, 600);
         }
       } else {
-        playSound("error");
+        void playSound("error");
         setErrorPair({ left: selectedLeft, right: index });
 
         setTimeout(() => {

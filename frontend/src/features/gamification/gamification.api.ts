@@ -1,7 +1,12 @@
 import { peticion } from "../../shared/api/api";
 import { claveCacheScope } from "@/lib/offline/scoped-cache";
 import { obtenerScopeOffline } from "@/lib/offline/user-scope";
-import { crearGamificacionOffline } from "./gamification.utils";
+import {
+  CATALOGO_LOGROS_DEFAULT,
+  REGLAS_NIVEL_DEFAULT,
+  crearGamificacionOffline,
+  guardarLogroReclamadoLocal,
+} from "./gamification.utils";
 export { crearGamificacionOffline } from "./gamification.utils";
 
 export type LogroGamificacion = {
@@ -47,32 +52,86 @@ export type GamificacionPropia = {
   pendientes_reclamar?: number;
 };
 
-const CACHE_KEY = "semillas_gamification_cache_v1";
+const CACHE_KEY = "semillas_gamification_cache_v2";
 
-export async function obtenerGamificacionPropia() {
-  if (!navigator.onLine) return (await leerCacheGamificacion()) ?? crearGamificacionOffline();
+function normalizarGamificacion(data: GamificacionPropia): GamificacionPropia {
+  const reglas = data.reglas_nivel?.length ? data.reglas_nivel : REGLAS_NIVEL_DEFAULT;
+  const catalogo = data.catalogo_logros?.length ? data.catalogo_logros : CATALOGO_LOGROS_DEFAULT;
+  const xpTotal = data.nivel?.xp_total ?? 0;
+  const reglaActual =
+    reglas.filter((r) => r.xp_minima <= xpTotal).at(-1) ??
+    reglas[0] ??
+    REGLAS_NIVEL_DEFAULT[0]!;
+
+  return {
+    ...data,
+    nivel: data.nivel ?? {
+      usuario_id: "local",
+      xp_total: xpTotal,
+      numero_nivel: reglaActual.numero_nivel,
+      nombre_nivel: reglaActual.nombre,
+    },
+    catalogo_logros: catalogo,
+    reglas_nivel: reglas,
+    racha: data.racha ?? { actual: 0, mejor: 0 },
+  };
+}
+
+export async function obtenerGamificacionPropia(): Promise<GamificacionPropia> {
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    return (await leerCacheGamificacion()) ?? crearGamificacionOffline();
+  }
 
   try {
-    const data = await peticion<GamificacionPropia>("/gamificacion/mi");
+    const rawData = await peticion<GamificacionPropia>("/gamificacion/mi");
+    const data = normalizarGamificacion(rawData);
     try {
       const clave = claveCacheScope(CACHE_KEY, await obtenerScopeOffline());
-      if (clave) localStorage.setItem(clave, JSON.stringify({ data, savedAt: new Date().toISOString() }));
+      if (clave) {
+        localStorage.setItem(
+          clave,
+          JSON.stringify({ data, savedAt: new Date().toISOString() }),
+        );
+      }
     } catch {
       // El contenido descargado sigue funcionando aunque el navegador bloquee localStorage.
     }
     return data;
-  } catch (error) {
+  } catch {
     const cached = await leerCacheGamificacion();
-    if (cached) return cached;
-    throw error;
+    if (cached) return normalizarGamificacion(cached);
+    return crearGamificacionOffline();
   }
 }
 
-/** Reclama un logro desbloqueado. Devuelve el bono XP otorgado. */
-export async function reclamarLogroApi(logroId: string): Promise<{ bono_xp: number; nombre: string }> {
-  return peticion<{ bono_xp: number; nombre: string }>(`/gamificacion/logros/${logroId}/reclamar`, {
-    metodo: "POST",
-  });
+/** Reclama un logro desbloqueado. Devuelve el bono XP otorgado e incluye soporte offline. */
+export async function reclamarLogroApi(
+  logroId: string,
+): Promise<{ bono_xp: number; nombre: string }> {
+  const buscarLogroLocal = () => {
+    const encontrado = CATALOGO_LOGROS_DEFAULT.find((l) => l.id === logroId);
+    return {
+      bono_xp: encontrado?.bono_xp ?? 25,
+      nombre: encontrado?.nombre ?? "Insignia desbloqueada",
+    };
+  };
+
+  if ((typeof navigator !== "undefined" && !navigator.onLine) || logroId.startsWith("fallback-")) {
+    guardarLogroReclamadoLocal(logroId);
+    return buscarLogroLocal();
+  }
+
+  try {
+    return await peticion<{ bono_xp: number; nombre: string }>(
+      `/gamificacion/logros/${logroId}/reclamar`,
+      {
+        metodo: "POST",
+      },
+    );
+  } catch {
+    guardarLogroReclamadoLocal(logroId);
+    return buscarLogroLocal();
+  }
 }
 
 async function leerCacheGamificacion(): Promise<GamificacionPropia | null> {
@@ -85,7 +144,7 @@ async function leerCacheGamificacion(): Promise<GamificacionPropia | null> {
       if (parsed.data) return parsed.data;
     }
   } catch {
-    // Se devuelve un resumen vacío seguro si no hay cache legible.
+    // Se devuelve un resumen seguro si no hay cache legible.
   }
 
   return null;

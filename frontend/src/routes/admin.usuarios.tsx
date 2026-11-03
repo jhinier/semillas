@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { createFileRoute, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, MailPlus, UserRoundPlus, Users } from "lucide-react";
@@ -26,8 +26,6 @@ function AdminUsuariosPage() {
   const [dialogMode, setDialogMode] = useState<"invite" | "child" | null>(null);
   const users = useAdminUsers();
 
-  if (!isExact) return <Outlet />;
-
   const bulkMutation = useMutation({
     mutationFn: (accion: "activar" | "desactivar") =>
       accionMasivaUsuariosAdmin(users.seleccionadosIds, accion),
@@ -39,6 +37,8 @@ function AdminUsuariosPage() {
     onError: (error) =>
       toast.error(error instanceof Error ? error.message : "No se pudo completar la acción"),
   });
+
+  if (!isExact) return <Outlet />;
 
   return (
     <div className="admin-users-page">

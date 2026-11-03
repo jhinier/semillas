@@ -18,7 +18,12 @@ export function obtenerDatosCuentaTopbar(perfil?: Perfil, usuario?: Usuario) {
   const esInvitado = usuario?.proveedor === "invitado";
   const nombre = perfil?.apodo || usuario?.nombre_visible || "Semillero";
   const nivelTexto = esInvitado ? "Invitado" : usuario?.correo || "Cuenta registrada";
-  const avatarUrl = MAPA_AVATARES[perfil?.url_avatar || "1"] || MAPA_AVATARES["1"] || "";
+  const clave = perfil?.clave_avatar || perfil?.url_avatar || "1";
+  const avatarUrl =
+    MAPA_AVATARES[clave] ||
+    (perfil?.url_avatar && /^https?:\/\//i.test(perfil.url_avatar) ? perfil.url_avatar : "") ||
+    MAPA_AVATARES["1"] ||
+    "";
 
   return { nombre, nivelTexto, avatarUrl };
 }

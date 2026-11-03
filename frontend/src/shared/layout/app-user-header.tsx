@@ -15,6 +15,7 @@ type AppUserHeaderProps = {
   onLogout: () => void;
   isOffline: boolean;
   esInicio?: boolean;
+  rol?: string;
 };
 
 export function AppUserHeader({
@@ -26,6 +27,7 @@ export function AppUserHeader({
   onLogout,
   isOffline,
   esInicio = false,
+  rol,
 }: AppUserHeaderProps) {
   const [cuentaAbierta, setCuentaAbierta] = useState(false);
 
@@ -47,6 +49,7 @@ export function AppUserHeader({
             nivelTexto={nivelTexto}
             avatarUrl={avatarUrl}
             onLogout={onLogout}
+            rol={rol}
           />
         </div>
       </div>
@@ -76,6 +79,7 @@ export function AppUserHeader({
         visible={cuentaAbierta}
         onCerrar={() => setCuentaAbierta(false)}
         onCerrarSesion={onLogout}
+        rol={rol}
       />
 
       {isOffline ? (

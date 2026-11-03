@@ -1,9 +1,19 @@
 import type { Actividad, Paso, Tema } from "@/shared/api/api";
 import { db, type ActividadLocal, type PasoLocal, type TemaLocal } from "./db";
-import { obtenerUrlMediaLocal } from "./media-cache";
+import { obtenerMedioCacheado, obtenerUrlMediaLocal } from "./media-cache";
+import { obtenerIlustracionFallback } from "@/features/media/use-resolved-media-url";
+
+async function buscarTemaLocal(idOrSlug: string): Promise<TemaLocal | undefined> {
+  const porServer = await db.temas.where("serverId").equals(idOrSlug).first();
+  if (porServer) return porServer;
+  const porLocal = await db.temas.get(idOrSlug);
+  if (porLocal) return porLocal;
+  const porSlug = await db.temas.where("slug").equals(idOrSlug).first();
+  return porSlug;
+}
 
 export async function obtenerTemaLocalPorServerId(serverId: string): Promise<Tema | null> {
-  const local = await db.temas.where("serverId").equals(serverId).first();
+  const local = await buscarTemaLocal(serverId);
   return local ? mapearTemaLocal(local) : null;
 }
 
@@ -12,45 +22,81 @@ export async function listarTemasLocalesComoApi(): Promise<Tema[]> {
   return temas.map(mapearTemaLocal);
 }
 
-export async function obtenerPasosLocalesPorTema(serverId: string): Promise<Paso[]> {
-  const tema = await db.temas.where("serverId").equals(serverId).first();
+export async function obtenerPasosLocalesPorTema(serverId: string, grupoEdadId?: string): Promise<Paso[]> {
+  const tema = await buscarTemaLocal(serverId);
   if (!tema) return [];
   const pasos = await db.pasos.where("temaLocalId").equals(tema.localId).sortBy("orden");
-  return pasos.map((paso) => mapearPasoLocal(paso, serverId));
+  const serverIdFinal = tema.serverId ?? tema.localId;
+  return pasos.map((paso) => mapearPasoLocal(paso, serverIdFinal, grupoEdadId));
 }
 
-export async function obtenerActividadesLocalesPorTema(serverId: string): Promise<Actividad[]> {
-  const tema = await db.temas.where("serverId").equals(serverId).first();
+export async function obtenerActividadesLocalesPorTema(serverId: string, grupoEdadId?: string): Promise<Actividad[]> {
+  const tema = await buscarTemaLocal(serverId);
   if (!tema) return [];
   const [actividades, pasos] = await Promise.all([
     db.actividades.where("temaLocalId").equals(tema.localId).sortBy("orden"),
     db.pasos.where("temaLocalId").equals(tema.localId).toArray(),
   ]);
-  const pasoServerPorLocal = new Map(pasos.map((paso) => [paso.localId, paso.serverId]));
-  return actividades.map((actividad) => mapearActividadLocal(actividad, serverId, pasoServerPorLocal));
+  const serverIdFinal = tema.serverId ?? tema.localId;
+  const pasoServerPorLocal = new Map(pasos.map((paso) => [paso.localId, paso.serverId ?? paso.localId]));
+  const mapeadas = actividades.map((actividad) =>
+    mapearActividadLocal(actividad, serverIdFinal, pasoServerPorLocal),
+  );
+  if (grupoEdadId) {
+    const filtradas = mapeadas.filter((a) => !a.grupo_edad_id || a.grupo_edad_id === grupoEdadId);
+    if (filtradas.length > 0) return filtradas;
+  }
+  return mapeadas;
 }
 
 export async function obtenerActividadLocalPorServerId(serverId: string): Promise<Actividad | null> {
-  const actividad = await db.actividades.where("serverId").equals(serverId).first();
+  const actividad =
+    (await db.actividades.where("serverId").equals(serverId).first()) ??
+    (await db.actividades.get(serverId));
   if (!actividad) return null;
   const tema = await db.temas.get(actividad.temaLocalId);
   const paso = actividad.pasoLocalId ? await db.pasos.get(actividad.pasoLocalId) : null;
   return mapearActividadLocal(
     actividad,
     tema?.serverId ?? tema?.localId ?? "",
-    new Map(actividad.pasoLocalId && paso?.serverId ? [[actividad.pasoLocalId, paso.serverId]] : []),
+    new Map(
+      actividad.pasoLocalId && (paso?.serverId || paso?.localId)
+        ? [[actividad.pasoLocalId, paso.serverId ?? paso.localId]]
+        : [],
+    ),
   );
 }
 
 export async function obtenerPortadaLocal(serverId: string): Promise<string | null> {
-  const tema = await db.temas.where("serverId").equals(serverId).first();
+  const tema = await buscarTemaLocal(serverId);
   if (!tema) return null;
-  if (tema.portadaMediaId) return obtenerUrlMediaLocal(tema.portadaMediaId);
-  return tema.portadaUrl;
+  if (tema.portadaMediaId) {
+    try {
+      const cached = await obtenerMedioCacheado(tema.portadaMediaId);
+      if (cached) {
+        const blob = await cached.blob();
+        if (blob.size > 0) {
+          return URL.createObjectURL(blob);
+        }
+      }
+    } catch {
+      // continuar al fallback
+    }
+  }
+  if (tema.portadaUrl && !tema.portadaUrl.startsWith("/__offline_media/") && !tema.portadaUrl.startsWith("/media/") && !tema.portadaUrl.startsWith("privada://")) {
+    return tema.portadaUrl;
+  }
+  return obtenerIlustracionFallback(tema.titulo || tema.sendaNombre);
 }
 
 function mapearTemaLocal(local: TemaLocal): Tema {
-  const portadaUrl = local.portadaMediaId ? obtenerUrlMediaLocal(local.portadaMediaId) : local.portadaUrl;
+  const portadaUrl =
+    local.portadaUrl && !local.portadaUrl.startsWith("/media/") && !local.portadaUrl.startsWith("privada://")
+      ? local.portadaUrl
+      : local.portadaMediaId
+        ? obtenerUrlMediaLocal(local.portadaMediaId)
+        : obtenerIlustracionFallback(local.titulo || local.sendaNombre);
+
   return {
     id: local.serverId ?? local.localId,
     senda_id: local.sendaId ?? "",
@@ -77,18 +123,44 @@ function mapearTemaLocal(local: TemaLocal): Tema {
           orden: 0,
         }
       : null,
-    portada_recurso: local.portadaMediaId
-      ? {
-          id: local.portadaMediaId,
-          url_publica: portadaUrl ?? "",
-          texto_alternativo: local.titulo,
-          titulo: local.titulo,
-        }
-      : null,
+    portada_recurso: {
+      id: local.portadaMediaId ?? local.localId,
+      url_publica: portadaUrl ?? obtenerIlustracionFallback(local.titulo || local.sendaNombre),
+      texto_alternativo: local.titulo,
+      titulo: local.titulo,
+    },
   };
 }
 
-function mapearPasoLocal(local: PasoLocal, temaServerId: string): Paso {
+function mapearPasoLocal(local: PasoLocal, temaServerId: string, grupoEdadId?: string): Paso {
+  const todosContenidos = local.contenidos.map((contenido) => ({
+    id: contenido.id,
+    grupo_edad_id: contenido.grupoEdadId,
+    titulo: contenido.titulo,
+    cuerpo: contenido.cuerpo,
+    instruccion_corta: contenido.instruccionCorta,
+    recurso_id: contenido.recursoId,
+    recurso_audio_id: contenido.recursoAudioId,
+    datos_extra: contenido.datosExtra,
+  }));
+
+  const contenidosFiltrados =
+    grupoEdadId && todosContenidos.some((c) => c.grupo_edad_id === grupoEdadId)
+      ? todosContenidos.filter((c) => c.grupo_edad_id === grupoEdadId)
+      : todosContenidos;
+
+  const todasPreguntas = local.preguntas.map((pregunta) => ({
+    id: pregunta.id,
+    grupo_edad_id: pregunta.grupoEdadId,
+    pregunta: pregunta.pregunta,
+    orden: pregunta.orden,
+  }));
+
+  const preguntasFiltradas =
+    grupoEdadId && todasPreguntas.some((p) => p.grupo_edad_id === grupoEdadId)
+      ? todasPreguntas.filter((p) => p.grupo_edad_id === grupoEdadId)
+      : todasPreguntas;
+
   return {
     id: local.serverId ?? local.localId,
     tema_id: temaServerId,
@@ -102,22 +174,8 @@ function mapearPasoLocal(local: PasoLocal, temaServerId: string): Paso {
           color_hex: local.tipoPasoColorHex,
         }
       : null,
-    contenidos: local.contenidos.map((contenido) => ({
-      id: contenido.id,
-      grupo_edad_id: contenido.grupoEdadId,
-      titulo: contenido.titulo,
-      cuerpo: contenido.cuerpo,
-      instruccion_corta: contenido.instruccionCorta,
-      recurso_id: contenido.recursoId,
-      recurso_audio_id: contenido.recursoAudioId,
-      datos_extra: contenido.datosExtra,
-    })),
-    preguntas: local.preguntas.map((pregunta) => ({
-      id: pregunta.id,
-      grupo_edad_id: pregunta.grupoEdadId,
-      pregunta: pregunta.pregunta,
-      orden: pregunta.orden,
-    })),
+    contenidos: contenidosFiltrados,
+    preguntas: preguntasFiltradas,
   } as Paso;
 }
 
@@ -129,7 +187,7 @@ function mapearActividadLocal(
   return {
     id: local.serverId ?? local.localId,
     tema_id: temaServerId,
-    paso_id: local.pasoLocalId ? pasoServerPorLocal.get(local.pasoLocalId) ?? null : null,
+    paso_id: local.pasoLocalId ? pasoServerPorLocal.get(local.pasoLocalId) ?? local.pasoLocalId : null,
     grupo_edad_id: local.grupoEdadId,
     tipo_actividad_id: local.tipoActividadId,
     titulo: local.titulo,

@@ -597,3 +597,140 @@
   cursor: pointer;
 }
 .crecer-narrador button:disabled { cursor: not-allowed; opacity: .45; }
+
+
+.crecer-focus__next:disabled {
+  cursor: not-allowed;
+  opacity: .58;
+  background: #94a3b8;
+  box-shadow: none;
+}
+
+.crecer-focus__action-hint {
+  margin-bottom: .35rem;
+  color: #6d28d9;
+  font-size: .74rem;
+  font-weight: 800;
+}
+
+.crecer-trinidad {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.crecer-trinidad__banner {
+  padding: 1rem 1.15rem;
+  border: 1px solid color-mix(in srgb, var(--lesson-accent) 28%, #e2e8f0);
+  border-radius: 1.2rem;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--lesson-soft) 85%, white), #ffffff);
+}
+
+.crecer-trinidad__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .35rem .75rem;
+  border-radius: 999px;
+  background: white;
+  color: var(--lesson-accent);
+  font-size: .78rem;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, .06);
+}
+
+.crecer-trinidad__banner p {
+  margin-top: .6rem;
+  color: #334155;
+  font-size: .92rem;
+  line-height: 1.55;
+  font-weight: 600;
+}
+
+.crecer-trinidad__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.crecer-trinidad__card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 1.25rem;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, .05);
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+
+.crecer-trinidad__card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 26px rgba(15, 23, 42, .09);
+}
+
+.crecer-trinidad__card-media {
+  position: relative;
+  height: 9.5rem;
+  overflow: hidden;
+  background: #f1f5f9;
+}
+
+.crecer-trinidad__card-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.crecer-trinidad__senda-pill {
+  position: absolute;
+  left: .75rem;
+  bottom: .65rem;
+  padding: .28rem .65rem;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, .78);
+  color: #ffffff;
+  font-size: .68rem;
+  font-weight: 850;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  backdrop-filter: blur(6px);
+}
+
+.crecer-trinidad__card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: .5rem;
+  padding: 1rem;
+}
+
+.crecer-trinidad__card-body h3 {
+  color: #1e293b;
+  font-size: 1.02rem;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.crecer-trinidad__verse {
+  color: var(--lesson-accent);
+  font-size: .8rem;
+  font-weight: 800;
+}
+
+.crecer-trinidad__desc {
+  color: #475569;
+  font-size: .86rem;
+  line-height: 1.5;
+}
+
+.crecer-trinidad__apply {
+  margin-top: auto;
+  padding: .65rem .75rem;
+  border-radius: .85rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+  font-size: .8rem;
+  line-height: 1.45;
+}

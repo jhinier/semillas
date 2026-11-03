@@ -11,16 +11,12 @@ import {
 import type { CategoriaLogro } from "../../gamification/componentes/logros-tabs-filter";
 import { crearTarjetaInsignia, descargarTarjetaInsignia } from "../utils/crear-tarjeta-insignia";
 
-/**
- * Fallback alineado con los INSERT iniciales del SQL de Semillas.
- * La fuente preferida es `catalogo_logros` entregada por la API.
- */
 const LOGROS_FALLBACK: LogroGamificacion[] = [
   {
     id: "fallback-primera-leccion",
     codigo: "primera_leccion",
     nombre: "Primer paso",
-    descripcion: "Completaste tu primera lección.",
+    descripcion: "Se otorga al completar tu primer tema bíblico completo en Semillas.",
     url_icono: null,
     codigo_criterio: "temas_completados",
     valor_criterio: 1,
@@ -29,14 +25,14 @@ const LOGROS_FALLBACK: LogroGamificacion[] = [
     creado_en: "",
   },
   {
-    id: "fallback-racha-siete-dias",
-    codigo: "racha_siete_dias",
-    nombre: "Semilla constante",
-    descripcion: "Mantén una racha de 7 días seguidos.",
+    id: "fallback-amor-de-dios",
+    codigo: "tema-amor-de-dios",
+    nombre: "El Amor de Dios",
+    descripcion: "Se otorga al completar los 6 pasos CRECER y las actividades del tema «El Amor de Dios».",
     url_icono: null,
-    codigo_criterio: "dias_racha",
-    valor_criterio: 7,
-    bono_xp: 50,
+    codigo_criterio: "temas_completados",
+    valor_criterio: 1,
+    bono_xp: 25,
     activo: true,
     creado_en: "",
   },
@@ -44,7 +40,7 @@ const LOGROS_FALLBACK: LogroGamificacion[] = [
     id: "fallback-explorador-palabra",
     codigo: "explorador_palabra",
     nombre: "Explorador de la Palabra",
-    descripcion: "Completa 10 actividades en total.",
+    descripcion: "Se otorga al resolver correctamente 10 actividades interactivas en tus lecciones.",
     url_icono: null,
     codigo_criterio: "actividades_completadas",
     valor_criterio: 10,
@@ -52,9 +48,20 @@ const LOGROS_FALLBACK: LogroGamificacion[] = [
     activo: true,
     creado_en: "",
   },
+  {
+    id: "fallback-racha-siete-dias",
+    codigo: "racha_siete_dias",
+    nombre: "Semilla constante",
+    descripcion: "Se otorga por mantener una racha de aprendizaje durante 7 días seguidos.",
+    url_icono: null,
+    codigo_criterio: "dias_racha",
+    valor_criterio: 7,
+    bono_xp: 50,
+    activo: true,
+    creado_en: "",
+  },
 ];
 
-/** Fallback alineado con `regla_nivel` del SQL. */
 const REGLAS_NIVEL_FALLBACK: ReglaNivelGamificacion[] = [
   { numero_nivel: 1, nombre: "Brote", xp_minima: 0 },
   { numero_nivel: 2, nombre: "Raíz", xp_minima: 100 },
@@ -67,9 +74,7 @@ const REGLAS_NIVEL_FALLBACK: ReglaNivelGamificacion[] = [
 
 export type InsigniaPresentacion = LogroGamificacion & {
   criterio: string;
-  /** true = el logro existe en logro_usuario (desbloqueado o reclamado) */
   obtenido: boolean;
-  /** true = desbloqueado pero NO reclamado aún */
   pendienteReclamar: boolean;
   ganadoEn: string | null;
   reclamadoEn: string | null;
@@ -79,7 +84,6 @@ export function useLogrosPage() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<CategoriaLogro>("todas");
   const [sharedBadge, setSharedBadge] = useState<string | null>(null);
-  // Estado del modal de celebración
   const [modalCelebracion, setModalCelebracion] = useState<{
     nombre: string;
     bonoXp: number;
@@ -89,20 +93,19 @@ export function useLogrosPage() {
   const query = useQuery({
     queryKey: ["gamification", "me"],
     queryFn: obtenerGamificacionPropia,
-    staleTime: 1000 * 60 * 3,
+    staleTime: 1000 * 30,
   });
 
   const reclamarMutation = useMutation({
     mutationFn: (logroId: string) => reclamarLogroApi(logroId),
     onSuccess: (data, logroId) => {
-      // Actualización optimista de la cache para quitar el punto rojo de inmediato
       queryClient.setQueryData<GamificacionPropia>(["gamification", "me"], (oldData) => {
         if (!oldData) return oldData;
         return {
           ...oldData,
           pendientes_reclamar: Math.max(0, (oldData.pendientes_reclamar ?? 0) - 1),
           logros: oldData.logros.map((l) =>
-            l.logro_id === logroId ? { ...l, reclamado_en: new Date().toISOString() } : l
+            l.logro_id === logroId ? { ...l, reclamado_en: new Date().toISOString() } : l,
           ),
           nivel: oldData.nivel
             ? { ...oldData.nivel, xp_total: oldData.nivel.xp_total + data.bono_xp }
@@ -110,25 +113,19 @@ export function useLogrosPage() {
         };
       });
 
-      // Invalidar para refrescar asíncronamente desde el backend
       void queryClient.invalidateQueries({ queryKey: ["gamification", "me"] });
-      // Limpiar cache local storage de gamificación
+      void queryClient.invalidateQueries({ queryKey: ["me"] });
       localStorage.removeItem("semillas_gamification_cache_v1");
+      localStorage.removeItem("semillas_gamification_cache_v2");
 
-      // Buscar la imagen de la insignia reclamada en el catálogo actual
       const insignia = insigniasCompletas.find((i) => i.id === logroId);
-      const imagen = insignia
-        ? (insignia.url_icono ?? "")
-        : "";
+      const imagen = insignia ? (insignia.url_icono ?? "") : "";
 
-      // Mostrar modal de celebración con la insignia y el bono XP
       setModalCelebracion({
         nombre: data.nombre,
         bonoXp: data.bono_xp,
         imagen,
       });
-
-      console.log(`🏅 ¡Logro "${data.nombre}" reclamado! +${data.bono_xp} XP`);
     },
     onError: (error) => {
       console.error("Error al reclamar logro:", error);
@@ -139,21 +136,27 @@ export function useLogrosPage() {
   const nivel = query.data?.nivel;
   const logrosObtenidos = query.data?.logros ?? [];
   const catalogo = useMemo(
-    () => (query.data?.catalogo_logros?.length ? query.data.catalogo_logros : LOGROS_FALLBACK).filter((logro) => logro.activo),
+    () =>
+      (query.data?.catalogo_logros?.length ? query.data.catalogo_logros : LOGROS_FALLBACK).filter(
+        (logro) => logro.activo,
+      ),
     [query.data?.catalogo_logros],
   );
 
   const reglasNivel = useMemo(
-    () => (query.data?.reglas_nivel?.length ? query.data.reglas_nivel : REGLAS_NIVEL_FALLBACK).slice().sort((a, b) => a.xp_minima - b.xp_minima),
+    () =>
+      (query.data?.reglas_nivel?.length ? query.data.reglas_nivel : REGLAS_NIVEL_FALLBACK)
+        .slice()
+        .sort((a, b) => a.xp_minima - b.xp_minima),
     [query.data?.reglas_nivel],
   );
 
   const xpInfo = useMemo(() => {
     const xpTotal = nivel?.xp_total ?? 0;
     const reglaActual =
-      reglasNivel
-        .filter((regla) => regla.xp_minima <= xpTotal)
-        .at(-1) ?? reglasNivel[0] ?? REGLAS_NIVEL_FALLBACK[0]!;
+      reglasNivel.filter((regla) => regla.xp_minima <= xpTotal).at(-1) ??
+      reglasNivel[0] ??
+      REGLAS_NIVEL_FALLBACK[0]!;
     const siguienteRegla = reglasNivel.find((regla) => regla.xp_minima > xpTotal) ?? null;
     const tramo = siguienteRegla ? siguienteRegla.xp_minima - reglaActual.xp_minima : 1;
     const avance = Math.max(0, xpTotal - reglaActual.xp_minima);
@@ -171,7 +174,6 @@ export function useLogrosPage() {
   }, [nivel, reglasNivel]);
 
   const insigniasCompletas = useMemo<InsigniaPresentacion[]>(() => {
-    // Mapa: codigo → registro del logro del usuario (incluye reclamado_en)
     const obtenidosPorCodigo = new Map(
       logrosObtenidos
         .filter((registro) => registro.logro?.codigo)
@@ -182,16 +184,18 @@ export function useLogrosPage() {
       const registro = obtenidosPorCodigo.get(logro.codigo);
       const obtenido = Boolean(registro);
       const reclamadoEn = registro?.reclamado_en ?? null;
-      // pendienteReclamar: desbloqueado pero reclamado_en = null
       const pendienteReclamar = obtenido && reclamadoEn === null;
 
-      // Quitamos del mapa los que ya procesamos
       if (registro) obtenidosPorCodigo.delete(logro.codigo);
+
+      const detalles = enriquecerExplicacionInsignia(logro, obtenido);
 
       return {
         ...logro,
+        bono_xp: detalles.bonoXp,
+        descripcion: detalles.descripcion,
         id: registro ? registro.logro_id : logro.id,
-        criterio: construirCriterio(logro.codigo_criterio, logro.valor_criterio),
+        criterio: detalles.criterio,
         obtenido,
         pendienteReclamar,
         ganadoEn: registro?.ganado_en ?? null,
@@ -199,32 +203,34 @@ export function useLogrosPage() {
       };
     });
 
-    // Agregar los obtenidos que NO están en el catálogo (por ejemplo, porque el catálogo
-    // falló o no se cargó y solo tenemos el LOGROS_FALLBACK, pero la DB tiene más logros)
-    const extras: InsigniaPresentacion[] = Array.from(obtenidosPorCodigo.values()).map((registro) => {
-      const logro = registro.logro!;
-      const reclamadoEn = registro.reclamado_en ?? null;
-      return {
-        ...logro,
-        id: registro.logro_id,
-        criterio: construirCriterio(logro.codigo_criterio, logro.valor_criterio),
-        obtenido: true,
-        pendienteReclamar: reclamadoEn === null,
-        ganadoEn: registro.ganado_en,
-        reclamadoEn,
-      };
-    });
+    const extras: InsigniaPresentacion[] = Array.from(obtenidosPorCodigo.values()).map(
+      (registro) => {
+        const logro = registro.logro!;
+        const reclamadoEn = registro.reclamado_en ?? null;
+        const detalles = enriquecerExplicacionInsignia(logro, true);
+        return {
+          ...logro,
+          bono_xp: detalles.bonoXp,
+          descripcion: detalles.descripcion,
+          id: registro.logro_id,
+          criterio: detalles.criterio,
+          obtenido: true,
+          pendienteReclamar: reclamadoEn === null,
+          ganadoEn: registro.ganado_en,
+          reclamadoEn,
+        };
+      },
+    );
 
     return [...mapeadas, ...extras];
   }, [catalogo, logrosObtenidos]);
 
-  /** Filtrado por pestaña activa */
   const insignias = useMemo(() => {
     if (activeTab === "obtenidas") {
-      // "Obtenidas" incluye tanto las reclamadas como las pendientes de reclamar
       return insigniasCompletas.filter((insignia) => insignia.obtenido);
     }
-    if (activeTab === "pendientes") return insigniasCompletas.filter((insignia) => !insignia.obtenido);
+    if (activeTab === "pendientes")
+      return insigniasCompletas.filter((insignia) => !insignia.obtenido);
     return insigniasCompletas;
   }, [activeTab, insigniasCompletas]);
 
@@ -237,7 +243,10 @@ export function useLogrosPage() {
     };
   }, [insigniasCompletas]);
 
-  const primerLogroObtenido = insigniasCompletas.find((insignia) => insignia.obtenido && insignia.reclamadoEn !== null) ?? null;
+  const primerLogroObtenido =
+    insigniasCompletas.find((insignia) => insignia.obtenido && insignia.reclamadoEn !== null) ??
+    insigniasCompletas.find((insignia) => insignia.obtenido) ??
+    null;
   const proximaInsignia = insigniasCompletas.find((insignia) => !insignia.obtenido) ?? null;
 
   const handleReclamar = (logroId: string) => {
@@ -292,16 +301,109 @@ export function useLogrosPage() {
   };
 }
 
-function construirCriterio(codigo: string, valor: number | null): string {
-  const cantidad = valor ?? 1;
-  switch (codigo) {
+function enriquecerExplicacionInsignia(
+  logro: LogroGamificacion,
+  obtenido: boolean,
+): { criterio: string; descripcion: string; bonoXp: number } {
+  const codigo = (logro.codigo ?? "").toLowerCase();
+  const nombre = (logro.nombre ?? "").toLowerCase();
+  const criterioCodigo = (logro.codigo_criterio ?? "").toLowerCase();
+  const cantidad = logro.valor_criterio && logro.valor_criterio > 0 ? logro.valor_criterio : 1;
+  const descOriginal = (logro.descripcion ?? "").trim();
+
+  // Casos específicos de temas o insignias con descripción genérica en la BD
+  if (codigo === "tema-amor-de-dios" || nombre.includes("amor de dios")) {
+    return {
+      criterio: obtenido
+        ? "Motivo: Completaste el tema «El Amor de Dios»"
+        : "Requisito: Completa el tema «El Amor de Dios»",
+      descripcion:
+        descOriginal && !descOriginal.toLowerCase().includes("insignia de logro")
+          ? `${descOriginal} (Otorgada por finalizar los 6 pasos CRECER de este tema).`
+          : "Se gana al completar los 6 pasos CRECER y las actividades del tema «El Amor de Dios».",
+      bonoXp: logro.bono_xp > 0 ? logro.bono_xp : 25,
+    };
+  }
+
+  if (codigo === "primera_leccion" || codigo === "insignia_1" || codigo === "insignia-1" || nombre === "insignia 1") {
+    return {
+      criterio: obtenido
+        ? "Motivo: Completaste tu primer tema bíblico"
+        : "Requisito: Completa tu primer tema bíblico",
+      descripcion:
+        !descOriginal || descOriginal.toLowerCase().includes("primera insignia de logro")
+          ? "Se gana al finalizar con éxito tu primera lección completa dentro de Semillas."
+          : descOriginal,
+      bonoXp: logro.bono_xp > 0 ? logro.bono_xp : 20,
+    };
+  }
+
+  if (codigo === "insignia_2" || codigo === "insignia-2" || nombre === "insignia 2") {
+    return {
+      criterio: obtenido
+        ? "Motivo: Completaste 2 temas bíblicos"
+        : "Requisito: Completa 2 temas bíblicos",
+      descripcion:
+        !descOriginal || descOriginal.toLowerCase().includes("segunda insignia de logro")
+          ? "Se gana por tu constancia al avanzar y completar dos temas de aprendizaje."
+          : descOriginal,
+      bonoXp: logro.bono_xp > 0 ? logro.bono_xp : 30,
+    };
+  }
+
+  if (codigo === "insignia_3" || codigo === "insignia-3" || nombre === "insignia 3") {
+    return {
+      criterio: obtenido
+        ? "Motivo: Completaste las actividades de comprobación"
+        : "Requisito: Completa 3 actividades interactivas",
+      descripcion:
+        !descOriginal || descOriginal.toLowerCase().includes("tercera insignia de logro")
+          ? "Se gana por resolver correctamente las actividades prácticas y juegos de comprobación en tus temas."
+          : descOriginal,
+      bonoXp: logro.bono_xp > 0 ? logro.bono_xp : 30,
+    };
+  }
+
+  switch (criterioCodigo) {
     case "temas_completados":
-      return `Completa ${cantidad} ${cantidad === 1 ? "tema" : "temas"}`;
+      return {
+        criterio: obtenido
+          ? `Motivo: Completaste ${cantidad} ${cantidad === 1 ? "tema bíblico" : "temas bíblicos"}`
+          : `Requisito: Completa ${cantidad} ${cantidad === 1 ? "tema bíblico" : "temas bíblicos"}`,
+        descripcion:
+          descOriginal ||
+          `Se desbloquea al completar ${cantidad} ${cantidad === 1 ? "tema" : "temas"} del recorrido CRECER.`,
+        bonoXp: logro.bono_xp > 0 ? logro.bono_xp : cantidad * 20,
+      };
     case "actividades_completadas":
-      return `Completa ${cantidad} actividades`;
+      return {
+        criterio: obtenido
+          ? `Motivo: Completaste ${cantidad} ${cantidad === 1 ? "actividad" : "actividades"}`
+          : `Requisito: Completa ${cantidad} ${cantidad === 1 ? "actividad" : "actividades"}`,
+        descripcion:
+          descOriginal ||
+          `Se desbloquea al resolver ${cantidad} ${cantidad === 1 ? "actividad interactiva" : "actividades interactivas"}.`,
+        bonoXp: logro.bono_xp > 0 ? logro.bono_xp : 50,
+      };
     case "dias_racha":
-      return `${cantidad} días de racha`;
+      return {
+        criterio: obtenido
+          ? `Motivo: Alcanzaste ${cantidad} ${cantidad === 1 ? "día" : "días"} de racha`
+          : `Requisito: Mantén ${cantidad} ${cantidad === 1 ? "día" : "días"} de racha`,
+        descripcion:
+          descOriginal ||
+          `Se desbloquea al aprender en Semillas durante ${cantidad} ${cantidad === 1 ? "día seguido" : "días seguidos"}.`,
+        bonoXp: logro.bono_xp > 0 ? logro.bono_xp : 50,
+      };
     default:
-      return "Sigue aprendiendo para desbloquearla";
+      return {
+        criterio: obtenido
+          ? `Motivo: ${descOriginal || `Obtuviste el logro «${logro.nombre}» por tu avance`}`
+          : "Requisito: Completa temas y actividades para desbloquearla",
+        descripcion:
+          descOriginal ||
+          "Reconocimiento otorgado por tu dedicación y aprendizaje en los temas bíblicos de Semillas.",
+        bonoXp: logro.bono_xp > 0 ? logro.bono_xp : 25,
+      };
   }
 }

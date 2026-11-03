@@ -41,7 +41,9 @@ export const ContenidoBoton: React.FC<PropiedadesContenidoBoton> = ({
     )}
 
     {children && (
-      <span>{cargando && textoCargando ? textoCargando : children}</span>
+      <span className="inline-flex items-center gap-2">
+        {cargando && textoCargando ? textoCargando : children}
+      </span>
     )}
 
     {!cargando && iconoDerecho && (
