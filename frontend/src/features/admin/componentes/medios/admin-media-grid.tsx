@@ -66,15 +66,15 @@ export function AdminMediaGrid({
           </p>
         </div>
       ) : viewMode === "list" ? (
-        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-          <div className="hidden grid-cols-[72px_minmax(0,1fr)_120px_130px_110px] gap-4 border-b border-slate-200 bg-slate-50 px-4 py-3 text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 md:grid">
+        <div className="overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+          <div className="hidden grid-cols-[72px_minmax(0,1fr)_120px_130px_110px] gap-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 px-4 py-3 text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400 md:grid">
             <span>Vista</span>
             <span>Recurso</span>
             <span>Tipo</span>
             <span>Tamaño</span>
             <span>Fecha</span>
           </div>
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-slate-100 dark:divide-slate-800">
             {items.map((item) => (
               <MediaListRow
                 key={item.id}
@@ -125,13 +125,13 @@ function MediaGridCard({
       type="button"
       aria-pressed={selected}
       onClick={onSelect}
-      className={`group min-w-0 overflow-hidden rounded-3xl border bg-white text-left shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 ${
+      className={`group min-w-0 overflow-hidden rounded-3xl border bg-white dark:bg-slate-900 text-left shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 ${
         selected
-          ? "border-violet-500 ring-2 ring-violet-100"
-          : "border-slate-200 hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-md"
+          ? "border-violet-500 ring-2 ring-violet-100 dark:ring-violet-950/50"
+          : "border-slate-200 dark:border-slate-800 hover:-translate-y-0.5 hover:border-violet-200 dark:hover:border-violet-800 hover:shadow-md"
       }`}
     >
-      <div className="relative aspect-[16/10] overflow-hidden bg-slate-100">
+      <div className="relative aspect-[16/10] overflow-hidden bg-slate-100 dark:bg-slate-800">
         <MediaPreview item={item} />
         <span className="absolute bottom-3 left-3">
           <MediaTypeBadge tipo={item.tipo} />
@@ -145,16 +145,16 @@ function MediaGridCard({
 
       <div className="p-4">
         <h3
-          className="line-clamp-2 min-h-10 !m-0 !text-sm !font-black !leading-5 !tracking-normal text-slate-900 transition group-hover:text-violet-700"
+          className="line-clamp-2 min-h-10 !m-0 !text-sm !font-black !leading-5 !tracking-normal text-slate-900 dark:text-slate-100 transition group-hover:text-violet-700 dark:group-hover:text-violet-400"
           title={item.nombre}
         >
           {item.nombre}
         </h3>
-        <div className="mt-3 flex items-center justify-between gap-2 text-xs font-bold text-slate-500">
+        <div className="mt-3 flex items-center justify-between gap-2 text-xs font-bold text-slate-500 dark:text-slate-400">
           <span>{item.tamano}</span>
           <span>{item.formato}</span>
         </div>
-        <div className="mt-3 flex min-h-6 items-center border-t border-slate-100 pt-3 text-[11px] font-bold text-slate-400">
+        <div className="mt-3 flex min-h-6 items-center border-t border-slate-100 dark:border-slate-800/80 pt-3 text-[11px] font-bold text-slate-400 dark:text-slate-500">
           {item.tipo === "imagen" && !item.altText ? (
             <span className="inline-flex items-center gap-1.5 text-amber-700">
               <AlertTriangle size={13} /> Falta texto alternativo
@@ -202,7 +202,7 @@ function MediaListRow({
       </span>
 
       <span className="min-w-0">
-        <strong className="block truncate !text-sm !font-black !leading-5 text-slate-900">
+        <strong className="block truncate !text-sm !font-black !leading-5 text-slate-900 dark:text-slate-100">
           {item.nombre}
         </strong>
         <span className="mt-1 block truncate text-xs font-semibold text-slate-500 md:hidden">
@@ -248,7 +248,7 @@ function MediaPreview({
 
   return (
     <span
-      className={`flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-50 to-slate-200 text-slate-400 ${
+      className={`flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-50 to-slate-200 text-slate-400 dark:from-slate-800 dark:to-slate-900 dark:text-slate-500 ${
         compact ? "" : "group-hover:text-violet-500"
       }`}
     >

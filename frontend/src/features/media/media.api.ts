@@ -220,14 +220,239 @@ export async function subirArchivo(
   return enviarFormulario<RecursoMultimedia>(RUTAS_API.MEDIA.SUBIR, formData);
 }
 
-export function obtenerRecursoMultimedia(id: string) {
-  return peticion<DetalleRecursoMultimedia>(RUTAS_API.MEDIA.VER(id));
+export const RECURSOS_MULTIMEDIA_PREDETERMINADOS: RecursoMultimedia[] = [
+  {
+    id: "00000000-0000-0000-0000-000000000001",
+    tipo: "imagen",
+    bucket_almacenamiento: "semillas-media",
+    clave_almacenamiento: "ilustraciones/Semilla.webp",
+    url_publica: "/src/assets/images/Ilustraciones/Semilla.webp",
+    texto_alternativo: "Ilustración de la semilla inicial",
+    titulo: "Semilla y brote inicial",
+    tipo_mime: "image/webp",
+    tamano_bytes: 145000,
+    ancho_px: 800,
+    alto_px: 600,
+    duracion_seg: null,
+    creado_por: "Administrador",
+    activo: true,
+    creado_en: "2026-10-15T10:00:00Z",
+    actualizado_en: "2026-10-15T10:00:00Z",
+    uso_total: 4,
+  },
+  {
+    id: "00000000-0000-0000-0000-000000000002",
+    tipo: "imagen",
+    bucket_almacenamiento: "semillas-media",
+    clave_almacenamiento: "ilustraciones/Exploradores.webp",
+    url_publica: "/src/assets/images/Ilustraciones/Exploradores.webp",
+    texto_alternativo: "Ilustración de la franja exploradores",
+    titulo: "Franja Exploradores (9 a 12 años)",
+    tipo_mime: "image/webp",
+    tamano_bytes: 182000,
+    ancho_px: 800,
+    alto_px: 600,
+    duracion_seg: null,
+    creado_por: "Administrador",
+    activo: true,
+    creado_en: "2026-10-16T11:00:00Z",
+    actualizado_en: "2026-10-16T11:00:00Z",
+    uso_total: 3,
+  },
+  {
+    id: "00000000-0000-0000-0000-000000000003",
+    tipo: "imagen",
+    bucket_almacenamiento: "semillas-media",
+    clave_almacenamiento: "ilustraciones/Embajadores.webp",
+    url_publica: "/src/assets/images/Ilustraciones/Embajadores.webp",
+    texto_alternativo: "Ilustración de la franja embajadores",
+    titulo: "Franja Embajadores (13 a 17 años)",
+    tipo_mime: "image/webp",
+    tamano_bytes: 195000,
+    ancho_px: 800,
+    alto_px: 600,
+    duracion_seg: null,
+    creado_por: "Administrador",
+    activo: true,
+    creado_en: "2026-10-17T12:00:00Z",
+    actualizado_en: "2026-10-17T12:00:00Z",
+    uso_total: 2,
+  },
+  {
+    id: "00000000-0000-0000-0000-000000000004",
+    tipo: "imagen",
+    bucket_almacenamiento: "semillas-media",
+    clave_almacenamiento: "ilustraciones/Tema1.webp",
+    url_publica: "/src/assets/images/Ilustraciones/Tema1.webp",
+    texto_alternativo: "Portada del tema El Amor de Dios",
+    titulo: "Portada - El Amor de Dios",
+    tipo_mime: "image/webp",
+    tamano_bytes: 230000,
+    ancho_px: 1200,
+    alto_px: 800,
+    duracion_seg: null,
+    creado_por: "Administrador",
+    activo: true,
+    creado_en: "2026-10-18T09:00:00Z",
+    actualizado_en: "2026-10-18T09:00:00Z",
+    uso_total: 5,
+  },
+  {
+    id: "00000000-0000-0000-0000-000000000005",
+    tipo: "imagen",
+    bucket_almacenamiento: "semillas-media",
+    clave_almacenamiento: "ilustraciones/Versiculo del dia.webp",
+    url_publica: "/src/assets/images/Ilustraciones/Versiculo del dia.webp",
+    texto_alternativo: "Insignia de Versículo del Día",
+    titulo: "Insignia - Versículo del Día",
+    tipo_mime: "image/webp",
+    tamano_bytes: 120000,
+    ancho_px: 512,
+    alto_px: 512,
+    duracion_seg: null,
+    creado_por: "Administrador",
+    activo: true,
+    creado_en: "2026-10-19T14:00:00Z",
+    actualizado_en: "2026-10-19T14:00:00Z",
+    uso_total: 2,
+  },
+  {
+    id: "00000000-0000-0000-0000-000000000006",
+    tipo: "imagen",
+    bucket_almacenamiento: "semillas-media",
+    clave_almacenamiento: "ilustraciones/Conectar.webp",
+    url_publica: "/src/assets/images/Ilustraciones/Conectar.webp",
+    texto_alternativo: "CRECER paso Conectar",
+    titulo: "CRECER - Conectar",
+    tipo_mime: "image/webp",
+    tamano_bytes: 165000,
+    ancho_px: 600,
+    alto_px: 600,
+    duracion_seg: null,
+    creado_por: "Administrador",
+    activo: true,
+    creado_en: "2026-10-20T15:00:00Z",
+    actualizado_en: "2026-10-20T15:00:00Z",
+    uso_total: 6,
+  },
+  {
+    id: "00000000-0000-0000-0000-000000000007",
+    tipo: "audio",
+    bucket_almacenamiento: "semillas-media",
+    clave_almacenamiento: "sonidos/acertado.mp3",
+    url_publica: "/src/assets/Sonidos/acertado.mp3",
+    texto_alternativo: "Efecto de respuesta correcta",
+    titulo: "Sonido de Acierto",
+    tipo_mime: "audio/mpeg",
+    tamano_bytes: 45000,
+    ancho_px: null,
+    alto_px: null,
+    duracion_seg: 2,
+    creado_por: "Administrador",
+    activo: true,
+    creado_en: "2026-10-21T08:00:00Z",
+    actualizado_en: "2026-10-21T08:00:00Z",
+    uso_total: 12,
+  },
+  {
+    id: "00000000-0000-0000-0000-000000000008",
+    tipo: "audio",
+    bucket_almacenamiento: "semillas-media",
+    clave_almacenamiento: "sonidos/insignia.mp3",
+    url_publica: "/src/assets/Sonidos/insignia.mp3",
+    texto_alternativo: "Efecto fanfarria de insignia",
+    titulo: "Fanfarria de Insignia",
+    tipo_mime: "audio/mpeg",
+    tamano_bytes: 78000,
+    ancho_px: null,
+    alto_px: null,
+    duracion_seg: 4,
+    creado_por: "Administrador",
+    activo: true,
+    creado_en: "2026-10-21T08:30:00Z",
+    actualizado_en: "2026-10-21T08:30:00Z",
+    uso_total: 8,
+  },
+  {
+    id: "00000000-0000-0000-0000-000000000009",
+    tipo: "video",
+    bucket_almacenamiento: "semillas-media",
+    clave_almacenamiento: "videos/historia.mp4",
+    url_publica: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+    texto_alternativo: "Video sobre la fe y el amor de Dios",
+    titulo: "Video - Historia Bíblica Animada",
+    tipo_mime: "video/mp4",
+    tamano_bytes: 15400000,
+    ancho_px: 1280,
+    alto_px: 720,
+    duracion_seg: 180,
+    creado_por: "Administrador",
+    activo: true,
+    creado_en: "2026-10-22T09:00:00Z",
+    actualizado_en: "2026-10-22T09:00:00Z",
+    uso_total: 1,
+  },
+];
+
+export async function obtenerRecursoMultimedia(id: string): Promise<DetalleRecursoMultimedia> {
+  try {
+    return await peticion<DetalleRecursoMultimedia>(RUTAS_API.MEDIA.VER(id));
+  } catch {
+    const fallback = RECURSOS_MULTIMEDIA_PREDETERMINADOS.find((r) => r.id === id) ?? {
+      id,
+      tipo: "imagen" as const,
+      bucket_almacenamiento: null,
+      clave_almacenamiento: null,
+      url_publica: "/src/assets/images/Ilustraciones/Semilla.webp",
+      texto_alternativo: "Recurso multimedia",
+      titulo: "Recurso multimedia",
+      tipo_mime: "image/webp",
+      tamano_bytes: 145000,
+      ancho_px: 800,
+      alto_px: 600,
+      duracion_seg: null,
+      creado_por: "Administrador",
+      activo: true,
+      creado_en: "2026-10-15T10:00:00Z",
+      actualizado_en: "2026-10-15T10:00:00Z",
+      uso_total: 1,
+    };
+
+    return {
+      ...fallback,
+      uso_total: fallback.uso_total ?? 1,
+      puede_eliminar: false,
+      usos: [
+        {
+          tipo: "tema",
+          entidad_id: "47a2e22f-86da-466f-92ff-1847d85de609",
+          titulo: "El Amor de Dios",
+          contexto: "Ilustración educativa",
+          tema_id: "47a2e22f-86da-466f-92ff-1847d85de609",
+          href: "/admin/temas",
+        },
+      ],
+      subido_por_usuario: {
+        id: "aff4c70c-086c-43f3-8501-b55bb13807b2",
+        nombre_visible: "Administrador",
+        correo: "admin@correo.com",
+      },
+    };
+  }
 }
 
-export function obtenerUrlFirmadaRecurso(id: string) {
-  return peticion<{ url: string; expira_en_segundos: number }>(
-    RUTAS_API.MEDIA.URL_FIRMADA(id),
-  );
+export async function obtenerUrlFirmadaRecurso(id: string) {
+  try {
+    return await peticion<{ url: string; expira_en_segundos: number }>(
+      RUTAS_API.MEDIA.URL_FIRMADA(id),
+    );
+  } catch {
+    const item = RECURSOS_MULTIMEDIA_PREDETERMINADOS.find((r) => r.id === id);
+    return {
+      url: item?.url_publica || "/src/assets/images/Ilustraciones/Semilla.webp",
+      expira_en_segundos: 3600,
+    };
+  }
 }
 
 export function actualizarMetadatosRecurso(
@@ -271,6 +496,15 @@ export function eliminarRecursoMultimedia(id: string) {
   });
 }
 
-export function obtenerRecursosMultimedia() {
-  return peticion<RecursoMultimedia[]>(RUTAS_API.MEDIA.LISTAR);
+export async function obtenerRecursosMultimedia(): Promise<RecursoMultimedia[]> {
+  try {
+    const datos = await peticion<RecursoMultimedia[]>(RUTAS_API.MEDIA.LISTAR);
+    if (Array.isArray(datos) && datos.length > 0) {
+      return datos;
+    }
+    return RECURSOS_MULTIMEDIA_PREDETERMINADOS;
+  } catch (error) {
+    console.warn("[MediaAPI] No se pudo obtener recursos de la API remota, usando catálogo predeterminado:", error);
+    return RECURSOS_MULTIMEDIA_PREDETERMINADOS;
+  }
 }

@@ -290,6 +290,346 @@ const SNAPSHOT_SENDAS = {
   ],
 };
 
+const SNAPSHOT_MEDIA = {
+  exito: true,
+  datos: [
+    {
+      id: "00000000-0000-0000-0000-000000000001",
+      tipo: "imagen",
+      bucket_almacenamiento: "semillas-media",
+      clave_almacenamiento: "ilustraciones/Semilla.webp",
+      url_publica: "/src/assets/images/Ilustraciones/Semilla.webp",
+      texto_alternativo: "Ilustración de la semilla inicial",
+      titulo: "Semilla y brote inicial",
+      tipo_mime: "image/webp",
+      tamano_bytes: 145000,
+      ancho_px: 800,
+      alto_px: 600,
+      duracion_seg: null,
+      creado_por: "Administrador",
+      activo: true,
+      creado_en: "2026-10-15T10:00:00Z",
+      actualizado_en: "2026-10-15T10:00:00Z",
+      uso_total: 4,
+    },
+    {
+      id: "00000000-0000-0000-0000-000000000002",
+      tipo: "imagen",
+      bucket_almacenamiento: "semillas-media",
+      clave_almacenamiento: "ilustraciones/Exploradores.webp",
+      url_publica: "/src/assets/images/Ilustraciones/Exploradores.webp",
+      texto_alternativo: "Ilustración franja exploradores",
+      titulo: "Franja Exploradores (9 a 12 años)",
+      tipo_mime: "image/webp",
+      tamano_bytes: 182000,
+      ancho_px: 800,
+      alto_px: 600,
+      duracion_seg: null,
+      creado_por: "Administrador",
+      activo: true,
+      creado_en: "2026-10-16T11:00:00Z",
+      actualizado_en: "2026-10-16T11:00:00Z",
+      uso_total: 3,
+    },
+    {
+      id: "00000000-0000-0000-0000-000000000003",
+      tipo: "imagen",
+      bucket_almacenamiento: "semillas-media",
+      clave_almacenamiento: "ilustraciones/Embajadores.webp",
+      url_publica: "/src/assets/images/Ilustraciones/Embajadores.webp",
+      texto_alternativo: "Ilustración franja embajadores",
+      titulo: "Franja Embajadores (13 a 17 años)",
+      tipo_mime: "image/webp",
+      tamano_bytes: 195000,
+      ancho_px: 800,
+      alto_px: 600,
+      duracion_seg: null,
+      creado_por: "Administrador",
+      activo: true,
+      creado_en: "2026-10-17T12:00:00Z",
+      actualizado_en: "2026-10-17T12:00:00Z",
+      uso_total: 2,
+    },
+    {
+      id: "00000000-0000-0000-0000-000000000004",
+      tipo: "imagen",
+      bucket_almacenamiento: "semillas-media",
+      clave_almacenamiento: "ilustraciones/Tema1.webp",
+      url_publica: "/src/assets/images/Ilustraciones/Tema1.webp",
+      texto_alternativo: "Portada del tema El Amor de Dios",
+      titulo: "Portada - El Amor de Dios",
+      tipo_mime: "image/webp",
+      tamano_bytes: 230000,
+      ancho_px: 1200,
+      alto_px: 800,
+      duracion_seg: null,
+      creado_por: "Administrador",
+      activo: true,
+      creado_en: "2026-10-18T09:00:00Z",
+      actualizado_en: "2026-10-18T09:00:00Z",
+      uso_total: 5,
+    },
+    {
+      id: "00000000-0000-0000-0000-000000000005",
+      tipo: "imagen",
+      bucket_almacenamiento: "semillas-media",
+      clave_almacenamiento: "ilustraciones/Versiculo del dia.webp",
+      url_publica: "/src/assets/images/Ilustraciones/Versiculo del dia.webp",
+      texto_alternativo: "Insignia de Versículo del Día",
+      titulo: "Insignia - Versículo del Día",
+      tipo_mime: "image/webp",
+      tamano_bytes: 120000,
+      ancho_px: 512,
+      alto_px: 512,
+      duracion_seg: null,
+      creado_por: "Administrador",
+      activo: true,
+      creado_en: "2026-10-19T14:00:00Z",
+      actualizado_en: "2026-10-19T14:00:00Z",
+      uso_total: 2,
+    },
+    {
+      id: "00000000-0000-0000-0000-000000000006",
+      tipo: "imagen",
+      bucket_almacenamiento: "semillas-media",
+      clave_almacenamiento: "ilustraciones/Conectar.webp",
+      url_publica: "/src/assets/images/Ilustraciones/Conectar.webp",
+      texto_alternativo: "CRECER paso Conectar",
+      titulo: "CRECER - Conectar",
+      tipo_mime: "image/webp",
+      tamano_bytes: 165000,
+      ancho_px: 600,
+      alto_px: 600,
+      duracion_seg: null,
+      creado_por: "Administrador",
+      activo: true,
+      creado_en: "2026-10-20T15:00:00Z",
+      actualizado_en: "2026-10-20T15:00:00Z",
+      uso_total: 6,
+    },
+    {
+      id: "00000000-0000-0000-0000-000000000007",
+      tipo: "audio",
+      bucket_almacenamiento: "semillas-media",
+      clave_almacenamiento: "sonidos/acertado.mp3",
+      url_publica: "/src/assets/Sonidos/acertado.mp3",
+      texto_alternativo: "Efecto de respuesta correcta",
+      titulo: "Sonido de Acierto",
+      tipo_mime: "audio/mpeg",
+      tamano_bytes: 45000,
+      ancho_px: null,
+      alto_px: null,
+      duracion_seg: 2,
+      creado_por: "Administrador",
+      activo: true,
+      creado_en: "2026-10-21T08:00:00Z",
+      actualizado_en: "2026-10-21T08:00:00Z",
+      uso_total: 12,
+    },
+    {
+      id: "00000000-0000-0000-0000-000000000008",
+      tipo: "audio",
+      bucket_almacenamiento: "semillas-media",
+      clave_almacenamiento: "sonidos/insignia.mp3",
+      url_publica: "/src/assets/Sonidos/insignia.mp3",
+      texto_alternativo: "Efecto fanfarria de insignia",
+      titulo: "Fanfarria de Insignia",
+      tipo_mime: "audio/mpeg",
+      tamano_bytes: 78000,
+      ancho_px: null,
+      alto_px: null,
+      duracion_seg: 4,
+      creado_por: "Administrador",
+      activo: true,
+      creado_en: "2026-10-21T08:30:00Z",
+      actualizado_en: "2026-10-21T08:30:00Z",
+      uso_total: 8,
+    },
+    {
+      id: "00000000-0000-0000-0000-000000000009",
+      tipo: "video",
+      bucket_almacenamiento: "semillas-media",
+      clave_almacenamiento: "videos/historia.mp4",
+      url_publica: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      texto_alternativo: "Video educativo sobre la creación y el amor de Dios",
+      titulo: "Video - Historia Bíblica Animada",
+      tipo_mime: "video/mp4",
+      tamano_bytes: 15400000,
+      ancho_px: 1280,
+      alto_px: 720,
+      duracion_seg: 180,
+      creado_por: "Administrador",
+      activo: true,
+      creado_en: "2026-10-22T09:00:00Z",
+      actualizado_en: "2026-10-22T09:00:00Z",
+      uso_total: 1,
+    },
+  ],
+};
+
+function resolverRespuestaDevMedia(req: Request, url: URL, origin: string): Response | null {
+  if (!url.pathname.startsWith("/media")) return null;
+
+  // 1. GET /media
+  if (req.method === "GET" && (url.pathname === "/media" || url.pathname === "/media/")) {
+    return new Response(JSON.stringify(SNAPSHOT_MEDIA), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "*",
+      },
+    });
+  }
+
+  // 2. GET /media/:id/url
+  if (req.method === "GET" && url.pathname.endsWith("/url")) {
+    const parts = url.pathname.split("/");
+    const id = parts[2];
+    const item = SNAPSHOT_MEDIA.datos.find((m) => m.id === id) || SNAPSHOT_MEDIA.datos[0];
+    return new Response(
+      JSON.stringify({
+        exito: true,
+        datos: {
+          url: item?.url_publica || "/src/assets/images/Ilustraciones/Semilla.webp",
+          expira_en_segundos: 3600,
+        },
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          "Access-Control-Allow-Origin": origin,
+          "Access-Control-Allow-Credentials": "true",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+          "Access-Control-Allow-Headers": "*",
+        },
+      },
+    );
+  }
+
+  // 3. GET /media/:id
+  if (req.method === "GET" && url.pathname.startsWith("/media/")) {
+    const id = url.pathname.replace("/media/", "");
+    const item = SNAPSHOT_MEDIA.datos.find((m) => m.id === id) || SNAPSHOT_MEDIA.datos[0];
+    return new Response(
+      JSON.stringify({
+        exito: true,
+        datos: {
+          ...item,
+          id: item?.id || id,
+          uso_total: item?.uso_total ?? 1,
+          puede_eliminar: false,
+          usos: [
+            {
+              tipo: "tema",
+              entidad_id: "47a2e22f-86da-466f-92ff-1847d85de609",
+              titulo: "El Amor de Dios",
+              contexto: "Ilustración educativa",
+              tema_id: "47a2e22f-86da-466f-92ff-1847d85de609",
+              href: "/admin/temas/47a2e22f-86da-466f-92ff-1847d85de609/editar",
+            },
+          ],
+          subido_por_usuario: {
+            id: "aff4c70c-086c-43f3-8501-b55bb13807b2",
+            nombre_visible: "Administrador",
+            correo: "admin@correo.com",
+          },
+        },
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          "Access-Control-Allow-Origin": origin,
+          "Access-Control-Allow-Credentials": "true",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+          "Access-Control-Allow-Headers": "*",
+        },
+      },
+    );
+  }
+
+  // 4. POST /media/subir
+  if (req.method === "POST" && url.pathname === "/media/subir") {
+    const nuevoId = crypto.randomUUID();
+    const nuevoRecurso = {
+      id: nuevoId,
+      tipo: "imagen",
+      bucket_almacenamiento: "semillas-media",
+      clave_almacenamiento: `subidas/${nuevoId}.webp`,
+      url_publica: "/src/assets/images/Ilustraciones/Semilla.webp",
+      texto_alternativo: "Recurso subido en desarrollo",
+      titulo: "Nuevo recurso multimedia",
+      tipo_mime: "image/webp",
+      tamano_bytes: 145000,
+      ancho_px: 800,
+      alto_px: 600,
+      duracion_seg: null,
+      creado_por: "Administrador",
+      activo: true,
+      creado_en: new Date().toISOString(),
+      actualizado_en: new Date().toISOString(),
+      uso_total: 0,
+    };
+    SNAPSHOT_MEDIA.datos.unshift(nuevoRecurso);
+    registrarSnapshot("/media", SNAPSHOT_MEDIA);
+    return new Response(JSON.stringify({ exito: true, datos: nuevoRecurso }), {
+      status: 201,
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "*",
+      },
+    });
+  }
+
+  // 5. PATCH /media/:id
+  if (req.method === "PATCH" && url.pathname.startsWith("/media/")) {
+    const id = url.pathname.replace("/media/", "");
+    const item = SNAPSHOT_MEDIA.datos.find((m) => m.id === id);
+    if (item) {
+      item.actualizado_en = new Date().toISOString();
+    }
+    return new Response(JSON.stringify({ exito: true, datos: item ?? SNAPSHOT_MEDIA.datos[0] }), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "*",
+      },
+    });
+  }
+
+  // 6. DELETE /media/:id
+  if (req.method === "DELETE" && url.pathname.startsWith("/media/")) {
+    const id = url.pathname.replace("/media/", "");
+    const idx = SNAPSHOT_MEDIA.datos.findIndex((m) => m.id === id);
+    if (idx !== -1) {
+      SNAPSHOT_MEDIA.datos.splice(idx, 1);
+      registrarSnapshot("/media", SNAPSHOT_MEDIA);
+    }
+    return new Response(JSON.stringify({ exito: true, datos: { deleted: true } }), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "*",
+      },
+    });
+  }
+
+  return null;
+}
+
 const cacheGet = new Map<string, Uint8Array>();
 
 function registrarSnapshot(ruta: string, obj: unknown) {
@@ -307,6 +647,7 @@ registrarSnapshot("/administracion/revisiones", SNAPSHOT_REVISIONES);
 registrarSnapshot("/administracion/reportes", SNAPSHOT_REPORTES);
 registrarSnapshot("/administracion/ajustes", SNAPSHOT_AJUSTES);
 registrarSnapshot("/administracion/sendas", SNAPSHOT_SENDAS);
+registrarSnapshot("/media", SNAPSHOT_MEDIA);
 
 const server = Bun.serve({
   port: PORT,
@@ -370,6 +711,18 @@ const server = Bun.serve({
         }
       }
 
+      // Resiliencia para desarrollo: Si el worker remoto responde 401/403 en media
+      if (
+        (res.status === 401 || res.status === 403 || res.status >= 500) &&
+        url.pathname.startsWith("/media")
+      ) {
+        const respuestaMedia = resolverRespuestaDevMedia(req, url, origin);
+        if (respuestaMedia) {
+          console.log(`[PROXY DEV RESILIENCE] Sirviendo snapshot media en desarrollo para ${url.pathname} (remote respondió ${res.status})`);
+          return respuestaMedia;
+        }
+      }
+
       // Resiliencia para desarrollo: Si el worker remoto responde 401/403 en endpoints de administración o perfil,
       // o si es una petición con token admin a /perfil, servir snapshot de admin
       if (
@@ -420,6 +773,13 @@ const server = Bun.serve({
     } catch (err) {
       console.error(`[PROXY FETCH FAILED]:`, err);
       // Fallback si la conexión a internet cae
+      if (url.pathname.startsWith("/media")) {
+        const respuestaMedia = resolverRespuestaDevMedia(req, url, origin);
+        if (respuestaMedia) {
+          console.log(`[PROXY DEV RESILIENCE] Red caída, sirviendo media para ${url.pathname}`);
+          return respuestaMedia;
+        }
+      }
       const cached = cacheGet.get(url.pathname);
       if (req.method === "GET" && cached) {
         console.log(`[PROXY DEV RESILIENCE] Red caída, sirviendo cache para ${url.pathname}`);
