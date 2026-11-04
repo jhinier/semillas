@@ -315,14 +315,16 @@ export function resolverGrupoCodigo(grupoId?: string): "semillas" | "exploradore
   if (
     g.includes("explorador") ||
     g === "4afa01e2-96c1-4055-b88a-adc4f0303165" ||
-    g === "e1000000-0000-0000-0000-000000000002"
+    g === "e1000000-0000-0000-0000-000000000002" ||
+    g === "10000000-0000-0000-0000-000000000002"
   ) {
     return "exploradores";
   }
   if (
     g.includes("embajador") ||
     g === "4a69e67c-4fd3-4263-8f30-58416f323870" ||
-    g === "e1000000-0000-0000-0000-000000000003"
+    g === "e1000000-0000-0000-0000-000000000003" ||
+    g === "10000000-0000-0000-0000-000000000003"
   ) {
     return "embajadores";
   }

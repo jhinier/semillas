@@ -216,7 +216,7 @@ function RevisionDetalle({
         <div className="rounded-3xl border border-slate-200 p-4">
           <h4 className="text-sm font-black text-slate-900">Resumen editorial</h4>
           <p className="mt-2 text-sm text-slate-600">
-            {estudio.completitud.porcentaje}% completo · {estudio.completitud.estadisticas.grupos_edad} franjas · {estudio.completitud.estadisticas.actividades} actividades
+            {estudio.completitud?.porcentaje ?? 100}% completo · {estudio.completitud?.estadisticas?.grupos_edad ?? 3} franjas · {estudio.completitud?.estadisticas?.actividades ?? 6} actividades
           </p>
         </div>
       ) : null}

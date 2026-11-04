@@ -20,30 +20,30 @@ interface ProfileEditFormProps {
 
 const GRUPOS_EDAD_FALLBACK: GrupoEdad[] = [
   {
-    id: "10000000-0000-0000-0000-000000000001",
+    id: "e1000000-0000-0000-0000-000000000001",
     codigo: "semillas",
     nombre: "Semillas",
-    edad_minima: 6,
+    edad_minima: 5,
     edad_maxima: 8,
-    descripcion: "Niños pequeños con apoyo visual y audio.",
+    descripcion: "Descubre a Dios con historias y actividades sencillas.",
     orden: 1,
   },
   {
-    id: "10000000-0000-0000-0000-000000000002",
+    id: "e1000000-0000-0000-0000-000000000002",
     codigo: "exploradores",
     nombre: "Exploradores",
     edad_minima: 9,
-    edad_maxima: 11,
-    descripcion: "Niños lectores con retos interactivos.",
+    edad_maxima: 12,
+    descripcion: "Aprende más de Dios y entiende su Palabra.",
     orden: 2,
   },
   {
-    id: "10000000-0000-0000-0000-000000000003",
+    id: "e1000000-0000-0000-0000-000000000003",
     codigo: "embajadores",
     nombre: "Embajadores",
-    edad_minima: 12,
-    edad_maxima: 14,
-    descripcion: "Preadolescentes con reflexión aplicada.",
+    edad_minima: 13,
+    edad_maxima: 17,
+    descripcion: "Profundiza tu fe y vive con propósito.",
     orden: 3,
   },
 ];
@@ -96,6 +96,14 @@ export function ProfileEditForm({
         );
         return;
       }
+    }
+
+    try {
+      if (typeof localStorage !== "undefined") {
+        localStorage.setItem("onboarding_grupo_edad_id", grupoEdadId);
+      }
+    } catch {
+      // ignorar
     }
 
     onSave({

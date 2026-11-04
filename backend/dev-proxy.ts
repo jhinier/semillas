@@ -147,11 +147,142 @@ const SNAPSHOT_TEMAS_LISTADO = {
       xp_recompensa: 50,
       publicado_en: t.actualizado_en,
       es_destacado: false,
-      grupos_edad: ["semillas", "exploradores", "embajadores"],
+      senda: { id: "senda-padre", nombre: t.senda },
+      grupos_edad: [
+        { id: "e1000000-0000-0000-0000-000000000001", codigo: "semillas", nombre: "Semillas" },
+        { id: "e1000000-0000-0000-0000-000000000002", codigo: "exploradores", nombre: "Exploradores" },
+        { id: "e1000000-0000-0000-0000-000000000003", codigo: "embajadores", nombre: "Embajadores" },
+      ],
+      completitud: {
+        porcentaje: t.estado === "publicado" ? 100 : 70,
+        listo_para_revision: true,
+        bloqueos: [],
+        estadisticas: {
+          pasos_totales: 6,
+          pasos_creados: 6,
+          contenidos_creados: 18,
+          contenidos_esperados: 18,
+          actividades: 6,
+        },
+      },
     })),
     total: 14,
     limit: 20,
     offset: 0,
+  },
+};
+
+const SNAPSHOT_CLUBES = {
+  exito: true,
+  datos: {
+    clubes: [
+      {
+        id: "c1000000-0000-0000-0000-000000000001",
+        nombre: "Club Semillas de Esperanza",
+        descripcion: "Comunidad de aprendizaje y crecimiento espiritual.",
+        activo: true,
+        creado_en: "2026-09-01T12:00:00Z",
+        miembros: 8,
+        retos_abiertos: 2,
+        lider: { usuario_id: "aff4c70c-086c-43f3-8501-b55bb13807b2", apodo: "Administrador" },
+      },
+      {
+        id: "c1000000-0000-0000-0000-000000000002",
+        nombre: "Exploradores de la Fe",
+        descripcion: "Club dedicado a resolver retos y dinámicas CRECER.",
+        activo: true,
+        creado_en: "2026-09-15T15:00:00Z",
+        miembros: 12,
+        retos_abiertos: 1,
+        lider: { usuario_id: "aff4c70c-086c-43f3-8501-b55bb13807b2", apodo: "Administrador" },
+      },
+    ],
+    meta: { total: 2, limit: 20, offset: 0 },
+  },
+};
+
+const SNAPSHOT_REPORTES_CLUBES = {
+  exito: true,
+  datos: [],
+};
+
+const SNAPSHOT_CLUB_DETALLE = {
+  exito: true,
+  datos: {
+    club: {
+      id: "c1000000-0000-0000-0000-000000000001",
+      nombre: "Club Semillas de Esperanza",
+      descripcion: "Comunidad de aprendizaje y crecimiento espiritual.",
+      codigo_invitacion: "SEMILLA123",
+      activo: true,
+      creado_en: "2026-09-01T12:00:00Z",
+    },
+    miembros: [
+      {
+        usuario_id: "aff4c70c-086c-43f3-8501-b55bb13807b2",
+        apodo: "Administrador",
+        rol_miembro: "lider",
+        unido_en: "2026-09-01T12:00:00Z",
+        url_avatar: null,
+        xp_total: 1200,
+        xp_semana: 250,
+        actividades_semana: 8,
+      },
+    ],
+    retos: [
+      {
+        id: "r1000000-0000-0000-0000-000000000001",
+        nombre: "Reto Semanal de Lectura",
+        descripcion: "Completar 3 lecciones esta semana",
+        codigo_metrica: "actividades_completadas",
+        valor_objetivo: 15,
+        xp_reto: 100,
+        fecha_inicio: "2026-10-28T00:00:00Z",
+        fecha_fin: "2026-11-05T23:59:59Z",
+      },
+    ],
+  },
+};
+
+const SNAPSHOT_LOGROS = {
+  exito: true,
+  datos: {
+    logros: [
+      {
+        id: "l1000000-0000-0000-0000-000000000001",
+        codigo: "primer_paso",
+        titulo: "Primer paso",
+        descripcion: "Completa tu primer tema bíblico completo.",
+        criterio: "Requisito: Completa tu primer tema bíblico",
+        xp_recompensa: 20,
+        icono_url: "/src/assets/images/Ilustraciones/Versiculo del dia.webp",
+        activo: true,
+        creado_en: "2026-08-01T10:00:00Z",
+        actualizado_en: "2026-08-01T10:00:00Z",
+        otorgados_count: 14,
+      },
+      {
+        id: "l1000000-0000-0000-0000-000000000002",
+        codigo: "amor_de_dios",
+        titulo: "El Amor de Dios",
+        descripcion: "Completa el tema El Amor de Dios.",
+        criterio: "Requisito: Completa el tema «El Amor de Dios»",
+        xp_recompensa: 25,
+        icono_url: "/src/assets/images/Ilustraciones/Versiculo del dia.webp",
+        activo: true,
+        creado_en: "2026-08-02T10:00:00Z",
+        actualizado_en: "2026-08-02T10:00:00Z",
+        otorgados_count: 9,
+      },
+    ],
+    total: 2,
+    limit: 20,
+    offset: 0,
+    meta: {
+      total: 2,
+      limit: 20,
+      offset: 0,
+    },
   },
 };
 
@@ -648,6 +779,10 @@ registrarSnapshot("/administracion/reportes", SNAPSHOT_REPORTES);
 registrarSnapshot("/administracion/ajustes", SNAPSHOT_AJUSTES);
 registrarSnapshot("/administracion/sendas", SNAPSHOT_SENDAS);
 registrarSnapshot("/media", SNAPSHOT_MEDIA);
+registrarSnapshot("/administracion/clubes", SNAPSHOT_CLUBES);
+registrarSnapshot("/administracion/reportes-clubes", SNAPSHOT_REPORTES_CLUBES);
+registrarSnapshot("/administracion/logros", SNAPSHOT_LOGROS);
+registrarSnapshot("/administracion/logros/catalogo", SNAPSHOT_LOGROS.datos.logros);
 
 const server = Bun.serve({
   port: PORT,
@@ -731,10 +866,30 @@ const server = Bun.serve({
           (url.pathname.startsWith("/administracion") || url.pathname === "/perfil")) ||
         (url.pathname === "/perfil" && authHeader && authHeader.startsWith("Bearer ") && res.status !== 200)
       ) {
-        const cached =
+        let cached =
           url.pathname === "/perfil"
             ? new TextEncoder().encode(JSON.stringify(SNAPSHOT_PERFIL_ADMIN))
             : cacheGet.get(url.pathname);
+
+        if (!cached) {
+          if (url.pathname.startsWith("/administracion/clubes/")) {
+            cached = new TextEncoder().encode(JSON.stringify(SNAPSHOT_CLUB_DETALLE));
+          } else if (url.pathname.startsWith("/administracion/logros/")) {
+            cached = new TextEncoder().encode(JSON.stringify({ exito: true, datos: SNAPSHOT_LOGROS.datos.logros[0] }));
+          } else if (url.pathname.startsWith("/administracion/temas/")) {
+            const tema = SNAPSHOT_TEMAS_LISTADO.datos.temas[0];
+            cached = new TextEncoder().encode(JSON.stringify({
+              exito: true,
+              datos: {
+                tema,
+                pasos: [],
+                actividades: [],
+                completitud: tema.completitud,
+                revisiones: [],
+              },
+            }));
+          }
+        }
         if (cached) {
           console.log(`[PROXY DEV RESILIENCE] Sirviendo snapshot en desarrollo para ${url.pathname} (remote respondió ${res.status})`);
           return new Response(cached, {
@@ -749,6 +904,25 @@ const server = Bun.serve({
             },
           });
         }
+      }
+
+      // Emular mutaciones exitosas en desarrollo si el backend remoto responde error de auth
+      if (
+        (res.status === 401 || res.status === 403 || res.status >= 500) &&
+        req.method !== "GET" &&
+        (url.pathname.startsWith("/administracion/clubes") || url.pathname.startsWith("/administracion/reportes-clubes") || url.pathname.startsWith("/administracion/logros") || url.pathname.startsWith("/administracion/temas"))
+      ) {
+        console.log(`[PROXY DEV RESILIENCE] Emulando éxito para ${req.method} ${url.pathname}`);
+        return new Response(JSON.stringify({ exito: true, datos: { success: true } }), {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json; charset=utf-8",
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+          },
+        });
       }
 
       if (res.status >= 400) {

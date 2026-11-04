@@ -2939,16 +2939,16 @@ html[data-semillas-text-size="grande"] {
 }
 
 /* Aplicar color de texto por defecto sin sobreescribir colores específicos ni botones/enlaces ni iconos */
-.dark h1:not([class*="text-"]):not(a):not(button):not(a *):not(button *),
-.dark h2:not([class*="text-"]):not(a):not(button):not(a *):not(button *),
-.dark h3:not([class*="text-"]):not(.home-path-card__title):not(a):not(button):not(a *):not(button *),
-.dark h4:not([class*="text-"]):not(a):not(button):not(a *):not(button *),
-.dark h5:not([class*="text-"]):not(a):not(button):not(a *):not(button *),
-.dark h6:not([class*="text-"]):not(a):not(button):not(a *):not(button *),
-.dark p:not([class*="text-"]):not(.home-path-card__desc):not(a):not(button):not(a *):not(button *),
-.dark span:not([class*="text-"]):not(.home-path-card__label):not(a):not(button):not(a *):not(button *):not([class*="icon"]):not([class*="icon"] *),
-.dark strong:not([class*="text-"]):not(a):not(button):not(a *):not(button *),
-.dark li:not([class*="text-"]):not(a):not(button):not(a *):not(button *) {
+.dark h1:not([class*="text-"]):not(a):not(button):not(a *):not(button *):not(.profile-age-option *):not(.crecer-reflection *):not(.activity-library-v2 *),
+.dark h2:not([class*="text-"]):not(a):not(button):not(a *):not(button *):not(.profile-age-option *):not(.crecer-reflection *):not(.activity-library-v2 *),
+.dark h3:not([class*="text-"]):not(.home-path-card__title):not(a):not(button):not(a *):not(button *):not(.profile-age-option *):not(.crecer-reflection *):not(.activity-library-v2 *),
+.dark h4:not([class*="text-"]):not(a):not(button):not(a *):not(button *):not(.profile-age-option *):not(.crecer-reflection *):not(.activity-library-v2 *),
+.dark h5:not([class*="text-"]):not(a):not(button):not(a *):not(button *):not(.profile-age-option *):not(.crecer-reflection *):not(.activity-library-v2 *),
+.dark h6:not([class*="text-"]):not(a):not(button):not(a *):not(button *):not(.profile-age-option *):not(.crecer-reflection *):not(.activity-library-v2 *),
+.dark p:not([class*="text-"]):not(.home-path-card__desc):not(a):not(button):not(a *):not(button *):not(.profile-age-option *):not(.crecer-reflection *):not(.activity-library-v2 *):not(.login-social__btn--guest *):not(.profile-google-link-btn *),
+.dark span:not([class*="text-"]):not(.home-path-card__label):not(a):not(button):not(a *):not(button *):not([class*="icon"]):not([class*="icon"] *):not(.profile-age-option *):not(.crecer-reflection *):not(.activity-library-v2 *):not(.login-social__btn--guest *):not(.profile-google-link-btn *),
+.dark strong:not([class*="text-"]):not(a):not(button):not(a *):not(button *):not(.profile-age-option *):not(.crecer-reflection *):not(.activity-library-v2 *):not(.login-social__btn--guest *),
+.dark li:not([class*="text-"]):not(a):not(button):not(a *):not(button *):not(.profile-age-option *):not(.crecer-reflection *):not(.activity-library-v2 *) {
   color: var(--color-text-dark);
 }
 

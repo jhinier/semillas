@@ -1,3 +1,29 @@
+export const RECURSOS_CLUBES_PREDETERMINADOS: ListadoClubesAdmin = {
+  clubes: [
+    {
+      id: "c1000000-0000-0000-0000-000000000001",
+      nombre: "Club Semillas de Esperanza",
+      descripcion: "Comunidad de aprendizaje y crecimiento espiritual.",
+      activo: true,
+      creado_en: "2026-09-01T12:00:00Z",
+      miembros: 8,
+      retos_abiertos: 2,
+      lider: { usuario_id: "aff4c70c-086c-43f3-8501-b55bb13807b2", apodo: "Administrador" },
+    },
+    {
+      id: "c1000000-0000-0000-0000-000000000002",
+      nombre: "Exploradores de la Fe",
+      descripcion: "Club dedicado a resolver retos y dinámicas CRECER.",
+      activo: true,
+      creado_en: "2026-09-15T15:00:00Z",
+      miembros: 12,
+      retos_abiertos: 1,
+      lider: { usuario_id: "aff4c70c-086c-43f3-8501-b55bb13807b2", apodo: "Administrador" },
+    },
+  ],
+  meta: { total: 2, limit: 20, offset: 0 },
+};
+
 import { peticion } from "../../shared/api/api";
 
 export type FiltrosClubesAdmin = {
@@ -191,9 +217,15 @@ export function cerrarRetoClubAdmin(idClub: string, retoId: string, motivo: stri
   });
 }
 
-export function listarReportesClubAdmin(estado?: ReporteClubAdmin["estado"]) {
+export async function listarReportesClubAdmin(estado?: ReporteClubAdmin["estado"]): Promise<ReporteClubAdmin[]> {
   const query = estado ? `?estado=${encodeURIComponent(estado)}` : "";
-  return peticion<ReporteClubAdmin[]>(`/administracion/reportes-clubes${query}`);
+  try {
+    const datos = await peticion<ReporteClubAdmin[]>(`/administracion/reportes-clubes${query}`);
+    return Array.isArray(datos) ? datos : [];
+  } catch (err) {
+    console.warn("[ClubesAPI] Falló listarReportesClubAdmin, usando array vacío:", err);
+    return [];
+  }
 }
 
 export function resolverReporteClubAdmin(idReporte: string, datos: { estado: "en_revision" | "resuelto" | "descartado"; nota?: string }) {

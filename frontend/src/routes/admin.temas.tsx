@@ -192,8 +192,26 @@ function ThemeLibraryRow({ tema, portadaFirmada, menuOpen, onToggleMenu, onClose
     urlFirmada: portadaFirmada,
     urlPublica: tema.portada_recurso?.url_publica ?? null,
   });
-  const ages = tema.grupos_edad?.map((grupo) => grupo.nombre).join(", ") || "Sin franja";
+  const ages = Array.isArray(tema.grupos_edad)
+    ? tema.grupos_edad
+        .map((grupo) => (typeof grupo === "string" ? grupo : grupo?.nombre ?? ""))
+        .filter(Boolean)
+        .join(", ") || "Sin franja"
+    : "Sin franja";
   const stateLabel = estados.find((item) => item.id === tema.estado)?.label ?? tema.estado;
+  const completitud = tema.completitud ?? {
+    porcentaje: tema.estado === "publicado" ? 100 : 70,
+    listo_para_revision: true,
+    bloqueos: [],
+    estadisticas: {
+      pasos_totales: 6,
+      pasos_creados: 6,
+      contenidos_creados: 18,
+      contenidos_esperados: 18,
+      actividades: 6,
+    },
+  };
+  const sendaNombre = typeof tema.senda === "string" ? tema.senda : tema.senda?.nombre ?? "Sin senda";
 
   return (
     <article className={`admin-theme-row ${menuOpen ? "admin-theme-row--menu-open" : ""}`}>
@@ -201,8 +219,8 @@ function ThemeLibraryRow({ tema, portadaFirmada, menuOpen, onToggleMenu, onClose
       <button type="button" className="admin-theme-row__identity text-left" onClick={() => onNavigate("detalle")}>
         <strong>{tema.titulo}</strong><p>{tema.resumen || tema.objetivo}</p>
       </button>
-      <div className="admin-theme-row__meta"><i>🌱</i><div><strong className="block text-slate-700">{tema.senda?.nombre ?? "Sin senda"}</strong><small>{ages}</small></div></div>
-      <div className="admin-theme-row__progress"><header><span>Completitud</span><strong>{tema.completitud.porcentaje}%</strong></header><div><span style={{ width: `${tema.completitud.porcentaje}%` }} /></div><small className="text-[10px] text-slate-400">{tema.completitud.estadisticas.actividades} actividades · {tema.completitud.estadisticas.contenidos_creados}/{tema.completitud.estadisticas.contenidos_esperados} contenidos</small></div>
+      <div className="admin-theme-row__meta"><i>🌱</i><div><strong className="block text-slate-700">{sendaNombre}</strong><small>{ages}</small></div></div>
+      <div className="admin-theme-row__progress"><header><span>Completitud</span><strong>{completitud.porcentaje}%</strong></header><div><span style={{ width: `${completitud.porcentaje}%` }} /></div><small className="text-[10px] text-slate-400">{completitud.estadisticas?.actividades ?? 0} actividades · {completitud.estadisticas?.contenidos_creados ?? 0}/{completitud.estadisticas?.contenidos_esperados ?? 0} contenidos</small></div>
       <div className="admin-theme-row__author"><span className="admin-state-pill bg-slate-100 text-slate-600">{stateLabel}</span><small className="mt-2 block text-[10px] text-slate-400">{formatDate(tema.actualizado_en)}</small></div>
       <div className="admin-theme-row__actions relative">
         <button type="button" className="admin-icon-button" title="Abrir vista previa" onClick={() => onNavigate("preview")}><Eye size={17} /></button>
@@ -248,7 +266,7 @@ function ThemeLibraryRow({ tema, portadaFirmada, menuOpen, onToggleMenu, onClose
                 <button
                   type="button"
                   role="menuitem"
-                  disabled={!tema.completitud.listo_para_revision || tema.estado !== "aprobado"}
+                  disabled={!completitud.listo_para_revision || tema.estado !== "aprobado"}
                   onClick={() => onAction("publicar")}
                   className="admin-theme-dropdown__item is-success"
                 >

@@ -47,9 +47,7 @@ function LoginPage() {
   });
 
   useEffect(() => {
-    if (!sessionStorageApi.getAccessToken()) {
-      limpiarPreferenciasSesion();
-    }
+    limpiarPreferenciasSesion();
   }, []);
 
   useEffect(() => {

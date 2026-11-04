@@ -101,7 +101,7 @@ export function useTemasPage({ searchSenda }: UseTemasPageOptions = {}) {
 
   const { data: temasApi, isLoading, isError } = useQuery({
     queryKey: ["temas", grupoEdadActivo.codigo],
-    queryFn: () => obtenerTemas({ grupo_edad_id: grupoEdadActivo.id }),
+    queryFn: () => obtenerTemas({ grupo_edad_id: grupoEdadActivo.codigo || grupoEdadActivo.id }),
     staleTime: 1000 * 60 * 3,
   });
 

@@ -33,11 +33,12 @@ export function AdminLogrosPanel() {
 
   const { estaConectado, listado, actualizar, archivar, reactivar, mutando } = useAdminLogros(filtros);
   const data = listado.data;
+  const totalItems = data?.meta?.total ?? (data as { total?: number } | undefined)?.total ?? 0;
 
   useEffect(() => {
-    const totalPaginas = Math.max(1, Math.ceil((data?.meta.total ?? 0) / porPagina));
+    const totalPaginas = Math.max(1, Math.ceil(totalItems / porPagina));
     if (paginaActual > totalPaginas) setPaginaActual(totalPaginas);
-  }, [data?.meta.total, paginaActual, porPagina]);
+  }, [totalItems, paginaActual, porPagina]);
 
   function abrirEditar(logro: LogroAdminResumen) {
     setLogroEnEdicion(logro);
@@ -176,7 +177,7 @@ export function AdminLogrosPanel() {
             <div className="flex items-center gap-2 text-sm text-slate-600">
               <Medal className="size-4" aria-hidden="true" />
               <span>
-                <b className="text-slate-900">{data?.meta.total ?? 0}</b> logros encontrados
+                <b className="text-slate-900">{totalItems}</b> logros encontrados
               </span>
             </div>
           </div>
@@ -237,9 +238,9 @@ export function AdminLogrosPanel() {
             </table>
           </div>
 
-          {data && data.meta.total > 0 ? (
+          {data && totalItems > 0 ? (
             <Paginacion
-              total={data.meta.total}
+              total={totalItems}
               paginaActual={paginaActual}
               porPagina={porPagina}
               onCambiarPagina={setPaginaActual}

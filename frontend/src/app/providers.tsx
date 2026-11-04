@@ -17,7 +17,7 @@ import { PwaLifecycle } from "@/componentes/ui/pwa-lifecycle";
 import { clasificarErrorVinculacion, resolverRedireccionBootstrap } from "./bootstrap";
 import { publicarConflictoVinculacion } from "@/shared/auth/conflicto-vinculacion";
 import { migrarInvitadoSiCorresponde } from "../features/auth/migracion-invitado";
-import { aplicarPreferenciasDispositivo } from "../shared/accessibility/preferences";
+import { aplicarPreferenciasDispositivo, limpiarPreferenciasSesion } from "../shared/accessibility/preferences";
 import { useVisualViewport } from "@/shared/hooks/visual-viewport";
 
 async function vincularCuentaPendiente() {
@@ -52,7 +52,16 @@ function AuthBootstrap({ children }: { children: ReactNode }) {
   useVisualViewport();
 
   useEffect(() => {
-    aplicarPreferenciasDispositivo();
+    const tieneSesion = sessionStorageApi.getAccessToken() || sessionStorageApi.getGuestUserId();
+    const esRutaPublica =
+      typeof window !== "undefined" &&
+      (window.location.pathname.startsWith("/login") || window.location.pathname === "/");
+
+    if (!tieneSesion || esRutaPublica) {
+      limpiarPreferenciasSesion();
+    } else {
+      aplicarPreferenciasDispositivo();
+    }
   }, []);
 
   useEffect(() => {

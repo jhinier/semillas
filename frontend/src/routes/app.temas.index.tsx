@@ -73,7 +73,11 @@ function PaginaTemas() {
             </span>
           </div>
 
-          <SendaFilterRow searchSenda={search.sendas} onSendaChange={cambiarSenda} />
+          <SendaFilterRow
+            searchSenda={search.sendas}
+            grupoEdadCodigo={grupoEdadActivo.codigo}
+            onSendaChange={cambiarSenda}
+          />
 
           <TemasTabsFilter
             activo={filtroTab}

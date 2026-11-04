@@ -239,13 +239,24 @@
   justify-content: flex-start;
   min-height: 94px;
   padding: 18px 20px;
-  background: #f2eafe;
-  border-color: #cdb8f2;
+  background: #f5f3ff !important;
+  border: 1.5px solid #c4b5fd !important;
 }
 
 .login-social__btn--guest:hover {
-  border-color: #b89be9;
-  background: #efe4fe;
+  border-color: #a78bfa !important;
+  background: #ede9fe !important;
+}
+
+.dark .login-social__btn--guest,
+[data-theme="app-dark"] .login-social__btn--guest {
+  background: #2e1065 !important;
+  border-color: #7c3aed !important;
+}
+
+.dark .login-social__btn--guest:hover,
+[data-theme="app-dark"] .login-social__btn--guest:hover {
+  background: #3b0764 !important;
 }
 
 .login-social__icon {
@@ -282,14 +293,24 @@
 .login-social__guest-title {
   font-size: 1rem;
   font-weight: 900;
-  color: var(--color-secundario-oscuro-min);
+  color: #5b21b6 !important;
 }
 
 .login-social__guest-note {
   font-size: 0.92rem;
   line-height: 1.45;
-  color: var(--color-neutro);
+  color: #6d28d9 !important;
   font-weight: 600;
+}
+
+.dark .login-social__guest-title,
+[data-theme="app-dark"] .login-social__guest-title {
+  color: #f5f3ff !important;
+}
+
+.dark .login-social__guest-note,
+[data-theme="app-dark"] .login-social__guest-note {
+  color: #ddd6fe !important;
 }
 
 .login-divider {

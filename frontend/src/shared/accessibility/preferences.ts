@@ -58,7 +58,7 @@ export function aplicarTemaVisual(temaRaw?: string | null): TemaVisual {
 }
 
 export function obtenerClavePref(claveBase: string, scopeId?: string | null): string {
-  if (!scopeId || scopeId === "default" || scopeId === "guest") {
+  if (!scopeId || scopeId === "default") {
     return claveBase;
   }
   return `${claveBase}:${scopeId}`;
@@ -74,6 +74,7 @@ export function leerPreferenciaPerfil(
     if (scopeId) {
       const valScoped = window.localStorage.getItem(obtenerClavePref(claveBase, scopeId));
       if (valScoped !== null) return valScoped;
+      return fallback;
     }
     const valGlobal = window.localStorage.getItem(claveBase);
     return valGlobal !== null ? valGlobal : fallback;
@@ -89,7 +90,7 @@ export function guardarPreferenciaPerfil(
 ): void {
   if (typeof window === "undefined") return;
   try {
-    if (scopeId && scopeId !== "default" && scopeId !== "guest") {
+    if (scopeId && scopeId !== "default") {
       window.localStorage.setItem(obtenerClavePref(claveBase, scopeId), valor);
     } else {
       window.localStorage.setItem(claveBase, valor);
