@@ -166,9 +166,22 @@ export async function obtenerMiPerfil(): Promise<MiPerfilRespuesta> {
 
   try {
     const respuesta = await peticion<MiPerfilRespuesta>("/perfil");
-    await guardarPerfilLocal(respuesta.usuario, respuesta.perfil, respuesta.grupos_edad);
+    const perfilFinal: Perfil = respuesta.perfil ?? {
+      id: respuesta.usuario.id,
+      usuario_id: respuesta.usuario.id,
+      apodo: respuesta.usuario.nombre_visible || (respuesta.usuario.rol === "administrador" ? "Administrador" : "Semillero"),
+      grupo_edad_id: respuesta.usuario.rol === "administrador" ? null : "semillas",
+      url_avatar: null,
+      clave_avatar: "1",
+      prefiere_audio: true,
+      tamano_texto_preferido: "mediano",
+      creado_en: new Date().toISOString(),
+      actualizado_en: new Date().toISOString(),
+    };
+    await guardarPerfilLocal(respuesta.usuario, perfilFinal, respuesta.grupos_edad);
     return {
       ...respuesta,
+      perfil: perfilFinal,
       grupos_edad: respuesta.grupos_edad?.length ? respuesta.grupos_edad : GRUPOS_EDAD_OFFLINE,
     };
   } catch {

@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { obtenerTemas } from "@/features/themes/themes.api";
+import { obtenerTemas, resolverGrupoCodigo } from "@/features/themes/themes.api";
 import { obtenerMiProgreso } from "@/features/progress/progress.api";
 import { obtenerMiPerfil } from "@/features/perfil/profile.api";
+import { GRUPOS_EDAD_OFFLINE } from "@/features/catalog/catalog.api";
 import { usePortadasFirmadas } from "@/features/themes/hooks/usePortadasFirmadas";
 import { normalizarSenda } from "@/features/themes/componentes/senda-filter-row";
 import { leerFavoritos, guardarFavoritos, mapearTema } from "@/features/themes/utils/temas-favorites.utils";
@@ -28,29 +29,79 @@ export function useTemasPage({ searchSenda }: UseTemasPageOptions = {}) {
     staleTime: 1000 * 60 * 3,
   });
 
-  const grupoEdadId = meQuery.data?.perfil?.grupo_edad_id ?? undefined;
+  const grupoEdadId =
+    meQuery.data?.perfil?.grupo_edad_id ||
+    (typeof localStorage !== "undefined" ? localStorage.getItem("onboarding_grupo_edad_id") : null) ||
+    undefined;
+
   const grupoEdadActivo = useMemo(() => {
-    const grupos = meQuery.data?.grupos_edad ?? [];
-    const encontrado = grupos.find((g) => g.id === grupoEdadId);
+    const grupos =
+      meQuery.data?.grupos_edad && meQuery.data.grupos_edad.length > 0
+        ? meQuery.data.grupos_edad
+        : GRUPOS_EDAD_OFFLINE;
+
+    const codigoGrupo = resolverGrupoCodigo(grupoEdadId);
+    const encontrado = grupos.find(
+      (g) => g.id === grupoEdadId || g.codigo === grupoEdadId || g.codigo === codigoGrupo,
+    );
+
     if (encontrado) {
+      const codigo = encontrado.codigo || codigoGrupo;
+      const min =
+        encontrado.edad_minima ??
+        (encontrado as unknown as { edad_min?: number }).edad_min ??
+        (codigo === "exploradores" ? 9 : codigo === "embajadores" ? 13 : 5);
+      const max =
+        encontrado.edad_maxima ??
+        (encontrado as unknown as { edad_max?: number }).edad_max ??
+        (codigo === "exploradores" ? 12 : codigo === "embajadores" ? 17 : 8);
+
       return {
         id: encontrado.id,
-        codigo: encontrado.codigo,
-        nombre: encontrado.nombre,
-        rango: `${encontrado.edad_minima} a ${encontrado.edad_maxima} años`,
+        codigo,
+        nombre: encontrado.nombre || (codigo === "embajadores" ? "Embajadores" : codigo === "exploradores" ? "Exploradores" : "Semillas"),
+        rango: `${min} a ${max} años`,
+        enfoque:
+          codigo === "embajadores"
+            ? "Reflexión profunda, carácter y liderazgo"
+            : codigo === "exploradores"
+              ? "Retos bíblicos, descubrimientos y acción"
+              : "Historias interactivas, canciones y juegos",
       };
     }
+
+    if (codigoGrupo === "exploradores") {
+      return {
+        id: grupoEdadId ?? "exploradores",
+        codigo: "exploradores",
+        nombre: "Exploradores",
+        rango: "9 a 12 años",
+        enfoque: "Retos bíblicos, descubrimientos y acción",
+      };
+    }
+
+    if (codigoGrupo === "embajadores") {
+      return {
+        id: grupoEdadId ?? "embajadores",
+        codigo: "embajadores",
+        nombre: "Embajadores",
+        rango: "13 a 17 años",
+        enfoque: "Reflexión profunda, carácter y liderazgo",
+      };
+    }
+
     return {
       id: grupoEdadId ?? "semillas",
       codigo: "semillas",
       nombre: "Semillas",
       rango: "5 a 8 años",
+      enfoque: "Historias interactivas, canciones y juegos",
     };
   }, [grupoEdadId, meQuery.data?.grupos_edad]);
 
   const { data: temasApi, isLoading, isError } = useQuery({
-    queryKey: ["temas", grupoEdadId ?? "all"],
-    queryFn: () => obtenerTemas({ grupo_edad_id: grupoEdadId }),
+    queryKey: ["temas", grupoEdadActivo.codigo],
+    queryFn: () => obtenerTemas({ grupo_edad_id: grupoEdadActivo.id }),
     staleTime: 1000 * 60 * 3,
   });
 

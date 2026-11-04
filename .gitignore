@@ -13,3 +13,5 @@ backend/.wrangler/
 .DS_Store
 frontend/dev-dist/diff-dev-vs-dev2/
 diff-dev-vs-dev2/
+
+scratch/

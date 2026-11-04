@@ -205,15 +205,15 @@ export function ProfileEditForm({
       </fieldset>
 
       {controlParentalActivo ? (
-        <div className="profile-form-section rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
-          <label className="profile-field-label flex items-center gap-2 text-amber-900" htmlFor="profile-parental-pin">
+        <div className="profile-form-section rounded-2xl border border-amber-200 bg-amber-50/70 p-4 dark:border-amber-900/60 dark:bg-amber-950/40">
+          <label className="profile-field-label flex items-center gap-2 text-amber-900 dark:text-amber-300" htmlFor="profile-parental-pin">
             <Lock size={16} />
             Clave de Control Parental
           </label>
-          <p className="profile-field-help text-amber-800 mb-2">
+          <p className="profile-field-help text-amber-800 dark:text-amber-200/80 mb-2">
             Los controles parentales están activos en Preferencias. Ingresa el PIN de adulto para autorizar cambios en el perfil.
           </p>
-          <div className="profile-input-shell bg-white">
+          <div className="profile-input-shell bg-white dark:bg-slate-900 dark:border-slate-700">
             <input
               id="profile-parental-pin"
               type="password"

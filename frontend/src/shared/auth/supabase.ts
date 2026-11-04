@@ -17,6 +17,7 @@ import {
 import { limpiarDatosSesionOffline } from "./logout-cleanup";
 import { obtenerScopeOffline } from "@/lib/offline/user-scope";
 import { limpiarCacheClubesScope } from "@/features/clubes/club-cache-storage";
+import { limpiarPreferenciasSesion } from "@/shared/accessibility/preferences";
 
 export const supabase = createClient(env.supabaseUrl, env.supabaseAnonKey, {
   auth: {
@@ -67,6 +68,7 @@ export async function cerrarSesionAutenticada() {
     queryClient.clear();
   });
   sessionStorageApi.clearAllSession();
+  limpiarPreferenciasSesion();
 }
 
 export async function registrarConCorreo(email: string, password: string) {

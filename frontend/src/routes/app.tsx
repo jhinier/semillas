@@ -74,8 +74,9 @@ function AppLayout() {
   const [mensajeConflicto, setMensajeConflicto] = useState<string | null>(null);
 
   useEffect(() => {
-    aplicarPreferenciasDispositivo();
-  }, []);
+    const perfilId = meQuery.data?.perfil?.id;
+    aplicarPreferenciasDispositivo(perfilId);
+  }, [meQuery.data?.perfil?.id]);
 
   useEffect(() => {
     const inicial = consumirConflictoVinculacion();

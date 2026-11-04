@@ -247,7 +247,7 @@ export function MediaGalleryDialog({
     file &&
       !uploadError &&
       uploadTitle.trim().length >= 2 &&
-      (!requiresAltText || textoAlternativo.trim().length >= 3),
+      true,
   );
 
   const resetUpload = () => {
@@ -278,10 +278,11 @@ export function MediaGalleryDialog({
       return;
     }
 
+    const cleanTitle = selectedFile.name.replace(/\.[^.]+$/, "");
     setUploadError(null);
     setFile(selectedFile);
-    setUploadTitle(selectedFile.name.replace(/\.[^.]+$/, ""));
-    setTextoAlternativo("");
+    setUploadTitle(cleanTitle);
+    setTextoAlternativo(cleanTitle);
     setInspectorMode("upload");
 
     function resetSelectedFileOnly() {
@@ -303,7 +304,7 @@ export function MediaGalleryDialog({
       setUploadError(null);
       await onUpload(file, {
         titulo: uploadTitle.trim(),
-        textoAlternativo: textoAlternativo.trim(),
+        textoAlternativo: textoAlternativo.trim() || uploadTitle.trim(),
       });
       resetUpload();
       closeRef.current();
@@ -367,6 +368,14 @@ export function MediaGalleryDialog({
           </div>
         </header>
 
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={accept}
+          className="admin-sr-only"
+          onChange={(event) => handleFileChange(event.target.files?.[0])}
+        />
+
         <div className="media-library-body">
           <main className="media-library-main">
             <div className="media-library-toolbar">
@@ -398,7 +407,13 @@ export function MediaGalleryDialog({
               <button
                 type="button"
                 className="media-library-upload-shortcut"
-                onClick={() => setInspectorMode("upload")}
+                onClick={() => {
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = "";
+                    fileInputRef.current.click();
+                  }
+                  setInspectorMode("upload");
+                }}
               >
                 <Upload size={16} />
                 Subir recurso
@@ -509,7 +524,13 @@ export function MediaGalleryDialog({
                 role="tab"
                 aria-selected={inspectorMode === "upload"}
                 className={inspectorMode === "upload" ? "is-active" : ""}
-                onClick={() => setInspectorMode("upload")}
+                onClick={() => {
+                  setInspectorMode("upload");
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = "";
+                    fileInputRef.current.click();
+                  }
+                }}
               >
                 Subir nuevo
               </button>
@@ -755,26 +776,25 @@ function UploadPanel({
   return (
     <section className="media-library-upload-panel">
       <div className="media-library-upload-panel__intro">
-        <span>
+        <button
+          type="button"
+          className="media-library-upload-panel__icon-button"
+          onClick={() => fileInputRef.current?.click()}
+          title="Seleccionar archivo desde tu equipo"
+          aria-label="Seleccionar archivo desde tu equipo"
+        >
           <Upload size={18} />
-        </span>
+        </button>
         <div>
           <h3>Subir nuevo recurso</h3>
           <p>Arrastra un archivo o selecciónalo desde tu equipo.</p>
         </div>
       </div>
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept={accept}
-        className="admin-sr-only"
-        onChange={(event) => onFileChange(event.target.files?.[0])}
-      />
-
       {!file ? (
         <div
-          className={`media-library-dropzone ${isDragging ? "is-dragging" : ""}`}
+          className={`media-library-dropzone cursor-pointer ${isDragging ? "is-dragging" : ""}`}
+          onClick={() => fileInputRef.current?.click()}
           onDragEnter={onDragEnter}
           onDragLeave={onDragLeave}
           onDragOver={onDragOver}
@@ -788,7 +808,10 @@ function UploadPanel({
           <button
             type="button"
             className="admin-secondary-button"
-            onClick={() => fileInputRef.current?.click()}
+            onClick={(e) => {
+              e.stopPropagation();
+              fileInputRef.current?.click();
+            }}
           >
             Elegir archivo
           </button>

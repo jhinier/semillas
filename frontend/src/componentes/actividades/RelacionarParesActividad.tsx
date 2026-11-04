@@ -143,8 +143,8 @@ export function RelacionarParesActividad({
             matchedPairs={matchedPairs}
             selectedIndex={selectedLeft}
             errorPair={errorPair}
-            colorClass="bg-white border-slate-200 text-slate-700 hover:border-blue-300 hover:bg-slate-50"
-            selectedColorClass="bg-blue-50 border-blue-500 text-blue-800 ring-blue-500/20"
+            colorClass="bg-white border-slate-200 text-slate-700 hover:border-blue-300 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:hover:border-blue-400 dark:hover:bg-slate-700/60"
+            selectedColorClass="bg-blue-50 border-blue-500 text-blue-800 ring-blue-500/20 dark:bg-blue-950/80 dark:border-blue-500 dark:text-blue-200"
             onItemClick={handleLeftClick}
             side="izquierda"
           />
@@ -155,8 +155,8 @@ export function RelacionarParesActividad({
             matchedPairs={matchedPairs}
             selectedIndex={selectedRight}
             errorPair={errorPair}
-            colorClass="bg-white border-slate-200 text-slate-700 hover:border-purple-300 hover:bg-slate-50"
-            selectedColorClass="bg-purple-50 border-purple-500 text-purple-800 ring-purple-500/20"
+            colorClass="bg-white border-slate-200 text-slate-700 hover:border-purple-300 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:hover:border-purple-400 dark:hover:bg-slate-700/60"
+            selectedColorClass="bg-purple-50 border-purple-500 text-purple-800 ring-purple-500/20 dark:bg-purple-950/80 dark:border-purple-500 dark:text-purple-200"
             onItemClick={handleRightClick}
             side="derecha"
           />

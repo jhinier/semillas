@@ -57,12 +57,71 @@ export function aplicarTemaVisual(temaRaw?: string | null): TemaVisual {
   return tema;
 }
 
-export function aplicarPreferenciasDispositivo(): void {
+export function obtenerClavePref(claveBase: string, scopeId?: string | null): string {
+  if (!scopeId || scopeId === "default" || scopeId === "guest") {
+    return claveBase;
+  }
+  return `${claveBase}:${scopeId}`;
+}
+
+export function leerPreferenciaPerfil(
+  claveBase: string,
+  scopeId?: string | null,
+  fallback: string | null = null,
+): string | null {
+  if (typeof window === "undefined") return fallback;
+  try {
+    if (scopeId) {
+      const valScoped = window.localStorage.getItem(obtenerClavePref(claveBase, scopeId));
+      if (valScoped !== null) return valScoped;
+    }
+    const valGlobal = window.localStorage.getItem(claveBase);
+    return valGlobal !== null ? valGlobal : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+export function guardarPreferenciaPerfil(
+  claveBase: string,
+  valor: string,
+  scopeId?: string | null,
+): void {
   if (typeof window === "undefined") return;
   try {
-    const contraste = window.localStorage.getItem("semillas-pref-contraste");
-    const tamano = window.localStorage.getItem("semillas-pref-text-size");
-    const tema = window.localStorage.getItem("semillas-pref-tema") || "claro";
+    if (scopeId && scopeId !== "default" && scopeId !== "guest") {
+      window.localStorage.setItem(obtenerClavePref(claveBase, scopeId), valor);
+    } else {
+      window.localStorage.setItem(claveBase, valor);
+    }
+  } catch {
+    // ignorar si localStorage está bloqueado
+  }
+}
+
+export function limpiarPreferenciasSesion(): void {
+  if (typeof document !== "undefined") {
+    document.documentElement.classList.remove("dark", "alto-contraste");
+    document.documentElement.setAttribute("data-theme", "app-light");
+    document.documentElement.dataset.semillasTextSize = "mediano";
+  }
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.removeItem("semillas-pref-tema");
+      window.localStorage.removeItem("semillas-pref-contraste");
+      window.localStorage.removeItem("semillas-pref-text-size");
+    } catch {
+      // ignorar si localStorage está bloqueado
+    }
+  }
+}
+
+export function aplicarPreferenciasDispositivo(scopeId?: string | null): void {
+  if (typeof window === "undefined") return;
+  try {
+    const contraste = leerPreferenciaPerfil("semillas-pref-contraste", scopeId);
+    const tamano = leerPreferenciaPerfil("semillas-pref-text-size", scopeId);
+    const tema = leerPreferenciaPerfil("semillas-pref-tema", scopeId, "claro") || "claro";
 
     aplicarContraste(contraste === "alto");
     if (tamano) {
@@ -74,19 +133,19 @@ export function aplicarPreferenciasDispositivo(): void {
   }
 }
 
-export function estaActivoControlParental(): boolean {
+export function estaActivoControlParental(scopeId?: string | null): boolean {
   if (typeof window === "undefined") return false;
   try {
-    return window.localStorage.getItem("semillas-pref-parental") === "true";
+    return leerPreferenciaPerfil("semillas-pref-parental", scopeId) === "true";
   } catch {
     return false;
   }
 }
 
-export function obtenerPinParental(): string {
+export function obtenerPinParental(scopeId?: string | null): string {
   if (typeof window === "undefined") return "1234";
   try {
-    return window.localStorage.getItem("semillas-pref-parental-pin") || "1234";
+    return leerPreferenciaPerfil("semillas-pref-parental-pin", scopeId, "1234") || "1234";
   } catch {
     return "1234";
   }

@@ -160,9 +160,9 @@ export function CompletarVersiculo({ actividad, onComplete }: CompletarVersiculo
   return (
     <div className="flex flex-col gap-6 items-center w-full max-w-4xl mx-auto py-4 animate-in fade-in zoom-in-95">
       {!completed ? (
-        <div className="w-full bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden flex flex-col relative">
+        <div className="w-full bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden flex flex-col relative dark:bg-slate-800 dark:border-slate-700">
           <div className="p-5 md:p-10 z-10 flex flex-col gap-8 md:gap-10">
-            <div className="bg-slate-50 p-4 md:p-8 rounded-2xl md:rounded-3xl border-2 border-slate-200 leading-[2.5rem] md:leading-[3.5rem] text-lg md:text-2xl text-slate-700 font-medium text-center shadow-inner">
+            <div className="bg-slate-50 p-4 md:p-8 rounded-2xl md:rounded-3xl border-2 border-slate-200 leading-[2.5rem] md:leading-[3.5rem] text-lg md:text-2xl text-slate-700 font-medium text-center shadow-inner dark:bg-slate-900/60 dark:border-slate-700 dark:text-slate-100">
               {partes.map((parte, index) => {
                 if (parte.tipo === "texto") {
                   return <span key={index}>{parte.valor}</span>;
@@ -247,7 +247,7 @@ export function CompletarVersiculo({ actividad, onComplete }: CompletarVersiculo
                 <button
                   type="button"
                   onClick={handleResetear}
-                  className="px-6 md:px-8 py-3 md:py-4 rounded-full font-bold text-lg md:text-xl flex items-center justify-center gap-2 md:gap-3 border-4 border-slate-200 text-slate-500 bg-white hover:bg-slate-50 hover:text-slate-700 transition-all active:scale-95 shadow-sm"
+                  className="px-6 md:px-8 py-3 md:py-4 rounded-full font-bold text-lg md:text-xl flex items-center justify-center gap-2 md:gap-3 border-4 border-slate-200 text-slate-500 bg-white hover:bg-slate-50 hover:text-slate-700 transition-all active:scale-95 shadow-sm dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700"
                 >
                   <RefreshCcw size={24} className="md:w-7 md:h-7" strokeWidth={3} />
                   Resetear

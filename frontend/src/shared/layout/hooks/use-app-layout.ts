@@ -4,6 +4,7 @@ import { sessionStorageApi } from "@/shared/api/session";
 import { cerrarSesionAutenticada } from "@/shared/auth/supabase";
 import { obtenerNavMovilActivo, obtenerNavegacionMovil } from "@/shared/layout/app-mobile-nav";
 import { esRutaModoLeccion } from "@/features/crecer/crecer-fases";
+import { limpiarPreferenciasSesion } from "@/shared/accessibility/preferences";
 
 type PageHeaderInfo = {
   titulo: string;
@@ -56,6 +57,7 @@ export function useAppLayout() {
   }, []);
 
   const handleLogout = async () => {
+    limpiarPreferenciasSesion();
     sessionStorageApi.clearAllSession();
     try {
       await Promise.race([

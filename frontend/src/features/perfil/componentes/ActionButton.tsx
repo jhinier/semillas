@@ -13,7 +13,7 @@ export function ActionButton({ icon: Icon, label, onClick }: ActionButtonProps) 
       type="button"
       onClick={onClick}
       variante="contorno"
-      clase="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 hover:border-[#2E9E5B]/40 hover:bg-slate-50"
+      clase="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 hover:border-[#2E9E5B]/40 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-700"
     >
       <Icon className="h-4 w-4 text-[#2E9E5B]" />
       {label}

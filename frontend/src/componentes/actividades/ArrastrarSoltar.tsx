@@ -109,7 +109,7 @@ export function ArrastrarSoltar({ actividad, onComplete }: ArrastrarSoltarProps)
   return (
     <div className="flex flex-col gap-6 items-center w-full max-w-3xl mx-auto py-4 animate-in fade-in zoom-in-95">
       {!completed ? (
-        <div className="w-full bg-white rounded-[2rem] p-5 md:p-8 shadow-sm border border-slate-100 flex flex-col gap-4">
+        <div className="w-full bg-white rounded-[2rem] p-5 md:p-8 shadow-sm border border-slate-100 flex flex-col gap-4 dark:bg-slate-800 dark:border-slate-700">
           
           <div className="flex flex-col gap-3">
             {items.map((item, index) => (
@@ -120,7 +120,7 @@ export function ArrastrarSoltar({ actividad, onComplete }: ArrastrarSoltarProps)
                 onDragEnter={() => (dragOverItem.current = index)}
                 onDragEnd={handleSort}
                 onDragOver={(e) => e.preventDefault()}
-                className="flex items-center gap-2 md:gap-4 p-3 md:p-4 bg-white border-2 border-slate-200 rounded-2xl shadow-sm hover:border-blue-400 hover:shadow-md transition-all group"
+                className="flex items-center gap-2 md:gap-4 p-3 md:p-4 bg-white border-2 border-slate-200 rounded-2xl shadow-sm hover:border-blue-400 hover:shadow-md transition-all group dark:bg-slate-800/90 dark:border-slate-700 dark:hover:border-blue-500"
               >
                 {/* Drag Handle - Solo visible en desktop */}
                 <div className="hidden md:block text-slate-300 group-hover:text-blue-500 cursor-grab active:cursor-grabbing">
@@ -128,7 +128,7 @@ export function ArrastrarSoltar({ actividad, onComplete }: ArrastrarSoltarProps)
                 </div>
                 
                 {/* Texto */}
-                <span className="flex-1 font-bold text-base md:text-lg text-slate-700 select-none">
+                <span className="flex-1 font-bold text-base md:text-lg text-slate-700 select-none dark:text-slate-100">
                   {item.text}
                 </span>
                 
@@ -138,7 +138,7 @@ export function ArrastrarSoltar({ actividad, onComplete }: ArrastrarSoltarProps)
                     aria-label={`Mover ${item.text} hacia arriba`}
                     onClick={() => moveItem(index, 'up')}
                     disabled={index === 0}
-                    className="p-3 md:p-2 text-slate-500 bg-slate-50 hover:text-blue-600 hover:bg-blue-100 border border-slate-200 rounded-xl disabled:opacity-30 disabled:hover:bg-slate-50 disabled:hover:text-slate-500 transition-colors shadow-sm"
+                    className="p-3 md:p-2 text-slate-500 bg-slate-50 hover:text-blue-600 hover:bg-blue-100 border border-slate-200 rounded-xl disabled:opacity-30 disabled:hover:bg-slate-50 disabled:hover:text-slate-500 transition-colors shadow-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
                   >
                     <ArrowUp size={24} className="md:w-6 md:h-6 w-7 h-7" />
                   </button>
@@ -146,7 +146,7 @@ export function ArrastrarSoltar({ actividad, onComplete }: ArrastrarSoltarProps)
                     aria-label={`Mover ${item.text} hacia abajo`}
                     onClick={() => moveItem(index, 'down')}
                     disabled={index === items.length - 1}
-                    className="p-3 md:p-2 text-slate-500 bg-slate-50 hover:text-blue-600 hover:bg-blue-100 border border-slate-200 rounded-xl disabled:opacity-30 disabled:hover:bg-slate-50 disabled:hover:text-slate-500 transition-colors shadow-sm"
+                    className="p-3 md:p-2 text-slate-500 bg-slate-50 hover:text-blue-600 hover:bg-blue-100 border border-slate-200 rounded-xl disabled:opacity-30 disabled:hover:bg-slate-50 disabled:hover:text-slate-500 transition-colors shadow-sm dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200"
                   >
                     <ArrowDown size={24} className="md:w-6 md:h-6 w-7 h-7" />
                   </button>
@@ -156,7 +156,7 @@ export function ArrastrarSoltar({ actividad, onComplete }: ArrastrarSoltarProps)
           </div>
 
           {error && (
-            <div className="mt-4 flex items-center justify-center gap-2 text-rose-600 bg-rose-50 p-4 rounded-xl border border-rose-100 animate-shake">
+            <div className="mt-4 flex items-center justify-center gap-2 text-rose-600 bg-rose-50 p-4 rounded-xl border border-rose-100 animate-shake dark:bg-rose-950/80 dark:border-rose-800 dark:text-rose-200">
               <ShieldAlert className="w-6 h-6 shrink-0" />
               <p className="font-bold">El orden no es correcto aún. ¡Sigue intentándolo!</p>
             </div>

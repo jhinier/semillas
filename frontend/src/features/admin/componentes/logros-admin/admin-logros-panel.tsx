@@ -1,5 +1,7 @@
 import { useDeferredValue, useEffect, useState } from "react";
 import { Archive, ArchiveRestore, Medal, Pencil, Plus, Search, ShieldAlert, WifiOff } from "lucide-react";
+import in1Img from "@/assets/images/Ilustraciones/in1.webp";
+import in2Img from "@/assets/images/Ilustraciones/in2.webp";
 import { Paginacion } from "@/componentes/ui/paginacion";
 import type {
   CodigoCriterioLogro,
@@ -288,6 +290,41 @@ export function AdminLogrosPanel() {
   );
 }
 
+function IconoLogroAdmin({ url, codigo }: { url: string | null; codigo: string }) {
+  const fallback = codigo === "primera_leccion" || codigo.includes("1") ? in1Img : in2Img;
+  const [src, setSrc] = useState(url || fallback);
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setSrc(url || fallback);
+    setHasError(false);
+  }, [url, fallback]);
+
+  if (hasError || !src) {
+    return (
+      <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-emerald-50 text-emerald-600">
+        <Medal className="size-4" aria-hidden="true" />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt=""
+      loading="lazy"
+      onError={() => {
+        if (src !== fallback) {
+          setSrc(fallback);
+        } else {
+          setHasError(true);
+        }
+      }}
+      className="size-9 shrink-0 rounded-lg object-cover"
+    />
+  );
+}
+
 function FilaLogro({
   logro,
   onEditar,
@@ -304,18 +341,7 @@ function FilaLogro({
     <tr className="group hover:bg-slate-50/80">
       <td className="px-4 py-3.5">
         <div className="flex items-center gap-3">
-          {logro.url_icono ? (
-            <img
-              src={logro.url_icono}
-              alt=""
-              loading="lazy"
-              className="size-9 shrink-0 rounded-lg object-cover"
-            />
-          ) : (
-            <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-emerald-50 text-emerald-600">
-              <Medal className="size-4" aria-hidden="true" />
-            </div>
-          )}
+          <IconoLogroAdmin url={logro.url_icono} codigo={logro.codigo} />
           <div className="min-w-0">
             <span className="block truncate font-bold text-slate-900">{logro.nombre}</span>
             <span className="mt-0.5 block truncate text-xs text-slate-500">

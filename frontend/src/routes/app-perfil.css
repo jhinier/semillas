@@ -1263,3 +1263,590 @@
     transition: none;
   }
 }
+
+/* ==========================================================
+   Perfil Dark Mode Contrast & Legibility Overrides
+   ========================================================== */
+.dark .profile-page,
+[data-theme="app-dark"] .profile-page {
+  color: var(--color-text-dark, #f8fafc);
+}
+
+.dark .profile-hero-card,
+.dark .profile-achievements-card,
+.dark .profile-side-card,
+.dark .profile-form-card,
+[data-theme="app-dark"] .profile-hero-card,
+[data-theme="app-dark"] .profile-achievements-card,
+[data-theme="app-dark"] .profile-side-card,
+[data-theme="app-dark"] .profile-form-card {
+  background: #131b2e !important;
+  border-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+.dark .profile-setting-row,
+[data-theme="app-dark"] .profile-setting-row {
+  background: #151d2a !important;
+  border-color: #1e293b !important;
+}
+
+.dark .profile-setting-row h2,
+[data-theme="app-dark"] .profile-setting-row h2 {
+  color: #f8fafc !important;
+}
+
+.dark .profile-setting-row__copy p,
+[data-theme="app-dark"] .profile-setting-row__copy p {
+  color: #94a3b8 !important;
+}
+
+.dark .profile-text-setting,
+[data-theme="app-dark"] .profile-text-setting {
+  background: #151d2a !important;
+  border-color: #1e293b !important;
+}
+
+.dark .profile-text-setting h2,
+[data-theme="app-dark"] .profile-text-setting h2 {
+  color: #f8fafc !important;
+}
+
+.dark .profile-text-setting p,
+[data-theme="app-dark"] .profile-text-setting p {
+  color: #94a3b8 !important;
+}
+
+.dark .profile-text-size-option,
+[data-theme="app-dark"] .profile-text-size-option {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #94a3b8 !important;
+}
+
+.dark .profile-text-size-option > span,
+[data-theme="app-dark"] .profile-text-size-option > span {
+  color: #f8fafc !important;
+}
+
+.dark .profile-text-size-option strong,
+[data-theme="app-dark"] .profile-text-size-option strong {
+  color: #cbd5e1 !important;
+}
+
+.dark .profile-text-size-option.is-selected,
+[data-theme="app-dark"] .profile-text-size-option.is-selected {
+  background: #2e1065 !important;
+  border-color: #a78bfa !important;
+  color: #ddd6fe !important;
+}
+
+.dark .profile-text-size-option.is-selected > span,
+.dark .profile-text-size-option.is-selected strong,
+[data-theme="app-dark"] .profile-text-size-option.is-selected > span,
+[data-theme="app-dark"] .profile-text-size-option.is-selected strong {
+  color: #ddd6fe !important;
+}
+
+.dark .profile-text-preview,
+[data-theme="app-dark"] .profile-text-preview {
+  background: #062816 !important;
+  border: 1px solid #14532d !important;
+}
+
+.dark .profile-text-preview strong,
+[data-theme="app-dark"] .profile-text-preview strong {
+  color: #4ade80 !important;
+}
+
+.dark .profile-text-preview p,
+[data-theme="app-dark"] .profile-text-preview p {
+  color: #cbd5e1 !important;
+}
+
+.dark .profile-switch,
+[data-theme="app-dark"] .profile-switch {
+  background: #334155 !important;
+}
+
+.dark .profile-switch.is-on,
+[data-theme="app-dark"] .profile-switch.is-on {
+  background: #16a34a !important;
+}
+
+.dark .profile-section-nav,
+[data-theme="app-dark"] .profile-section-nav {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+.dark .profile-section-nav__item,
+[data-theme="app-dark"] .profile-section-nav__item {
+  color: #94a3b8 !important;
+}
+
+.dark .profile-section-nav__item.is-active,
+[data-theme="app-dark"] .profile-section-nav__item.is-active {
+  background: #0f172a !important;
+  color: #4ade80 !important;
+}
+
+.dark .profile-hero-card__stats div,
+[data-theme="app-dark"] .profile-hero-card__stats div {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+.dark .profile-hero-card__stats strong,
+[data-theme="app-dark"] .profile-hero-card__stats strong {
+  color: #f8fafc !important;
+}
+
+.dark .profile-hero-card__stats span,
+[data-theme="app-dark"] .profile-hero-card__stats span {
+  color: #94a3b8 !important;
+}
+
+
+.dark .profile-status-badge,
+[data-theme="app-dark"] .profile-status-badge,
+.alto-contraste .profile-status-badge {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #cbd5e1 !important;
+}
+
+.dark .profile-hero-card__notice.is-warning,
+[data-theme="app-dark"] .profile-hero-card__notice.is-warning,
+.alto-contraste .profile-hero-card__notice.is-warning {
+  background: #1e2433 !important;
+  border-top: 1px solid #283347 !important;
+}
+
+.dark .profile-hero-card__notice.is-success,
+[data-theme="app-dark"] .profile-hero-card__notice.is-success,
+.alto-contraste .profile-hero-card__notice.is-success {
+  background: #0d2818 !important;
+  border-top: 1px solid #14532d !important;
+}
+
+.dark .profile-hero-card__notice strong,
+[data-theme="app-dark"] .profile-hero-card__notice strong,
+.alto-contraste .profile-hero-card__notice strong {
+  color: #f8fafc !important;
+}
+
+.dark .profile-hero-card__notice p,
+[data-theme="app-dark"] .profile-hero-card__notice p,
+.alto-contraste .profile-hero-card__notice p {
+  color: #94a3b8 !important;
+}
+
+.dark .profile-hero-card__notice-icon,
+[data-theme="app-dark"] .profile-hero-card__notice-icon,
+.alto-contraste .profile-hero-card__notice-icon {
+  background: #1e293b !important;
+  color: #4ade80 !important;
+}
+
+.dark .profile-notice-cta,
+[data-theme="app-dark"] .profile-notice-cta,
+.alto-contraste .profile-notice-cta {
+  background: #451a03 !important;
+  border-color: #b45309 !important;
+  color: #fde68a !important;
+}
+
+.dark .profile-notice-cta:hover,
+[data-theme="app-dark"] .profile-notice-cta:hover,
+.alto-contraste .profile-notice-cta:hover {
+  background: #78350f !important;
+}
+
+.dark .profile-metric-card,
+[data-theme="app-dark"] .profile-metric-card,
+.alto-contraste .profile-metric-card {
+  background: #131b2e !important;
+  border-color: #1e293b !important;
+  color: #f8fafc !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25) !important;
+}
+
+.dark .profile-metric-card__value-row strong,
+[data-theme="app-dark"] .profile-metric-card__value-row strong,
+.alto-contraste .profile-metric-card__value-row strong {
+  color: #f8fafc !important;
+}
+
+.dark .profile-metric-card__label,
+.dark .profile-metric-card__value-row small,
+[data-theme="app-dark"] .profile-metric-card__label,
+[data-theme="app-dark"] .profile-metric-card__value-row small,
+.alto-contraste .profile-metric-card__label,
+.alto-contraste .profile-metric-card__value-row small {
+  color: #94a3b8 !important;
+}
+
+.dark .profile-metric-card__icon,
+[data-theme="app-dark"] .profile-metric-card__icon,
+.alto-contraste .profile-metric-card__icon {
+  background: #1e293b !important;
+}
+
+.dark .profile-metric-card__icon.is-green,
+[data-theme="app-dark"] .profile-metric-card__icon.is-green,
+.alto-contraste .profile-metric-card__icon.is-green {
+  background: #052e16 !important;
+  color: #4ade80 !important;
+}
+
+.dark .profile-metric-card__icon.is-amber,
+[data-theme="app-dark"] .profile-metric-card__icon.is-amber,
+.alto-contraste .profile-metric-card__icon.is-amber {
+  background: #451a03 !important;
+  color: #fbbf24 !important;
+}
+
+.dark .profile-metric-card__icon.is-coral,
+[data-theme="app-dark"] .profile-metric-card__icon.is-coral,
+.alto-contraste .profile-metric-card__icon.is-coral {
+  background: #431407 !important;
+  color: #fb7185 !important;
+}
+
+.dark .profile-metric-card__icon.is-teal,
+[data-theme="app-dark"] .profile-metric-card__icon.is-teal,
+.alto-contraste .profile-metric-card__icon.is-teal {
+  background: #042f2e !important;
+  color: #2dd4bf !important;
+}
+
+.dark .profile-account-summary,
+[data-theme="app-dark"] .profile-account-summary,
+.alto-contraste .profile-account-summary {
+  background: #151d2a !important;
+  border-color: #1e293b !important;
+}
+
+.dark .profile-account-summary strong,
+[data-theme="app-dark"] .profile-account-summary strong,
+.alto-contraste .profile-account-summary strong {
+  color: #f8fafc !important;
+}
+
+.dark .profile-account-summary p,
+[data-theme="app-dark"] .profile-account-summary p,
+.alto-contraste .profile-account-summary p {
+  color: #94a3b8 !important;
+}
+
+.dark .profile-account-summary span,
+[data-theme="app-dark"] .profile-account-summary span,
+.alto-contraste .profile-account-summary span {
+  color: #a78bfa !important;
+}
+
+.dark .profile-account-button,
+[data-theme="app-dark"] .profile-account-button,
+.alto-contraste .profile-account-button {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+.dark .profile-account-button:hover,
+[data-theme="app-dark"] .profile-account-button:hover,
+.alto-contraste .profile-account-button:hover {
+  background: #283347 !important;
+  border-color: #4ade80 !important;
+  color: #4ade80 !important;
+}
+
+.dark .profile-account-verified,
+[data-theme="app-dark"] .profile-account-verified {
+  background: #052e16 !important;
+  border: 1px solid #14532d !important;
+  color: #4ade80 !important;
+}
+
+.dark .profile-account-logout,
+[data-theme="app-dark"] .profile-account-logout {
+  border-color: #7c3aed !important;
+  color: #c4b5fd !important;
+  background: #1e1533 !important;
+}
+
+.dark .profile-account-logout:hover,
+[data-theme="app-dark"] .profile-account-logout:hover {
+  background: #2e1065 !important;
+  color: #ffffff !important;
+}
+
+.dark .profile-preference-row,
+[data-theme="app-dark"] .profile-preference-row {
+  background: #151d2a !important;
+  border-color: #1e293b !important;
+}
+
+.dark .profile-preference-row__icon,
+[data-theme="app-dark"] .profile-preference-row__icon {
+  background: #1e293b !important;
+  color: #a78bfa !important;
+}
+
+.dark .profile-preference-row dd,
+[data-theme="app-dark"] .profile-preference-row dd {
+  color: #f8fafc !important;
+}
+
+.dark .profile-achievement-item,
+[data-theme="app-dark"] .profile-achievement-item {
+  background: #151d2a !important;
+  border-color: #1e293b !important;
+}
+
+.dark .profile-achievement-item h3,
+[data-theme="app-dark"] .profile-achievement-item h3 {
+  color: #f8fafc !important;
+}
+
+.dark .profile-achievement-item p,
+[data-theme="app-dark"] .profile-achievement-item p {
+  color: #94a3b8 !important;
+}
+
+.dark .profile-achievement-item time,
+[data-theme="app-dark"] .profile-achievement-item time {
+  color: #64748b !important;
+}
+
+.dark .profile-empty-achievements,
+[data-theme="app-dark"] .profile-empty-achievements {
+  background: #151d2a !important;
+  border-color: #1e293b !important;
+  color: #94a3b8 !important;
+}
+
+.dark .profile-action-button,
+[data-theme="app-dark"] .profile-action-button {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+.dark .profile-action-button--secondary,
+[data-theme="app-dark"] .profile-action-button--secondary {
+  background: #151d2a !important;
+  border-color: #1e293b !important;
+  color: #94a3b8 !important;
+}
+
+.dark .profile-action-button:hover,
+[data-theme="app-dark"] .profile-action-button:hover {
+  background: #2e1065 !important;
+  border-color: #7c3aed !important;
+  color: #ddd6fe !important;
+}
+
+.dark .profile-link-button,
+[data-theme="app-dark"] .profile-link-button {
+  color: #a78bfa !important;
+}
+
+.dark .profile-form-card__heading h1,
+[data-theme="app-dark"] .profile-form-card__heading h1 {
+  color: #4ade80 !important;
+}
+
+.dark .profile-loading-state,
+.dark .profile-error-state,
+[data-theme="app-dark"] .profile-loading-state,
+[data-theme="app-dark"] .profile-error-state {
+  border-color: #1e293b !important;
+  background: #101520 !important;
+  color: #f8fafc !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4) !important;
+}
+
+.dark .profile-error-state h1,
+[data-theme="app-dark"] .profile-error-state h1 {
+  color: #f8fafc !important;
+}
+
+.dark .profile-error-state p,
+[data-theme="app-dark"] .profile-error-state p {
+  color: #94a3b8 !important;
+}
+
+
+/* Iconos e indicadores de estado en modo oscuro */
+.dark .profile-side-card__status.is-warning,
+[data-theme="app-dark"] .profile-side-card__status.is-warning {
+  background: #451a03 !important;
+  color: #fbbf24 !important;
+  border: 1px solid #78350f !important;
+}
+
+.dark .profile-side-card__status.is-success,
+[data-theme="app-dark"] .profile-side-card__status.is-success {
+  background: #064e3b !important;
+  color: #34d399 !important;
+  border: 1px solid #047857 !important;
+}
+
+.dark .profile-side-card__status.is-neutral,
+[data-theme="app-dark"] .profile-side-card__status.is-neutral {
+  background: #2e1065 !important;
+  color: #c084fc !important;
+  border: 1px solid #581c87 !important;
+}
+
+.dark .profile-metric-card__icon.is-green,
+[data-theme="app-dark"] .profile-metric-card__icon.is-green {
+  background: #064e3b !important;
+  color: #34d399 !important;
+}
+
+.dark .profile-metric-card__icon.is-amber,
+[data-theme="app-dark"] .profile-metric-card__icon.is-amber {
+  background: #451a03 !important;
+  color: #fbbf24 !important;
+}
+
+.dark .profile-metric-card__icon.is-coral,
+[data-theme="app-dark"] .profile-metric-card__icon.is-coral {
+  background: #4c1d1d !important;
+  color: #f87171 !important;
+}
+
+.dark .profile-metric-card__icon.is-teal,
+[data-theme="app-dark"] .profile-metric-card__icon.is-teal {
+  background: #134e4a !important;
+  color: #2dd4bf !important;
+}
+
+/* Botones de acción en modo oscuro para el perfil */
+.profile-google-link-btn {
+  background: #ffffff !important;
+  color: #1e293b !important;
+  border: 1.5px solid #cbd5e1 !important;
+}
+.profile-google-link-btn:hover {
+  background: #f8fafc !important;
+}
+
+.dark .profile-google-link-btn,
+[data-theme="app-dark"] .profile-google-link-btn {
+  background: #1e293b !important;
+  color: #f8fafc !important;
+  border: 1.5px solid #334155 !important;
+}
+.dark .profile-google-link-btn:hover,
+[data-theme="app-dark"] .profile-google-link-btn:hover {
+  background: #283347 !important;
+}
+
+.dark .profile-form-card button.bg-white,
+.dark .profile-side-card button.bg-white,
+[data-theme="app-dark"] .profile-form-card button.bg-white,
+[data-theme="app-dark"] .profile-side-card button.bg-white {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+.dark .profile-form-card button.bg-white:hover,
+.dark .profile-side-card button.bg-white:hover,
+[data-theme="app-dark"] .profile-form-card button.bg-white:hover,
+[data-theme="app-dark"] .profile-side-card button.bg-white:hover {
+  background: #283347 !important;
+  border-color: #475569 !important;
+  color: #f8fafc !important;
+}
+
+/* ── Opciones de edad en edición de perfil (Modo Oscuro & Alto Contraste) ── */
+.profile-age-option strong { color: #1e293b !important; }
+.profile-age-option > span:not(.profile-age-option__check) { color: #166534 !important; }
+.profile-age-option small { color: #475569 !important; }
+
+.dark .profile-age-option,
+[data-theme="app-dark"] .profile-age-option {
+  background: #151d2a !important;
+  border-color: #334155 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+}
+
+.dark .profile-age-option.is-selected,
+[data-theme="app-dark"] .profile-age-option.is-selected {
+  background: #052e16 !important;
+  border-color: #22c55e !important;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.2) !important;
+}
+
+.dark .profile-age-option strong,
+[data-theme="app-dark"] .profile-age-option strong {
+  color: #f8fafc !important;
+}
+
+.dark .profile-age-option > span:not(.profile-age-option__check),
+[data-theme="app-dark"] .profile-age-option > span:not(.profile-age-option__check) {
+  color: #4ade80 !important;
+}
+
+.dark .profile-age-option small,
+[data-theme="app-dark"] .profile-age-option small {
+  color: #cbd5e1 !important;
+}
+
+.dark .profile-age-option__check,
+[data-theme="app-dark"] .profile-age-option__check {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+.dark .profile-age-option.is-selected .profile-age-option__check,
+[data-theme="app-dark"] .profile-age-option.is-selected .profile-age-option__check {
+  background: #16a34a !important;
+  border-color: #22c55e !important;
+  color: #ffffff !important;
+}
+
+/* Avatares en edición de perfil */
+.dark .profile-avatar-option,
+[data-theme="app-dark"] .profile-avatar-option {
+  background: #151d2a !important;
+  border-color: #334155 !important;
+}
+
+.dark .profile-avatar-option.is-selected,
+[data-theme="app-dark"] .profile-avatar-option.is-selected {
+  border-color: #7c3aed !important;
+  box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.25) !important;
+}
+
+/* Etiquetas y textos de ayuda en perfil */
+.dark .profile-field-label,
+[data-theme="app-dark"] .profile-field-label {
+  color: #f8fafc !important;
+}
+
+.dark .profile-field-help,
+[data-theme="app-dark"] .profile-field-help {
+  color: #94a3b8 !important;
+}
+
+/* Botón secundario Volver */
+.dark .profile-secondary-button,
+[data-theme="app-dark"] .profile-secondary-button {
+  background: #151d2a !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+.dark .profile-secondary-button:hover,
+[data-theme="app-dark"] .profile-secondary-button:hover {
+  background: #1e293b !important;
+  border-color: #475569 !important;
+  color: #f8fafc !important;
+}

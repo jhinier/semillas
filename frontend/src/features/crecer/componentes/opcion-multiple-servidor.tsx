@@ -102,10 +102,10 @@ export function OpcionMultipleServidor({ actividad, onComplete }: Props) {
           ( Boolean(resultado) && Boolean(opcion.correcta) );
         const respondida = Boolean(resultado);
 
-        let clases = "border-slate-200 bg-white hover:border-violet-300 hover:bg-violet-50/40";
-        if (respondida && esCorrecta) clases = "border-green-500 bg-green-50";
-        else if (respondida && esSeleccionada) clases = "border-red-400 bg-red-50";
-        else if (respondida) clases = "border-slate-200 bg-slate-50 opacity-60";
+        let clases = "border-slate-200 bg-white hover:border-violet-300 hover:bg-violet-50/40 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-violet-500 dark:hover:bg-slate-700/60";
+        if (respondida && esCorrecta) clases = "border-green-500 bg-green-50 dark:border-green-500 dark:bg-green-950/70";
+        else if (respondida && esSeleccionada) clases = "border-red-400 bg-red-50 dark:border-red-500 dark:bg-red-950/70";
+        else if (respondida) clases = "border-slate-200 bg-slate-50 opacity-60 dark:border-slate-800 dark:bg-slate-900/60";
 
         return (
           <button
@@ -115,10 +115,10 @@ export function OpcionMultipleServidor({ actividad, onComplete }: Props) {
             onClick={() => responder(opcion.id)}
             className={`flex w-full items-center gap-3 rounded-xl border-2 p-4 text-left transition-all disabled:cursor-default ${clases}`}
           >
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-sm font-black text-violet-700 shadow-sm">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-sm font-black text-violet-700 shadow-sm dark:bg-slate-700 dark:text-violet-300">
               {opcion.etiqueta ?? opcion.orden}
             </span>
-            <span className="flex-1 font-semibold text-slate-700">{opcion.texto}</span>
+            <span className="flex-1 font-semibold text-slate-700 dark:text-slate-100">{opcion.texto}</span>
             {respuestaMutation.isPending && esSeleccionada ? <Loader2 className="animate-spin text-violet-600" size={20} /> : null}
             {respondida && esCorrecta ? <Check className="text-green-600" size={22} /> : null}
             {respondida && esSeleccionada && !esCorrecta ? <X className="text-red-500" size={22} /> : null}
@@ -140,11 +140,14 @@ export function OpcionMultipleServidor({ actividad, onComplete }: Props) {
       ) : null}
 
       {resultado ? (
-        <div className={`mt-2 rounded-xl p-4 ${resultado.resultado.correcta ? "bg-green-50" : "bg-red-50"}`}>
+        <div className={`mt-2 rounded-xl p-4 border ${resultado.resultado.correcta ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-950/50 dark:text-green-300 dark:border-green-800" : "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800"}`}>
+          <p className="font-black">
+            {resultado.resultado.correcta ? "¡Correcto!" : "Respuesta incorrecta"}
+          </p>
           <p className={`font-black ${resultado.resultado.correcta ? "text-green-700" : "text-red-700"}`}>
             {resultado.resultado.correcta ? "¡Correcto!" : "Respuesta incorrecta"}
           </p>
-          <p className="mt-1 text-sm font-medium text-slate-600">
+          <p className="mt-1 text-sm font-medium text-slate-600 dark:text-slate-300">
             {resultado.resultado.retroalimentacion
               ?? (resultado.resultado.correcta
                 ? `Ganaste ${resultado.resultado.xp_otorgada} XP.`

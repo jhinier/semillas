@@ -1096,3 +1096,273 @@
     margin: 0 1rem 1.25rem;
   }
 }
+
+/* ==========================================================
+   Logros Dark Mode Contrast & Legibility Overrides
+   ========================================================== */
+.dark .logros-page,
+[data-theme="app-dark"] .logros-page {
+  color: var(--color-text-dark, #f8fafc);
+}
+
+.dark .logro-card,
+[data-theme="app-dark"] .logro-card {
+  background: #131b2e !important;
+  border-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+.dark .logro-card.is-earned,
+[data-theme="app-dark"] .logro-card.is-earned {
+  background: #131b2e !important;
+  border-color: #166534 !important;
+}
+
+.dark .logro-card__visual,
+[data-theme="app-dark"] .logro-card__visual {
+  background: linear-gradient(155deg, #1e293b 0%, #151d2e 100%) !important;
+}
+
+.dark .logro-card.is-earned .logro-card__visual,
+[data-theme="app-dark"] .logro-card.is-earned .logro-card__visual {
+  background: linear-gradient(155deg, #052e16 0%, #064e3b 100%) !important;
+}
+
+.dark .logro-card__state-icon,
+[data-theme="app-dark"] .logro-card__state-icon {
+  background: #1e293b !important;
+  color: #94a3b8 !important;
+}
+
+.dark .logro-card.is-earned .logro-card__state-icon,
+[data-theme="app-dark"] .logro-card.is-earned .logro-card__state-icon {
+  background: #052e16 !important;
+  color: #4ade80 !important;
+}
+
+.dark .logro-card__heading h2,
+[data-theme="app-dark"] .logro-card__heading h2 {
+  color: #f8fafc !important;
+}
+
+.dark .logro-card__criterion,
+[data-theme="app-dark"] .logro-card__criterion {
+  color: #a78bfa !important;
+}
+
+.dark .logro-card__description,
+[data-theme="app-dark"] .logro-card__description {
+  color: #94a3b8 !important;
+}
+
+.dark .logro-card__xp,
+[data-theme="app-dark"] .logro-card__xp {
+  background: #451a03 !important;
+  color: #fbbf24 !important;
+}
+
+.dark .logro-card,
+[data-theme="app-dark"] .logro-card,
+.dark.alto-contraste .logro-card,
+[data-theme="app-dark"].alto-contraste .logro-card {
+  background: #131b2e !important;
+  border-color: #1e293b !important;
+  color: #f8fafc !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35) !important;
+}
+
+.dark .logro-card__heading h2,
+[data-theme="app-dark"] .logro-card__heading h2,
+.dark.alto-contraste .logro-card__heading h2,
+[data-theme="app-dark"].alto-contraste .logro-card__heading h2 {
+  color: #f8fafc !important;
+}
+
+.dark .logro-card__criterion,
+[data-theme="app-dark"] .logro-card__criterion,
+.dark.alto-contraste .logro-card__criterion,
+[data-theme="app-dark"].alto-contraste .logro-card__criterion {
+  color: #c4b5fd !important;
+}
+
+.dark .logro-card__description,
+[data-theme="app-dark"] .logro-card__description,
+.dark.alto-contraste .logro-card__description,
+[data-theme="app-dark"].alto-contraste .logro-card__description {
+  color: #94a3b8 !important;
+}
+
+.dark .logro-card__visual,
+[data-theme="app-dark"] .logro-card__visual,
+.dark.alto-contraste .logro-card__visual,
+[data-theme="app-dark"].alto-contraste .logro-card__visual {
+  background: #1e293b !important;
+}
+
+.dark .logro-card__xp,
+[data-theme="app-dark"] .logro-card__xp,
+.dark.alto-contraste .logro-card__xp,
+[data-theme="app-dark"].alto-contraste .logro-card__xp {
+  background: #2e1065 !important;
+  color: #ddd6fe !important;
+}
+
+.dark .logros-progress-card,
+.dark .logros-next-card,
+.dark .logros-share-card,
+.dark .logros-state-card,
+[data-theme="app-dark"] .logros-progress-card,
+[data-theme="app-dark"] .logros-next-card,
+[data-theme="app-dark"] .logros-share-card,
+[data-theme="app-dark"] .logros-state-card,
+.dark.alto-contraste .logros-progress-card,
+.dark.alto-contraste .logros-next-card,
+.dark.alto-contraste .logros-share-card,
+.dark.alto-contraste .logros-state-card,
+[data-theme="app-dark"].alto-contraste .logros-progress-card,
+[data-theme="app-dark"].alto-contraste .logros-next-card,
+[data-theme="app-dark"].alto-contraste .logros-share-card,
+[data-theme="app-dark"].alto-contraste .logros-state-card {
+  background: #131b2e !important;
+  border-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+.dark .logros-progress-card h2,
+.dark .logros-next-card h2,
+.dark .logros-share-card h2,
+.dark .logros-state-card h2,
+[data-theme="app-dark"] .logros-progress-card h2,
+[data-theme="app-dark"] .logros-next-card h2,
+[data-theme="app-dark"] .logros-share-card h2,
+[data-theme="app-dark"] .logros-state-card h2 {
+  color: #f8fafc !important;
+}
+
+.dark .logros-progress-card__value,
+.dark .logros-progress-card__percent,
+[data-theme="app-dark"] .logros-progress-card__value,
+[data-theme="app-dark"] .logros-progress-card__percent {
+  color: #f8fafc !important;
+}
+
+.dark .logros-progress-card__label,
+.dark .logros-next-card p,
+.dark .logros-share-card p,
+.dark .logros-state-card p,
+[data-theme="app-dark"] .logros-progress-card__label,
+[data-theme="app-dark"] .logros-next-card p,
+[data-theme="app-dark"] .logros-share-card p,
+[data-theme="app-dark"] .logros-state-card p {
+  color: #94a3b8 !important;
+}
+
+/* Alto contraste en modo claro para Logros */
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .logro-card__heading h2 {
+  color: #000000 !important;
+}
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .logro-card__description {
+  color: #1f2937 !important;
+}
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .logro-card__criterion {
+  color: #4338ca !important;
+}
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .logros-progress-card__label,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .logros-next-card p,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .logros-share-card p {
+  color: #1f2937 !important;
+}
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .logros-progress-card h2,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .logros-next-card h2,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .logros-share-card h2 {
+  color: #000000 !important;
+}
+
+.dark .logros-progress-card__track,
+[data-theme="app-dark"] .logros-progress-card__track {
+  background: #1e293b !important;
+}
+
+.dark .logros-progress-card__icon,
+.dark .logros-next-card__icon,
+[data-theme="app-dark"] .logros-progress-card__icon,
+[data-theme="app-dark"] .logros-next-card__icon {
+  background: #1e293b !important;
+  color: #a78bfa !important;
+}
+
+.dark .logros-tab,
+[data-theme="app-dark"] .logros-tab {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #94a3b8 !important;
+}
+
+.dark .logros-tab:hover,
+[data-theme="app-dark"] .logros-tab:hover {
+  border-color: #7c3aed !important;
+  color: #c4b5fd !important;
+}
+
+.dark .logros-tab.is-active,
+[data-theme="app-dark"] .logros-tab.is-active {
+  background: #2e1065 !important;
+  border-color: #7c3aed !important;
+  color: #ddd6fe !important;
+}
+
+.dark .logros-tab__count,
+[data-theme="app-dark"] .logros-tab__count {
+  background: #0f172a !important;
+  color: #94a3b8 !important;
+}
+
+.dark .logros-tab.is-active .logros-tab__count,
+[data-theme="app-dark"] .logros-tab.is-active .logros-tab__count {
+  background: #7c3aed !important;
+  color: #ffffff !important;
+}
+
+.dark .logros-mobile-overview,
+[data-theme="app-dark"] .logros-mobile-overview {
+  background: #131b2e !important;
+  border-color: #1e293b !important;
+}
+
+.dark .logros-mobile-overview__item,
+[data-theme="app-dark"] .logros-mobile-overview__item {
+  background: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+
+.dark .logro-card__status,
+[data-theme="app-dark"] .logro-card__status {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #94a3b8 !important;
+}
+
+.dark .logro-card__status.is-earned,
+[data-theme="app-dark"] .logro-card__status.is-earned {
+  background: #052e16 !important;
+  border-color: #14532d !important;
+  color: #4ade80 !important;
+}
+
+.dark .logro-card__date,
+[data-theme="app-dark"] .logro-card__date {
+  color: #94a3b8 !important;
+}
+
+.dark .logro-card__reclamar-btn,
+[data-theme="app-dark"] .logro-card__reclamar-btn {
+  background: #7c3aed !important;
+  color: #ffffff !important;
+}
+
+.dark .logro-card-skeleton,
+[data-theme="app-dark"] .logro-card-skeleton {
+  background: #131b2e !important;
+  border-color: #1e293b !important;
+}

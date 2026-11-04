@@ -6,6 +6,7 @@ import { obtenerGruposEdad } from "@/features/catalog/catalog.api";
 import { crearSesionInvitado } from "@/features/auth/auth.api";
 import { hasSession } from "@/shared/api/auth-guard";
 import { sessionStorageApi } from "@/shared/api/session";
+import { limpiarPreferenciasSesion } from "@/shared/accessibility/preferences";
 import imagenSemillas from "@/assets/images/Ilustraciones/Semilla.webp";
 import imagenExploradores from "@/assets/images/Ilustraciones/Exploradores.webp";
 import imagenEmbajadores from "@/assets/images/Ilustraciones/Embajadores.webp";
@@ -57,6 +58,7 @@ export function useOnboardingPage() {
   // Si el usuario entra a /onboarding sin sesión (por ejemplo desde Jugar como invitado), inicializar sesión de invitado
   useEffect(() => {
     if (!hasSession()) {
+      limpiarPreferenciasSesion();
       void crearSesionInvitado({ apodo: "Semillero" }).then((res) => {
         sessionStorageApi.setGuestUserId(res.autenticacion.valor);
         sessionStorageApi.setGuestToken(res.autenticacion.token);
@@ -73,7 +75,7 @@ export function useOnboardingPage() {
     if (ageGroupsQuery.data && ageGroupsQuery.data.length > 0) {
       return ageGroupsQuery.data.map((grupo) => ({
         ...grupo,
-        imagen_url: grupo.imagen_url ?? imagenPorCodigo[grupo.codigo] ?? null,
+        imagen_url: imagenPorCodigo[grupo.codigo?.toLowerCase()] || grupo.imagen_url || null,
       }));
     }
 

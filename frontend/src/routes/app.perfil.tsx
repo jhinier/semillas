@@ -89,9 +89,20 @@ function ProfilePage() {
   });
 
   const usuario = meQuery.data?.usuario;
-  const perfil = meQuery.data?.perfil;
+  const perfil = meQuery.data?.perfil ?? (usuario ? {
+    id: usuario.id,
+    usuario_id: usuario.id,
+    apodo: usuario.nombre_visible || (usuario.rol === "administrador" ? "Administrador" : "Semillero"),
+    grupo_edad_id: usuario.rol === "administrador" ? null : "semillas",
+    url_avatar: null,
+    clave_avatar: "1",
+    prefiere_audio: true,
+    tamano_texto_preferido: "mediano" as const,
+    creado_en: new Date().toISOString(),
+    actualizado_en: new Date().toISOString(),
+  } : null);
   const estaCargando = meQuery.isLoading && !meQuery.data;
-  const tieneError = meQuery.isError && !meQuery.data;
+  const tieneError = meQuery.isError && !meQuery.data && !usuario;
   const esInvitado = usuario?.proveedor === "invitado";
 
   function cambiarSeccion(seccion: ProfileSection) {
@@ -136,7 +147,7 @@ function ProfilePage() {
     );
   }
 
-  if (tieneError || !perfil) {
+  if ((tieneError || !perfil) && !usuario) {
     return (
       <div className="profile-error-state" role="alert">
         <AlertCircle size={32} aria-hidden="true" />

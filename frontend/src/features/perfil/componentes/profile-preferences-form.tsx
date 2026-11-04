@@ -20,6 +20,8 @@ import {
   aplicarContraste,
   aplicarTamanoTexto,
   aplicarTemaVisual,
+  guardarPreferenciaPerfil,
+  leerPreferenciaPerfil,
   normalizarTamanoTexto,
   obtenerPinParental,
 } from "@/shared/accessibility/preferences";
@@ -41,19 +43,6 @@ const textSizes = [
   { value: "grande", label: "Grande", example: "Aa" },
 ] as const;
 
-function obtenerAlmacenLocal() {
-  if (typeof localStorage === "undefined") return null;
-  return localStorage;
-}
-
-function leerPreferenciaLocal(clave: string, valorPorDefecto: string | null = null) {
-  return obtenerAlmacenLocal()?.getItem(clave) ?? valorPorDefecto;
-}
-
-function guardarPreferenciaLocal(clave: string, valor: string) {
-  obtenerAlmacenLocal()?.setItem(clave, valor);
-}
-
 export function ProfilePreferencesForm({
   perfil,
   usuario,
@@ -63,24 +52,26 @@ export function ProfilePreferencesForm({
   onVincularGoogle,
   onLogout,
 }: ProfilePreferencesFormProps) {
+  const scopeId = perfil.id || usuario?.id || "default";
+
   const [audio, setAudio] = useState(Boolean(perfil.prefiere_audio));
   const [textSize, setTextSize] = useState(normalizarTamanoTexto(perfil.tamano_texto_preferido));
 
   const [notificaciones, setNotificaciones] = useState(() => {
-    return leerPreferenciaLocal("semillas-pref-notificaciones") !== "false";
+    return leerPreferenciaPerfil("semillas-pref-notificaciones", scopeId) !== "false";
   });
   const [wifiOnly, setWifiOnly] = useState(() => {
-    return leerPreferenciaLocal("semillas-pref-wifi-only") === "true";
+    return leerPreferenciaPerfil("semillas-pref-wifi-only", scopeId) === "true";
   });
   const [contraste, setContraste] = useState(() => {
-    return leerPreferenciaLocal("semillas-pref-contraste") === "alto";
+    return leerPreferenciaPerfil("semillas-pref-contraste", scopeId) === "alto";
   });
   const [parental, setParental] = useState(() => {
-    return leerPreferenciaLocal("semillas-pref-parental") === "true";
+    return leerPreferenciaPerfil("semillas-pref-parental", scopeId) === "true";
   });
-  const [pinParental, setPinParental] = useState(() => obtenerPinParental());
+  const [pinParental, setPinParental] = useState(() => obtenerPinParental(scopeId));
   const [tema, setTema] = useState<"sistema" | "claro" | "oscuro">(() => {
-    return (leerPreferenciaLocal("semillas-pref-tema") || "claro") as "sistema" | "claro" | "oscuro";
+    return (leerPreferenciaPerfil("semillas-pref-tema", scopeId, "claro") || "claro") as "sistema" | "claro" | "oscuro";
   });
   const [savedSnapshot, setSavedSnapshot] = useState(0);
 
@@ -98,12 +89,12 @@ export function ProfilePreferencesForm({
 
   const hasLocalChanges = useMemo(() => {
     void savedSnapshot;
-    const prevNotif = leerPreferenciaLocal("semillas-pref-notificaciones") !== "false";
-    const prevWifi = leerPreferenciaLocal("semillas-pref-wifi-only") === "true";
-    const prevContraste = leerPreferenciaLocal("semillas-pref-contraste") === "alto";
-    const prevParental = leerPreferenciaLocal("semillas-pref-parental") === "true";
-    const prevPin = obtenerPinParental();
-    const prevTema = leerPreferenciaLocal("semillas-pref-tema") || "claro";
+    const prevNotif = leerPreferenciaPerfil("semillas-pref-notificaciones", scopeId) !== "false";
+    const prevWifi = leerPreferenciaPerfil("semillas-pref-wifi-only", scopeId) === "true";
+    const prevContraste = leerPreferenciaPerfil("semillas-pref-contraste", scopeId) === "alto";
+    const prevParental = leerPreferenciaPerfil("semillas-pref-parental", scopeId) === "true";
+    const prevPin = obtenerPinParental(scopeId);
+    const prevTema = leerPreferenciaPerfil("semillas-pref-tema", scopeId, "claro") || "claro";
 
     return (
       notificaciones !== prevNotif ||
@@ -113,26 +104,26 @@ export function ProfilePreferencesForm({
       pinParental !== prevPin ||
       tema !== prevTema
     );
-  }, [notificaciones, wifiOnly, contraste, parental, pinParental, tema, savedSnapshot]);
+  }, [notificaciones, wifiOnly, contraste, parental, pinParental, tema, savedSnapshot, scopeId]);
 
   const hasChanges = hasApiChanges || hasLocalChanges;
 
   const handleToggleAudio = () => {
     const next = !audio;
     setAudio(next);
-    guardarPreferenciaLocal("semillas-prefiere-audio", String(next));
+    guardarPreferenciaPerfil("semillas-prefiere-audio", String(next), scopeId);
   };
 
   const handleSelectTextSize = (size: "pequeno" | "mediano" | "grande") => {
     setTextSize(size);
-    guardarPreferenciaLocal("semillas-pref-text-size", size);
+    guardarPreferenciaPerfil("semillas-pref-text-size", size, scopeId);
     aplicarTamanoTexto(size);
   };
 
   const handleToggleNotificaciones = async () => {
     const next = !notificaciones;
     setNotificaciones(next);
-    guardarPreferenciaLocal("semillas-pref-notificaciones", String(next));
+    guardarPreferenciaPerfil("semillas-pref-notificaciones", String(next), scopeId);
     if (next && typeof window !== "undefined" && "Notification" in window) {
       if (Notification.permission === "default") {
         try {
@@ -150,42 +141,42 @@ export function ProfilePreferencesForm({
   const handleToggleWifiOnly = () => {
     const next = !wifiOnly;
     setWifiOnly(next);
-    guardarPreferenciaLocal("semillas-pref-wifi-only", String(next));
+    guardarPreferenciaPerfil("semillas-pref-wifi-only", String(next), scopeId);
   };
 
   const handleToggleContraste = () => {
     const next = !contraste;
     setContraste(next);
-    guardarPreferenciaLocal("semillas-pref-contraste", next ? "alto" : "normal");
+    guardarPreferenciaPerfil("semillas-pref-contraste", next ? "alto" : "normal", scopeId);
     aplicarContraste(next);
   };
 
   const handleToggleParental = () => {
     const next = !parental;
     setParental(next);
-    guardarPreferenciaLocal("semillas-pref-parental", String(next));
-    if (next && !leerPreferenciaLocal("semillas-pref-parental-pin")) {
-      guardarPreferenciaLocal("semillas-pref-parental-pin", pinParental || "1234");
+    guardarPreferenciaPerfil("semillas-pref-parental", String(next), scopeId);
+    if (next && !leerPreferenciaPerfil("semillas-pref-parental-pin", scopeId)) {
+      guardarPreferenciaPerfil("semillas-pref-parental-pin", pinParental || "1234", scopeId);
     }
   };
 
   const handleSelectTema = (nuevoTema: "sistema" | "claro" | "oscuro") => {
     setTema(nuevoTema);
-    guardarPreferenciaLocal("semillas-pref-tema", nuevoTema);
+    guardarPreferenciaPerfil("semillas-pref-tema", nuevoTema, scopeId);
     aplicarTemaVisual(nuevoTema);
   };
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    guardarPreferenciaLocal("semillas-prefiere-audio", String(audio));
-    guardarPreferenciaLocal("semillas-pref-notificaciones", String(notificaciones));
-    guardarPreferenciaLocal("semillas-pref-wifi-only", String(wifiOnly));
-    guardarPreferenciaLocal("semillas-pref-contraste", contraste ? "alto" : "normal");
-    guardarPreferenciaLocal("semillas-pref-parental", String(parental));
-    guardarPreferenciaLocal("semillas-pref-parental-pin", pinParental.trim() || "1234");
-    guardarPreferenciaLocal("semillas-pref-tema", tema);
-    guardarPreferenciaLocal("semillas-pref-text-size", textSize);
+    guardarPreferenciaPerfil("semillas-prefiere-audio", String(audio), scopeId);
+    guardarPreferenciaPerfil("semillas-pref-notificaciones", String(notificaciones), scopeId);
+    guardarPreferenciaPerfil("semillas-pref-wifi-only", String(wifiOnly), scopeId);
+    guardarPreferenciaPerfil("semillas-pref-contraste", contraste ? "alto" : "normal", scopeId);
+    guardarPreferenciaPerfil("semillas-pref-parental", String(parental), scopeId);
+    guardarPreferenciaPerfil("semillas-pref-parental-pin", pinParental.trim() || "1234", scopeId);
+    guardarPreferenciaPerfil("semillas-pref-tema", tema, scopeId);
+    guardarPreferenciaPerfil("semillas-pref-text-size", textSize, scopeId);
 
     aplicarTamanoTexto(textSize);
     aplicarContraste(contraste);
@@ -227,16 +218,16 @@ export function ProfilePreferencesForm({
       <div className="profile-form-card__heading">
         <div>
           <p className="profile-eyebrow font-bold">Configuración</p>
-          <h1 className="text-xl font-black text-green-950">Ajustes del Usuario</h1>
-          <p className="text-xs text-slate-500 mt-1">
+          <h1 className="text-xl font-black text-green-950 dark:text-emerald-400">Ajustes del Usuario</h1>
+          <p className="text-xs text-slate-500 mt-1 dark:text-slate-400">
             Personaliza el aprendizaje, el rendimiento de red y la accesibilidad de la plataforma.
           </p>
         </div>
       </div>
 
       {/* Sección 1: Aprendizaje (API) */}
-      <fieldset className="flex flex-col gap-4 border-b border-slate-100 pb-5">
-        <legend className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+      <fieldset className="flex flex-col gap-4 border-b border-slate-100 dark:border-slate-800 pb-5">
+        <legend className="text-xs font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider mb-2">
           Preferencias de Aprendizaje
         </legend>
 
@@ -298,7 +289,7 @@ export function ProfilePreferencesForm({
       </fieldset>
 
       {/* Sección 2: Ajustes de la Aplicación (Local) */}
-      <fieldset className="flex flex-col gap-4 border-b border-slate-100 pb-5 pt-2">
+      <fieldset className="flex flex-col gap-4 border-b border-slate-100 dark:border-slate-800 pb-5 pt-2">
         <legend className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
           Preferencias del Dispositivo
         </legend>
@@ -384,10 +375,10 @@ export function ProfilePreferencesForm({
         </div>
 
         {parental ? (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 dark:border-amber-900/60 dark:bg-amber-950/40">
             <div>
-              <strong className="text-xs font-bold text-amber-900">PIN de Control Parental</strong>
-              <p className="text-xs text-amber-700">
+              <strong className="text-xs font-bold text-amber-900 dark:text-amber-200">PIN de Control Parental</strong>
+              <p className="text-xs text-amber-700 dark:text-amber-300">
                 Se solicitará esta clave al editar el perfil o desvincular la cuenta.
               </p>
             </div>
@@ -399,11 +390,11 @@ export function ProfilePreferencesForm({
               onChange={(e) => {
                 const limpio = e.target.value.replace(/\D/g, "").slice(0, 6);
                 setPinParental(limpio);
-                guardarPreferenciaLocal("semillas-pref-parental-pin", limpio || "1234");
+                guardarPreferenciaPerfil("semillas-pref-parental-pin", limpio || "1234", scopeId);
               }}
               placeholder="1234"
               aria-label="PIN de control parental"
-              className="w-28 rounded-xl border border-amber-300 bg-white px-3 py-2 text-center font-bold text-slate-800"
+              className="w-28 rounded-xl border border-amber-300 bg-white px-3 py-2 text-center font-bold text-slate-800 dark:border-amber-700 dark:bg-slate-900 dark:text-white"
             />
           </div>
         ) : null}
@@ -446,10 +437,10 @@ export function ProfilePreferencesForm({
           Seguridad y Métodos de Acceso
         </legend>
 
-        <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex flex-col gap-3">
+        <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex flex-col gap-3 dark:bg-slate-900/60 dark:border-slate-800">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-slate-500">Método de acceso actual:</span>
-            <strong className="text-slate-700 capitalize font-bold">
+            <span className="text-slate-500 dark:text-slate-400">Método de acceso actual:</span>
+            <strong className="text-slate-700 dark:text-slate-200 capitalize font-bold">
               {usuario?.proveedor || "Invitado"}
             </strong>
           </div>
@@ -462,20 +453,20 @@ export function ProfilePreferencesForm({
               <button
                 type="button"
                 onClick={onVincularGoogle}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-white border border-slate-200 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+                className="profile-google-link-btn w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition"
               >
                 <KeyRound size={14} /> Vincular cuenta de Google
               </button>
             </div>
           ) : (
-            <div className="flex flex-col gap-1 text-xs text-slate-500">
+            <div className="flex flex-col gap-1 text-xs text-slate-500 dark:text-slate-400">
               <div className="flex justify-between">
                 <span>Nombre:</span>
-                <strong className="text-slate-700">{usuario?.nombre_visible}</strong>
+                <strong className="text-slate-700 dark:text-slate-200">{usuario?.nombre_visible}</strong>
               </div>
               <div className="flex justify-between">
                 <span>Correo:</span>
-                <strong className="text-slate-700">{usuario?.correo}</strong>
+                <strong className="text-slate-700 dark:text-slate-200">{usuario?.correo}</strong>
               </div>
             </div>
           )}

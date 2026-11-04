@@ -1,6 +1,14 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root.dark,
+[data-theme="app-dark"],
+[data-theme="admin-dark"] {
+  color-scheme: dark !important;
+}
+
 /* Mantener un indicador visible para teclado y navegación asistida. */
 :focus-visible {
   outline: 3px solid color-mix(in srgb, var(--color-verde-brote) 72%, white);
@@ -496,7 +504,7 @@ html[data-semillas-text-size="grande"] { font-size: clamp(16px, 1.45vw + 11px, 1
   gap: 8px;
   padding: 8px 12px;
   border-radius: 16px;
-  color: #9a9a9a;
+  color: #475569;
   font-size: 0.94rem;
   font-weight: 800;
 }
@@ -751,9 +759,83 @@ html[data-semillas-text-size="grande"] { font-size: clamp(16px, 1.45vw + 11px, 1
 
 .onboarding-age-footer__button:disabled {
   background: #e6e1ef;
-  color: #9f96ad;
+  color: #5b4d75;
   box-shadow: none;
   cursor: not-allowed;
+}
+
+/* ── Onboarding Dark Mode & Alto Contraste ── */
+.dark .onboarding-age-page,
+[data-theme="app-dark"] .onboarding-age-page {
+  background: #080a10 !important;
+  color: #f8fafc !important;
+}
+
+.dark .onboarding-age-page .onboarding-topbar,
+[data-theme="app-dark"] .onboarding-age-page .onboarding-topbar {
+  background: rgba(16, 21, 32, 0.95) !important;
+  border-bottom: 1px solid #1e293b !important;
+}
+
+.dark .onboarding-age-page .onboarding-help-button,
+[data-theme="app-dark"] .onboarding-age-page .onboarding-help-button {
+  background: #1e293b !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+
+.dark .onboarding-age-hero__title,
+[data-theme="app-dark"] .onboarding-age-hero__title {
+  color: #f8fafc !important;
+}
+
+.dark .onboarding-age-hero__copy,
+[data-theme="app-dark"] .onboarding-age-hero__copy {
+  color: #94a3b8 !important;
+}
+
+.dark .onboarding-age-stepper,
+[data-theme="app-dark"] .onboarding-age-stepper {
+  background: #1e293b !important;
+}
+
+.dark .onboarding-age-step,
+[data-theme="app-dark"] .onboarding-age-step {
+  color: #64748b !important;
+}
+
+.dark .onboarding-age-step.is-active,
+[data-theme="app-dark"] .onboarding-age-step.is-active {
+  background: #0f172a !important;
+  color: #c4b5fd !important;
+}
+
+.dark .onboarding-age-card,
+[data-theme="app-dark"] .onboarding-age-card {
+  background: #101520 !important;
+  border-color: #1e293b !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4) !important;
+}
+
+.dark .onboarding-age-card.is-selected,
+[data-theme="app-dark"] .onboarding-age-card.is-selected {
+  background: #182236 !important;
+  border-color: #7c3aed !important;
+}
+
+.dark .onboarding-age-card__heading h2,
+[data-theme="app-dark"] .onboarding-age-card__heading h2 {
+  color: #f8fafc !important;
+}
+
+.dark .onboarding-age-card__body p,
+[data-theme="app-dark"] .onboarding-age-card__body p {
+  color: #94a3b8 !important;
+}
+
+.dark .onboarding-age-card__media,
+[data-theme="app-dark"] .onboarding-age-card__media {
+  background: #0f172a !important;
 }
 
 .onboarding-help-overlay {

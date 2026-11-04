@@ -129,9 +129,9 @@ const SNAPSHOT_PERFIL_ADMIN = {
       tamano_texto_preferido: "mediano",
     },
     grupos_edad: [
-      { id: "e1000000-0000-0000-0000-000000000001", codigo: "semillas", nombre: "Semillas", edad_min: 4, edad_max: 6 },
-      { id: "e1000000-0000-0000-0000-000000000002", codigo: "exploradores", nombre: "Exploradores", edad_min: 7, edad_max: 9 },
-      { id: "e1000000-0000-0000-0000-000000000003", codigo: "embajadores", nombre: "Embajadores", edad_min: 10, edad_max: 12 },
+      { id: "e1000000-0000-0000-0000-000000000001", codigo: "semillas", nombre: "Semillas", edad_min: 5, edad_max: 8, edad_minima: 5, edad_maxima: 8 },
+      { id: "e1000000-0000-0000-0000-000000000002", codigo: "exploradores", nombre: "Exploradores", edad_min: 9, edad_max: 12, edad_minima: 9, edad_maxima: 12 },
+      { id: "e1000000-0000-0000-0000-000000000003", codigo: "embajadores", nombre: "Embajadores", edad_min: 13, edad_max: 17, edad_minima: 13, edad_maxima: 17 },
     ],
   },
 };
@@ -209,8 +209,62 @@ const SNAPSHOT_REVISIONES = {
 const SNAPSHOT_REPORTES = {
   exito: true,
   datos: {
-    reportes: [],
-    metricas: { total: 0, resueltos: 0, pendientes: 0 },
+    rango: {
+      desde: "2026-10-04",
+      hasta: "2026-11-03",
+    },
+    metricas: {
+      usuarios_activos: 34,
+      usuarios_nuevos: 12,
+      temas_completados: 48,
+      actividades_completadas: 112,
+      xp_otorgada: 3450,
+      precision_respuestas: 87,
+      clubes_activos: 2,
+      temas_publicados: 3,
+    },
+    actividad_diaria: [
+      { fecha: "2026-10-28", eventos: 14, usuarios: 8, xp: 420 },
+      { fecha: "2026-10-29", eventos: 22, usuarios: 12, xp: 680 },
+      { fecha: "2026-10-30", eventos: 35, usuarios: 19, xp: 950 },
+      { fecha: "2026-10-31", eventos: 18, usuarios: 9, xp: 510 },
+      { fecha: "2026-11-01", eventos: 26, usuarios: 15, xp: 720 },
+      { fecha: "2026-11-02", eventos: 31, usuarios: 17, xp: 890 },
+      { fecha: "2026-11-03", eventos: 19, usuarios: 11, xp: 540 },
+    ],
+    temas_destacados: [
+      {
+        id: "47a2e22f-86da-466f-92ff-1847d85de609",
+        titulo: "El Amor de Dios",
+        eventos: 54,
+        completados: 28,
+        usuarios: 22,
+      },
+      {
+        id: "d7d010a2-6a7b-45b4-bc63-860db116ad8e",
+        titulo: "El buen samaritano: amar sin fronteras",
+        eventos: 38,
+        completados: 16,
+        usuarios: 15,
+      },
+    ],
+    distribucion_roles: {
+      administrador: 2,
+      padre: 8,
+      usuario: 24,
+    },
+    revision_editorial: {
+      por_estado: {
+        borrador: 6,
+        revision: 0,
+        aprobado: 0,
+        publicado: 3,
+        archivado: 5,
+      },
+      tiempo_promedio_horas: 3.5,
+      total: 14,
+    },
+    muestra_limitada: false,
   },
 };
 

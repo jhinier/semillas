@@ -47,14 +47,71 @@ export function crearAdminGovernanceRepository({ supabase }: Dependencias) {
     },
 
     async obtenerReportes(query: ReportsQueryInput) {
-      if (sinCliente(supabase)) return { desde: query.desde, hasta: query.hasta, usuarios_activos: 0, temas_publicados: 0, actividades_completadas: 0 };
+      if (sinCliente(supabase)) {
+        return {
+          desde: query.desde,
+          hasta: query.hasta,
+          rango: { desde: query.desde, hasta: query.hasta },
+          usuarios_activos: 0,
+          temas_publicados: 0,
+          actividades_completadas: 0,
+          metricas: {
+            usuarios_activos: 0,
+            usuarios_nuevos: 0,
+            temas_completados: 0,
+            actividades_completadas: 0,
+            xp_otorgada: 0,
+            precision_respuestas: 0,
+            clubes_activos: 0,
+            temas_publicados: 0,
+          },
+          actividad_diaria: [],
+          temas_destacados: [],
+          distribucion_roles: {},
+          revision_editorial: {
+            por_estado: { borrador: 0, revision: 0, aprobado: 0, publicado: 0, archivado: 0 },
+            tiempo_promedio_horas: 0,
+            total: 0,
+          },
+          muestra_limitada: false,
+        };
+      }
       const [usuarios, temas, actividades] = await Promise.all([
         supabase.from("usuario_app").select("id", { count: "exact", head: true }).gte("ultimo_login_en", `${query.desde}T00:00:00.000Z`).lte("ultimo_login_en", `${query.hasta}T23:59:59.999Z`),
         supabase.from("tema").select("id", { count: "exact", head: true }).eq("estado", "publicado").gte("publicado_en", query.desde).lte("publicado_en", query.hasta),
         supabase.from("progreso_actividad_usuario").select("id", { count: "exact", head: true }).gte("completado_en", `${query.desde}T00:00:00.000Z`).lte("completado_en", `${query.hasta}T23:59:59.999Z`),
       ]);
       for (const resultado of [usuarios, temas, actividades]) if (resultado.error) throw resultado.error;
-      return { desde: query.desde, hasta: query.hasta, usuarios_activos: usuarios.count ?? 0, temas_publicados: temas.count ?? 0, actividades_completadas: actividades.count ?? 0 };
+      const countUsuarios = usuarios.count ?? 0;
+      const countTemas = temas.count ?? 0;
+      const countActividades = actividades.count ?? 0;
+      return {
+        desde: query.desde,
+        hasta: query.hasta,
+        rango: { desde: query.desde, hasta: query.hasta },
+        usuarios_activos: countUsuarios,
+        temas_publicados: countTemas,
+        actividades_completadas: countActividades,
+        metricas: {
+          usuarios_activos: countUsuarios,
+          usuarios_nuevos: 0,
+          temas_completados: 0,
+          actividades_completadas: countActividades,
+          xp_otorgada: 0,
+          precision_respuestas: 0,
+          clubes_activos: 0,
+          temas_publicados: countTemas,
+        },
+        actividad_diaria: [],
+        temas_destacados: [],
+        distribucion_roles: {},
+        revision_editorial: {
+          por_estado: { borrador: 0, revision: 0, aprobado: 0, publicado: countTemas, archivado: 0 },
+          tiempo_promedio_horas: 0,
+          total: 0,
+        },
+        muestra_limitada: false,
+      };
     },
 
     async actualizarAjustes(input: UpdatePlatformSettingsInput, adminId: string) {

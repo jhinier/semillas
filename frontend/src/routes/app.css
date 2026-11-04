@@ -2768,35 +2768,97 @@ html[data-semillas-text-size="grande"] {
 
 /* ── Alto Contraste ── */
 .alto-contraste {
-  filter: contrast(1.2);
+  filter: contrast(1.15);
 }
-.alto-contraste body,
-.alto-contraste .app-shell,
-.alto-contraste .app-shell__workspace {
+.alto-contraste.dark body,
+.alto-contraste[data-theme="app-dark"] body,
+.dark .alto-contraste body,
+.alto-contraste.dark .app-shell,
+.alto-contraste.dark .app-shell__workspace,
+.alto-contraste.dark .onboarding-age-page,
+.alto-contraste.dark .login-panel--visual {
   background-color: #0c101a !important;
   color: #f8fafc !important;
 }
-.alto-contraste .profile-form-card,
-.alto-contraste .profile-setting-row,
-.alto-contraste .card,
-.alto-contraste .bg-white,
-.alto-contraste .bg-slate-50 {
+
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) body,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .app-shell,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .app-shell__workspace,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .onboarding-age-page,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .login-panel--visual {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+.alto-contraste.dark .profile-form-card,
+.alto-contraste.dark .profile-setting-row,
+.alto-contraste.dark .profile-hero-card,
+.alto-contraste.dark .profile-hero-card__notice,
+.alto-contraste.dark .profile-account-summary,
+.alto-contraste.dark .profile-status-badge,
+.alto-contraste.dark .profile-metric-card,
+.alto-contraste.dark .card,
+.alto-contraste.dark .bg-white,
+.alto-contraste.dark .bg-slate-50,
+.alto-contraste.dark .bg-slate-100,
+.alto-contraste.dark .logro-card,
+.alto-contraste.dark .logros-progress-card,
+.alto-contraste.dark .logros-next-card,
+.alto-contraste.dark .logros-share-card,
+.alto-contraste.dark .logros-tab,
+.alto-contraste.dark .logros-state-card,
+.alto-contraste.dark .login-benefit,
+.alto-contraste.dark .login-illustration-card,
+.alto-contraste.dark .login-privacy,
+.alto-contraste.dark .offline-theme-card,
+.alto-contraste.dark .offline-storage-card,
+[data-theme="app-dark"].alto-contraste .profile-form-card,
+[data-theme="app-dark"].alto-contraste .logro-card,
+[data-theme="app-dark"].alto-contraste .onboarding-age-card {
   background-color: #131924 !important;
   color: #f3f4f6 !important;
-  border-color: #374151 !important;
+  border-color: #4b5563 !important;
 }
-.alto-contraste text,
-.alto-contraste p,
-.alto-contraste span,
-.alto-contraste h1,
-.alto-contraste h2,
-.alto-contraste h3,
-.alto-contraste strong {
-  color: #ffffff !important;
+
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .profile-form-card,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .profile-setting-row,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .profile-hero-card,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .profile-hero-card__notice,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .profile-account-summary,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .profile-status-badge,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .profile-metric-card,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .card,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .bg-white,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .bg-slate-50,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .bg-slate-100,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .logro-card,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .logros-progress-card,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .logros-next-card,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .logros-share-card,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .logros-tab,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .logros-state-card,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .login-benefit,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .login-illustration-card,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .login-privacy,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .offline-theme-card,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .offline-storage-card {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border-color: #000000 !important;
+  border-width: 2px !important;
 }
-.alto-contraste a,
-.alto-contraste button:not(.profile-primary-button) {
-  color: #f4b740 !important;
+/* Alto contraste: asegurar textos legibles sin romper fondos */
+.alto-contraste.dark .app-shell,
+.alto-contraste[data-theme="app-dark"] .app-shell {
+  color: #f8fafc !important;
+}
+
+.alto-contraste:not(.dark):not([data-theme="app-dark"]) .app-shell {
+  color: #000000 !important;
+}
+
+.alto-contraste a:not([class*="btn"]):not([class*="button"]):hover {
+  text-decoration: underline !important;
 }
 
 /* ── Modo Oscuro ── */
@@ -2833,6 +2895,39 @@ html[data-semillas-text-size="grande"] {
   background-color: var(--color-bg-sidebar) !important;
   border-color: var(--color-border) !important;
   color: var(--color-text-dark) !important;
+}
+
+.dark .app-sidebar,
+[data-theme="app-dark"] .app-sidebar,
+.alto-contraste .app-sidebar {
+  background-color: var(--color-bg-sidebar, #101520) !important;
+  border-color: var(--color-border, #1e293b) !important;
+}
+
+.dark .app-sidebar a[aria-current="page"],
+[data-theme="app-dark"] .app-sidebar a[aria-current="page"],
+.alto-contraste .app-sidebar a[aria-current="page"] {
+  background-color: #14532d !important;
+  color: #4ade80 !important;
+}
+
+.dark .app-sidebar a[aria-current="page"] *,
+[data-theme="app-dark"] .app-sidebar a[aria-current="page"] *,
+.alto-contraste .app-sidebar a[aria-current="page"] * {
+  color: #4ade80 !important;
+}
+
+.dark .app-sidebar a:not([aria-current="page"]),
+[data-theme="app-dark"] .app-sidebar a:not([aria-current="page"]),
+.alto-contraste .app-sidebar a:not([aria-current="page"]) {
+  color: #94a3b8 !important;
+}
+
+.dark .app-sidebar a:not([aria-current="page"]):hover,
+[data-theme="app-dark"] .app-sidebar a:not([aria-current="page"]):hover,
+.alto-contraste .app-sidebar a:not([aria-current="page"]):hover {
+  background-color: #1e293b !important;
+  color: #f8fafc !important;
 }
 
 .dark input,
@@ -3335,6 +3430,7 @@ html[data-semillas-text-size="grande"] {
 /* ── Sobreescribir inputs con fondos transparentes dentro de contenedores redondeados ── */
 .dark .login-field input,
 .dark .profile-input-shell input,
+.dark .customize-input input,
 .dark input.login-field__input,
 .dark input.profile-input-shell__input {
   background-color: transparent !important;
@@ -3373,3 +3469,187 @@ html[data-semillas-text-size="grande"] {
     display: none !important;
   }
 }
+
+/* ── Modo Oscuro Universal para Actividades y Cuestionarios ── */
+.dark .crecer-activity-card,
+.dark .crecer-question-card,
+[data-theme="app-dark"] .crecer-activity-card,
+[data-theme="app-dark"] .crecer-question-card {
+  background-color: #101520 !important;
+  border-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+.dark .crecer-activity-card h2,
+.dark .crecer-activity-card h3,
+.dark .crecer-question-card h2,
+.dark .crecer-question-card h3,
+[data-theme="app-dark"] .crecer-activity-card h2,
+[data-theme="app-dark"] .crecer-activity-card h3,
+[data-theme="app-dark"] .crecer-question-card h2,
+[data-theme="app-dark"] .crecer-question-card h3 {
+  color: #f8fafc !important;
+}
+
+.dark .crecer-activity-card p,
+.dark .crecer-question-card p,
+[data-theme="app-dark"] .crecer-activity-card p,
+[data-theme="app-dark"] .crecer-question-card p {
+  color: #cbd5e1 !important;
+}
+
+.dark .crecer-activity-card .bg-white,
+.dark .crecer-activity-card button.bg-white,
+.dark .student-activity-stage .bg-white,
+.dark .student-activity-stage button.bg-white,
+[data-theme="app-dark"] .crecer-activity-card .bg-white,
+[data-theme="app-dark"] .crecer-activity-card button.bg-white,
+[data-theme="app-dark"] .student-activity-stage .bg-white,
+[data-theme="app-dark"] .student-activity-stage button.bg-white {
+  background-color: #151d2a !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+.dark .crecer-activity-card .text-slate-700,
+.dark .crecer-activity-card .text-slate-800,
+.dark .student-activity-stage .text-slate-700,
+.dark .student-activity-stage .text-slate-800,
+[data-theme="app-dark"] .crecer-activity-card .text-slate-700,
+[data-theme="app-dark"] .crecer-activity-card .text-slate-800,
+[data-theme="app-dark"] .student-activity-stage .text-slate-700,
+[data-theme="app-dark"] .student-activity-stage .text-slate-800 {
+  color: #f8fafc !important;
+}
+
+.dark .crecer-activity-card .text-slate-500,
+.dark .crecer-activity-card .text-slate-600,
+.dark .student-activity-stage .text-slate-500,
+.dark .student-activity-stage .text-slate-600,
+[data-theme="app-dark"] .crecer-activity-card .text-slate-500,
+[data-theme="app-dark"] .crecer-activity-card .text-slate-600,
+[data-theme="app-dark"] .student-activity-stage .text-slate-500,
+[data-theme="app-dark"] .student-activity-stage .text-slate-600 {
+  color: #94a3b8 !important;
+}
+
+.dark .crecer-activity-card .bg-slate-50,
+.dark .student-activity-stage .bg-slate-50,
+[data-theme="app-dark"] .crecer-activity-card .bg-slate-50,
+[data-theme="app-dark"] .student-activity-stage .bg-slate-50 {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+.dark .crecer-activity-card .bg-violet-50,
+.dark .student-activity-stage .bg-violet-50,
+[data-theme="app-dark"] .crecer-activity-card .bg-violet-50,
+[data-theme="app-dark"] .student-activity-stage .bg-violet-50 {
+  background-color: #2e1065 !important;
+  color: #ddd6fe !important;
+}
+
+.dark .crecer-activity-card .bg-green-50,
+.dark .student-activity-stage .bg-green-50,
+[data-theme="app-dark"] .crecer-activity-card .bg-green-50,
+[data-theme="app-dark"] .student-activity-stage .bg-green-50 {
+  background-color: #052e16 !important;
+  border-color: #166534 !important;
+}
+
+.dark .crecer-activity-card .bg-red-50,
+.dark .student-activity-stage .bg-red-50,
+[data-theme="app-dark"] .crecer-activity-card .bg-red-50,
+[data-theme="app-dark"] .student-activity-stage .bg-red-50 {
+  background-color: #450a0a !important;
+  border-color: #991b1b !important;
+}
+
+.dark .crecer-activity-card .text-green-700,
+.dark .student-activity-stage .text-green-700,
+[data-theme="app-dark"] .crecer-activity-card .text-green-700,
+[data-theme="app-dark"] .student-activity-stage .text-green-700 {
+  color: #4ade80 !important;
+}
+
+.dark .crecer-activity-card .text-red-700,
+.dark .student-activity-stage .text-red-700,
+[data-theme="app-dark"] .crecer-activity-card .text-red-700,
+[data-theme="app-dark"] .student-activity-stage .text-red-700 {
+  color: #f87171 !important;
+}
+
+.dark .crecer-activity-card .text-violet-700,
+.dark .crecer-activity-card .text-violet-800,
+.dark .student-activity-stage .text-violet-700,
+.dark .student-activity-stage .text-violet-800,
+[data-theme="app-dark"] .crecer-activity-card .text-violet-700,
+[data-theme="app-dark"] .crecer-activity-card .text-violet-800,
+[data-theme="app-dark"] .student-activity-stage .text-violet-700,
+[data-theme="app-dark"] .student-activity-stage .text-violet-800 {
+  color: #c4b5fd !important;
+}
+
+/* ── Chips en Modo Oscuro ── */
+.dark .chip--azul, [data-theme="app-dark"] .chip--azul {
+  background-color: #1e3a8a !important;
+  border-color: #3b82f6 !important;
+  color: #bfdbfe !important;
+}
+.dark .chip--morado, [data-theme="app-dark"] .chip--morado {
+  background-color: #2e1065 !important;
+  border-color: #7c3aed !important;
+  color: #ddd6fe !important;
+}
+.dark .chip--naranja, [data-theme="app-dark"] .chip--naranja {
+  background-color: #451a03 !important;
+  border-color: #ea580c !important;
+  color: #fed7aa !important;
+}
+.dark .chip--verde, [data-theme="app-dark"] .chip--verde {
+  background-color: #052e16 !important;
+  border-color: #16a34a !important;
+  color: #bbf7d0 !important;
+}
+.dark .chip--amarillo, [data-theme="app-dark"] .chip--amarillo {
+  background-color: #451a03 !important;
+  border-color: #d97706 !important;
+  color: #fef08a !important;
+}
+.dark .chip--gris, [data-theme="app-dark"] .chip--gris {
+  background-color: #1e293b !important;
+  border-color: #475569 !important;
+  color: #e2e8f0 !important;
+}
+.dark .chip--rosa, [data-theme="app-dark"] .chip--rosa {
+  background-color: #4c0519 !important;
+  border-color: #db2777 !important;
+  color: #fbcfe8 !important;
+}
+
+/* ── Actividades Interactivas Genéricas en Modo Oscuro ── */
+.dark .crecer-activity-card button.bg-white,
+.dark .student-activity-stage button.bg-white,
+.dark .crecer-focus button.bg-white,
+.dark .admin-activity-preview button.bg-white,
+.dark .admin-preview-stage button.bg-white,
+[data-theme="app-dark"] .crecer-activity-card button.bg-white,
+[data-theme="app-dark"] .student-activity-stage button.bg-white,
+[data-theme="app-dark"] .crecer-focus button.bg-white,
+[data-theme="app-dark"] .admin-activity-preview button.bg-white,
+[data-theme="app-dark"] .admin-preview-stage button.bg-white {
+  background-color: #151d2a !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+.dark .crecer-activity-card button.bg-white:hover,
+.dark .student-activity-stage button.bg-white:hover,
+.dark .crecer-focus button.bg-white:hover,
+[data-theme="app-dark"] .crecer-activity-card button.bg-white:hover,
+[data-theme="app-dark"] .student-activity-stage button.bg-white:hover,
+[data-theme="app-dark"] .crecer-focus button.bg-white:hover {
+  background-color: #1e293b !important;
+  border-color: #7c3aed !important;
+}
+

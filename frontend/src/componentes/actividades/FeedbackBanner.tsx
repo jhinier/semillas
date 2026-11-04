@@ -12,7 +12,7 @@ export function FeedbackBanner({ tipo, mensaje }: FeedbackBannerProps) {
       aria-live="polite"
       className={[
         "flex items-center gap-3 rounded-3xl px-4 py-3",
-        tipo === "correcto" ? "bg-[#DCFCE7] text-[#166534]" : "bg-[#FEE2E2] text-[#991B1B]",
+        tipo === "correcto" ? "bg-[#DCFCE7] text-[#166534] dark:bg-green-950/70 dark:text-green-300" : "bg-[#FEE2E2] text-[#991B1B] dark:bg-red-950/70 dark:text-red-300",
       ].join(" ")}
     >
       {tipo === "correcto" ? (

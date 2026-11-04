@@ -63,13 +63,13 @@ function PaginaTemas() {
         </div>
 
         <div className="temas-page__filters" aria-label="Filtros de temas">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-emerald-200/80 bg-emerald-50/70 px-3.5 py-2 text-xs text-emerald-950">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-emerald-200/80 bg-emerald-50/70 px-3.5 py-2 text-xs text-emerald-950 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-100">
             <span className="inline-flex items-center gap-1.5 font-extrabold">
-              <Sparkles className="size-3.5 text-emerald-600" aria-hidden="true" />
+              <Sparkles className="size-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
               Franja de edad activa: {grupoEdadActivo.nombre} ({grupoEdadActivo.rango})
             </span>
-            <span className="font-semibold text-emerald-800/90">
-              3 Sendas adaptadas a tu edad · Metodología CRECER (6 pasos por senda)
+            <span className="font-semibold text-emerald-800/90 dark:text-emerald-300">
+              3 Sendas adaptadas a tu edad · {grupoEdadActivo.enfoque} · Metodología CRECER
             </span>
           </div>
 

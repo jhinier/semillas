@@ -9,6 +9,8 @@ import logoImg from "@/assets/images/logos/Logotipo.webp";
 import "../estilos.css";
 import "./login.css";
 import { BotonTemaToggle } from "@/componentes/ui/boton-tema-toggle";
+import { limpiarPreferenciasSesion } from "@/shared/accessibility/preferences";
+import { sessionStorageApi } from "@/shared/api/session";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -43,6 +45,12 @@ function LoginPage() {
   } = useLoginPage({
     redirectTo: search.redirect,
   });
+
+  useEffect(() => {
+    if (!sessionStorageApi.getAccessToken()) {
+      limpiarPreferenciasSesion();
+    }
+  }, []);
 
   useEffect(() => {
     const notificacion = obtenerMensajeRedireccionLogin(search.reason);

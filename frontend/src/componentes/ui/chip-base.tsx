@@ -7,7 +7,7 @@ export const MAPEO_COLORES_DISENO = {
   morado: { bg: "#FAF5FF", border: "#6C3AED", text: "#6C3AED" },
   naranja: { bg: "#FFF8F1", border: "#EE6C4D", text: "#EE6C4D" },
   verde: { bg: "#F0FDF4", border: "#2E9E5B", text: "#2E9E5B" },
-  amarillo: { bg: "#FFFDF5", border: "#F4B740", text: "#F4B740" },
+  amarillo: { bg: "#FFFDF5", border: "#F4B740", text: "#92400E" },
   gris: { bg: "#F8FAFC", border: "#64748B", text: "#64748B" },
   rosa: { bg: "#FDF2F8", border: "#EC4899", text: "#EC4899" },
   moradoOscuro: { bg: "#6C3AED", border: "#6C3AED", text: "#FFFFFF" },
@@ -44,7 +44,7 @@ export const Chip = React.forwardRef<HTMLDivElement, PropiedadesChip>(
     return (
       <div
         ref={referencia}
-        className={unirClases(variantesChip({ forma }), className, clase)}
+        className={unirClases(variantesChip({ forma }), `chip--${color}`, className, clase)}
         style={{ backgroundColor: configColor.bg, borderColor: configColor.border, color: configColor.text, ...style }}
         {...propiedades}
       >

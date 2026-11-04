@@ -29,7 +29,7 @@ export function OpcionesConFeedback({
         const hasAnswered = !!selectedAnswers[actividadId];
         const isCorrect = opcion.correcta;
 
-        let optionClass = "bg-white border-slate-200 hover:border-[#7c3aed] hover:bg-purple-50/30 cursor-pointer";
+        let optionClass = "bg-white border-slate-200 hover:border-[#7c3aed] hover:bg-purple-50/30 cursor-pointer dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700/60";
         if (hasAnswered) {
           if (isSelected) {
             optionClass = isCorrect 
@@ -44,11 +44,11 @@ export function OpcionesConFeedback({
 
         const labelBg = hasAnswered && (isSelected || isCorrect)
           ? (isCorrect ? 'bg-green-500 text-white' : 'bg-red-500 text-white')
-          : 'bg-slate-100 text-slate-600';
+          : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-200';
 
         const textColor = hasAnswered && (isSelected || isCorrect)
           ? (isCorrect ? 'text-green-800' : 'text-red-800')
-          : 'text-slate-700';
+          : 'text-slate-700 dark:text-slate-100';
 
         return (
           <div 

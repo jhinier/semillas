@@ -20,7 +20,7 @@ export function OpcionButton({
   const selected = isSelected === isTrueButton;
 
   let btnClass = "w-full text-left px-5 py-6 rounded-2xl font-medium text-xl sm:text-2xl border-2 transition-all flex flex-col items-center justify-center gap-3 mb-4 ";
-  let textClass = "text-slate-700";
+  let textClass = "text-slate-700 dark:text-slate-100";
   let iconClass = "text-slate-400";
 
   if (isSelected === null) {

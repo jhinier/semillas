@@ -1,6 +1,15 @@
-import type { CSSProperties } from "react";
+import { useState, useEffect, type CSSProperties } from "react";
 import { Check } from "lucide-react";
 import type { GrupoEdad } from "../../../shared/api/api";
+import imagenSemillas from "@/assets/images/Ilustraciones/Semilla.webp";
+import imagenExploradores from "@/assets/images/Ilustraciones/Exploradores.webp";
+import imagenEmbajadores from "@/assets/images/Ilustraciones/Embajadores.webp";
+
+const fallbackPorCodigo: Record<string, string> = {
+  semillas: imagenSemillas,
+  exploradores: imagenExploradores,
+  embajadores: imagenEmbajadores,
+};
 
 const mapaColores: Record<string, { borde: string; fondo: string; acento: string; suave: string }> = {
   semillas: { borde: "#43A047", fondo: "#E8F5E9", acento: "#2E7D32", suave: "#F3FAF4" },
@@ -15,6 +24,13 @@ interface GrupoEdadCardProps {
 }
 
 export function GrupoEdadCard({ grupo, seleccionado, onSelect }: GrupoEdadCardProps) {
+  const fallback = fallbackPorCodigo[grupo.codigo?.toLowerCase()] ?? imagenSemillas;
+  const [imgSrc, setImgSrc] = useState<string>(grupo.imagen_url || fallback);
+
+  useEffect(() => {
+    setImgSrc(grupo.imagen_url || fallback);
+  }, [grupo.imagen_url, fallback]);
+
   const colores = mapaColores[grupo.codigo] ?? {
     borde: "#7E57C2",
     fondo: "#EDE7F6",
@@ -45,10 +61,15 @@ export function GrupoEdadCard({ grupo, seleccionado, onSelect }: GrupoEdadCardPr
 
       <div className="onboarding-age-card__media">
         <img
-          src={grupo.imagen_url ?? undefined}
-          alt=""
+          src={imgSrc}
+          alt={grupo.nombre}
           className="onboarding-age-card__image"
           loading="lazy"
+          onError={() => {
+            if (imgSrc !== fallback) {
+              setImgSrc(fallback);
+            }
+          }}
         />
         <span className="onboarding-age-card__check" aria-hidden="true">
           <Check size={22} strokeWidth={3} />

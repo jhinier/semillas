@@ -23,9 +23,9 @@ export function PareButton({
     "w-full text-left p-4 sm:p-5 rounded-2xl font-medium text-base sm:text-lg transition-all border-2 flex items-center justify-between shadow-sm relative break-words ";
 
   if (isMatched) {
-    btnClass += "bg-green-100 border-green-500 text-green-800 opacity-90 scale-95";
+    btnClass += "bg-green-100 border-green-500 text-green-800 opacity-90 scale-95 dark:bg-emerald-950/80 dark:border-emerald-500 dark:text-emerald-200";
   } else if (isError) {
-    btnClass += "bg-red-50 border-red-500 text-red-700 animate-shake";
+    btnClass += "bg-red-50 border-red-500 text-red-700 animate-shake dark:bg-rose-950/80 dark:border-rose-500 dark:text-rose-200";
   } else if (isSelected) {
     btnClass += `${selectedColorClass} ring-4 ring-opacity-20 transform scale-[1.02] z-10`;
   } else {

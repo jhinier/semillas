@@ -79,8 +79,8 @@ export function AventuraDecisiones({ actividad, onComplete }: AventuraDecisiones
   return (
     <div className="flex flex-col gap-6 items-center w-full max-w-4xl mx-auto py-4 animate-in fade-in zoom-in-95">
       {!completed ? (
-        <div className="w-full bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden flex flex-col">
-          <div className="w-full bg-slate-50 border-b border-slate-100 p-4 flex justify-between items-center">
+        <div className="w-full bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden flex flex-col dark:bg-slate-800 dark:border-slate-700">
+          <div className="w-full bg-slate-50 border-b border-slate-100 p-4 flex justify-between items-center dark:bg-slate-900/60 dark:border-slate-700">
             <span className="text-slate-500 font-bold">
               Escena {escenaActualIndex + 1} de {escenas.length}
             </span>
@@ -117,13 +117,13 @@ export function AventuraDecisiones({ actividad, onComplete }: AventuraDecisiones
             </div>
 
             <div className="flex-1 flex flex-col gap-4 text-center md:text-left">
-              <h3 className="text-xl md:text-2xl font-black text-slate-800 leading-snug">
+              <h3 className="text-xl md:text-2xl font-black text-slate-800 leading-snug dark:text-slate-100">
                 {escenaActual.texto}
               </h3>
             </div>
           </div>
 
-          <div className="bg-slate-50 p-5 md:p-8 border-t border-slate-100">
+          <div className="bg-slate-50 p-5 md:p-8 border-t border-slate-100 dark:bg-slate-900/60 dark:border-slate-700">
             <h4 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4 text-center">
               ¿Qué decides hacer?
             </h4>

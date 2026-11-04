@@ -225,3 +225,371 @@
   .offline-manager__failure-actions { align-items: stretch; flex-direction: column; }
   .offline-manager__failure-actions > div:last-child { justify-content: flex-end; }
 }
+
+/* ==========================================================
+   Descargas Dark Mode Contrast & Legibility Overrides
+   ========================================================== */
+.dark .downloads-page,
+[data-theme="app-dark"] .downloads-page {
+  color: var(--color-text-dark, #f8fafc);
+}
+
+.dark .downloads-hero,
+[data-theme="app-dark"] .downloads-hero {
+  background: linear-gradient(115deg, #1e1b4b 0%, #171d36 60%, #062816 100%) !important;
+  border-color: #2e285a !important;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4) !important;
+}
+
+.dark .downloads-hero__icon,
+[data-theme="app-dark"] .downloads-hero__icon {
+  background: #2e1065 !important;
+  color: #a78bfa !important;
+}
+
+.dark .downloads-hero__eyebrow,
+[data-theme="app-dark"] .downloads-hero__eyebrow {
+  color: #a78bfa !important;
+}
+
+.dark .downloads-hero h2,
+[data-theme="app-dark"] .downloads-hero h2 {
+  color: #f8fafc !important;
+}
+
+.dark .downloads-hero p,
+[data-theme="app-dark"] .downloads-hero p {
+  color: #cbd5e1 !important;
+}
+
+.dark .downloads-hero__pending,
+[data-theme="app-dark"] .downloads-hero__pending {
+  background: #1e293b !important;
+  color: #c4b5fd !important;
+  border: 1px solid #334155 !important;
+}
+
+.dark .downloads-hero__close,
+[data-theme="app-dark"] .downloads-hero__close {
+  color: #cbd5e1 !important;
+}
+
+.dark .downloads-hero__close:hover,
+[data-theme="app-dark"] .downloads-hero__close:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark .downloads-filter-tab,
+[data-theme="app-dark"] .downloads-filter-tab {
+  background: #1e293b !important;
+  border: 1px solid #334155 !important;
+  color: #94a3b8 !important;
+}
+
+.dark .downloads-filter-tab:hover,
+[data-theme="app-dark"] .downloads-filter-tab:hover {
+  background: #283347 !important;
+  color: #ddd6fe !important;
+}
+
+.dark .downloads-filter-tab.is-active,
+[data-theme="app-dark"] .downloads-filter-tab.is-active {
+  background: #2e1065 !important;
+  color: #ddd6fe !important;
+  border-color: #7c3aed !important;
+  box-shadow: 0 5px 16px rgba(108, 58, 237, 0.25) !important;
+}
+
+.dark .downloads-filter-tab__count,
+[data-theme="app-dark"] .downloads-filter-tab__count {
+  background: #0f172a !important;
+  color: #94a3b8 !important;
+}
+
+.dark .downloads-filter-tab.is-active .downloads-filter-tab__count,
+[data-theme="app-dark"] .downloads-filter-tab.is-active .downloads-filter-tab__count {
+  background: #7c3aed !important;
+  color: #ffffff !important;
+}
+
+.dark .downloads-search,
+[data-theme="app-dark"] .downloads-search {
+  background: #131b2e !important;
+  border-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+.dark .downloads-search input,
+[data-theme="app-dark"] .downloads-search input {
+  color: #f8fafc !important;
+}
+
+.dark .downloads-sort,
+[data-theme="app-dark"] .downloads-sort {
+  color: #94a3b8 !important;
+}
+
+.dark .downloads-sort select,
+[data-theme="app-dark"] .downloads-sort select {
+  background: #131b2e !important;
+  border-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+.dark .offline-theme-card,
+[data-theme="app-dark"] .offline-theme-card {
+  background: #131b2e !important;
+  border-color: #1e293b !important;
+  color: #f8fafc !important;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark .offline-theme-card.is-downloaded,
+[data-theme="app-dark"] .offline-theme-card.is-downloaded {
+  border-color: #166534 !important;
+}
+
+.dark .offline-theme-card__media,
+[data-theme="app-dark"] .offline-theme-card__media {
+  background: #0f172a !important;
+}
+
+.dark .offline-theme-card__senda,
+[data-theme="app-dark"] .offline-theme-card__senda {
+  background: rgba(15, 23, 42, 0.9) !important;
+  color: #f8fafc !important;
+  border: 1px solid #334155 !important;
+}
+
+.dark .offline-theme-card__ready,
+[data-theme="app-dark"] .offline-theme-card__ready {
+  background: #052e16 !important;
+  color: #4ade80 !important;
+  border: 1px solid #14532d !important;
+}
+
+.dark .offline-theme-card h3,
+[data-theme="app-dark"] .offline-theme-card h3 {
+  color: #f8fafc !important;
+}
+
+.dark .offline-theme-card__heading p,
+[data-theme="app-dark"] .offline-theme-card__heading p {
+  color: #94a3b8 !important;
+}
+
+.dark .offline-theme-card__update,
+[data-theme="app-dark"] .offline-theme-card__update {
+  background: #451a03 !important;
+  color: #fbbf24 !important;
+}
+
+.dark .offline-theme-card__meta,
+[data-theme="app-dark"] .offline-theme-card__meta {
+  color: #94a3b8 !important;
+}
+
+.dark .offline-theme-card__progress-row,
+[data-theme="app-dark"] .offline-theme-card__progress-row {
+  color: #a78bfa !important;
+}
+
+.dark .offline-theme-card__progress-track,
+[data-theme="app-dark"] .offline-theme-card__progress-track {
+  background: #1e293b !important;
+}
+
+.dark .offline-theme-card__primary,
+[data-theme="app-dark"] .offline-theme-card__primary {
+  background: #1e293b !important;
+  color: #f8fafc !important;
+  border: 1px solid #334155 !important;
+}
+
+.dark .offline-theme-card__primary:hover,
+[data-theme="app-dark"] .offline-theme-card__primary:hover {
+  background: #283347 !important;
+}
+
+.dark .offline-theme-card__secondary,
+[data-theme="app-dark"] .offline-theme-card__secondary {
+  border-color: #7c3aed !important;
+  color: #c4b5fd !important;
+  background: #2e1065 !important;
+}
+
+.dark .offline-theme-card__secondary:hover,
+[data-theme="app-dark"] .offline-theme-card__secondary:hover {
+  background: #3b137f !important;
+  color: #ffffff !important;
+}
+
+.dark .offline-theme-card__delete,
+[data-theme="app-dark"] .offline-theme-card__delete {
+  background: #450a0a !important;
+  color: #f87171 !important;
+}
+
+.dark .offline-theme-card__delete:hover,
+[data-theme="app-dark"] .offline-theme-card__delete:hover {
+  background: #5b0d0d !important;
+}
+
+.dark .downloads-empty,
+[data-theme="app-dark"] .downloads-empty {
+  background: #131b2e !important;
+  border-color: #1e293b !important;
+  color: #94a3b8 !important;
+}
+
+.dark .downloads-empty__icon,
+[data-theme="app-dark"] .downloads-empty__icon {
+  background: #2e1065 !important;
+  color: #a78bfa !important;
+}
+
+.dark .downloads-empty h2,
+[data-theme="app-dark"] .downloads-empty h2 {
+  color: #f8fafc !important;
+}
+
+.dark .downloads-empty p,
+[data-theme="app-dark"] .downloads-empty p {
+  color: #94a3b8 !important;
+}
+
+.dark .offline-storage-card,
+[data-theme="app-dark"] .offline-storage-card {
+  background: #131b2e !important;
+  border-color: #1e293b !important;
+}
+
+.dark .offline-storage-card h2,
+[data-theme="app-dark"] .offline-storage-card h2 {
+  color: #f8fafc !important;
+}
+
+.dark .offline-storage-card__copy > p,
+[data-theme="app-dark"] .offline-storage-card__copy > p {
+  color: #94a3b8 !important;
+}
+
+.dark .offline-storage-card__icon,
+[data-theme="app-dark"] .offline-storage-card__icon {
+  background: #2e1065 !important;
+  color: #a78bfa !important;
+}
+
+.dark .offline-storage-card__track,
+[data-theme="app-dark"] .offline-storage-card__track {
+  background: #1e293b !important;
+}
+
+.dark .offline-storage-card__foot,
+[data-theme="app-dark"] .offline-storage-card__foot {
+  color: #64748b !important;
+}
+
+.dark .offline-storage-card__sync,
+[data-theme="app-dark"] .offline-storage-card__sync {
+  border-color: #7c3aed !important;
+  color: #c4b5fd !important;
+  background: #2e1065 !important;
+}
+
+.dark .offline-storage-card__manage,
+[data-theme="app-dark"] .offline-storage-card__manage {
+  background: #1e293b !important;
+  color: #f8fafc !important;
+  border: 1px solid #334155 !important;
+}
+
+.dark .offline-manager__dialog,
+[data-theme="app-dark"] .offline-manager__dialog {
+  background: #131b2e !important;
+  color: #f8fafc !important;
+  border: 1px solid #1e293b !important;
+}
+
+.dark .offline-manager__header,
+[data-theme="app-dark"] .offline-manager__header {
+  border-color: #1e293b !important;
+}
+
+.dark .offline-manager h2,
+[data-theme="app-dark"] .offline-manager h2 {
+  color: #f8fafc !important;
+}
+
+.dark .offline-manager__header p,
+[data-theme="app-dark"] .offline-manager__header p {
+  color: #94a3b8 !important;
+}
+
+.dark .offline-manager__close,
+[data-theme="app-dark"] .offline-manager__close {
+  background: #1e293b !important;
+  color: #94a3b8 !important;
+}
+
+.dark .offline-manager__status-grid article,
+[data-theme="app-dark"] .offline-manager__status-grid article {
+  background: #151d2a !important;
+  border-color: #1e293b !important;
+}
+
+.dark .offline-manager__status-icon,
+[data-theme="app-dark"] .offline-manager__status-icon {
+  background: #1e293b !important;
+  color: #94a3b8 !important;
+}
+
+.dark .offline-manager__status-grid strong,
+[data-theme="app-dark"] .offline-manager__status-grid strong {
+  color: #f8fafc !important;
+}
+
+.dark .offline-manager__status-grid div > span,
+[data-theme="app-dark"] .offline-manager__status-grid div > span {
+  color: #94a3b8 !important;
+}
+
+.dark .offline-manager__storage,
+[data-theme="app-dark"] .offline-manager__storage {
+  background: #151d2a !important;
+}
+
+.dark .offline-manager__storage h3,
+[data-theme="app-dark"] .offline-manager__storage h3 {
+  color: #f8fafc !important;
+}
+
+.dark .offline-manager__storage p,
+[data-theme="app-dark"] .offline-manager__storage p {
+  color: #94a3b8 !important;
+}
+
+.dark .offline-manager__storage-track,
+[data-theme="app-dark"] .offline-manager__storage-track {
+  background: #1e293b !important;
+}
+
+.dark .offline-manager__footer,
+[data-theme="app-dark"] .offline-manager__footer {
+  background: rgba(19, 27, 46, 0.95) !important;
+  border-color: #1e293b !important;
+}
+
+.dark .offline-manager__danger,
+[data-theme="app-dark"] .offline-manager__danger {
+  border-color: #7f1d1d !important;
+  color: #f87171 !important;
+  background: #450a0a !important;
+}
+
+.dark .offline-storage-card__title-row > span,
+[data-theme="app-dark"] .offline-storage-card__title-row > span {
+  background: #052e16 !important;
+  color: #4ade80 !important;
+  border: 1px solid #14532d !important;
+}

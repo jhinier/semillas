@@ -33,7 +33,7 @@ export function QuizActividad({ actividad, onComplete }: QuizActividadProps) {
     <div className="flex flex-col w-full max-w-2xl mx-auto py-2 animate-in fade-in zoom-in-95">
       
       {/* Top Bar (Progress) */}
-      <div className="flex justify-between w-full mb-8 bg-violet-50 text-violet-800 font-bold px-5 py-3 rounded-xl text-sm">
+      <div className="flex justify-between w-full mb-8 bg-violet-50 text-violet-800 dark:bg-violet-950/50 dark:text-violet-300 font-bold px-5 py-3 rounded-xl text-sm">
         <span>Pregunta {currentQuestionIndex + 1} de {preguntas.length}</span>
       </div>
 
@@ -42,7 +42,7 @@ export function QuizActividad({ actividad, onComplete }: QuizActividadProps) {
         className="w-full mb-8 relative flex items-center justify-center p-8 sm:p-12 min-h-[160px] overflow-hidden rounded-3xl bg-cover bg-center"
         style={{ backgroundImage: `url(${imgBannerQuiz})` }}
       >
-        <h3 className="text-xl sm:text-2xl font-bold text-slate-800 text-center relative z-10">
+        <h3 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-white dark:drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] text-center relative z-10">
           {question.pregunta}
         </h3>
       </div>
@@ -54,11 +54,11 @@ export function QuizActividad({ actividad, onComplete }: QuizActividadProps) {
           const isCorrectAnswer = index === question.respuesta_correcta;
           
           const baseClass = "w-full text-left px-5 py-4 rounded-xl font-medium text-base sm:text-lg border-2 transition-all flex items-center justify-between mb-3";
-          let textClass = "text-slate-700";
+          let textClass = "text-slate-700 dark:text-slate-200";
 
           let btnClass = baseClass;
           if (selectedOption === null) {
-            btnClass = unirClases(baseClass, "bg-white border-slate-200 hover:border-violet-300 hover:bg-slate-50 cursor-pointer shadow-sm");
+            btnClass = unirClases(baseClass, "bg-white border-slate-200 hover:border-violet-300 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:hover:border-violet-500 dark:hover:bg-slate-700/60 cursor-pointer shadow-sm");
           } else {
             if (isSelected && isCorrectAnswer) {
               btnClass = unirClases(baseClass, "bg-green-50 border-green-500 z-10 shadow-sm");
@@ -83,7 +83,7 @@ export function QuizActividad({ actividad, onComplete }: QuizActividadProps) {
               className={btnClass}
             >
               <div className="flex items-center gap-4">
-                <span className={`font-bold ${isSelected ? 'text-slate-800' : 'text-violet-800'}`}>
+                <span className={`font-bold ${isSelected ? 'text-slate-800 dark:text-white' : 'text-violet-800 dark:text-violet-300'}`}>
                   {letters[index]}.
                 </span>
                 <span className={textClass}>{opcion}</span>

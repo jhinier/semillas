@@ -556,6 +556,113 @@
   opacity: 0.75;
 }
 
+/* ── Login Dark Mode Overrides ── */
+.dark .login-page,
+[data-theme="app-dark"] .login-page {
+  background: #080a10 !important;
+  color: #f8fafc !important;
+}
+
+.dark .login-shell,
+[data-theme="app-dark"] .login-shell {
+  background: #0b0f19 !important;
+  border-color: #1e293b !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4) !important;
+}
+
+.dark .login-topbar,
+[data-theme="app-dark"] .login-topbar {
+  background: #101520 !important;
+  border-bottom: 1px solid #1e293b !important;
+}
+
+.dark .login-brand__name,
+[data-theme="app-dark"] .login-brand__name {
+  color: #a78bfa !important;
+}
+
+.dark .login-brand__tagline,
+[data-theme="app-dark"] .login-brand__tagline {
+  color: #4ade80 !important;
+}
+
+.dark .login-lang,
+[data-theme="app-dark"] .login-lang {
+  background: #101520 !important;
+  border-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+.dark .login-panel--visual,
+[data-theme="app-dark"] .login-panel--visual {
+  background: transparent !important;
+}
+
+.dark .login-illustration-card,
+[data-theme="app-dark"] .login-illustration-card {
+  background: radial-gradient(circle at top, #1a2234, #101520) !important;
+  border: 1px solid #1e293b !important;
+}
+
+.dark .login-bubble,
+[data-theme="app-dark"] .login-bubble {
+  background: #1e293b !important;
+  color: #f8fafc !important;
+  border: 1px solid #334155 !important;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4) !important;
+}
+
+.dark .login-bubble span,
+[data-theme="app-dark"] .login-bubble span {
+  color: #f8fafc !important;
+}
+
+.dark .login-bubble::after,
+[data-theme="app-dark"] .login-bubble::after {
+  border-top-color: #1e293b !important;
+}
+
+.dark .login-benefit,
+[data-theme="app-dark"] .login-benefit {
+  background: #101520 !important;
+  border: 1px solid #1e293b !important;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark .login-benefit__title,
+[data-theme="app-dark"] .login-benefit__title {
+  color: #f8fafc !important;
+}
+
+.dark .login-benefit__desc,
+[data-theme="app-dark"] .login-benefit__desc {
+  color: #94a3b8 !important;
+}
+
+.dark .login-benefit__icon-wrap--cloud,
+[data-theme="app-dark"] .login-benefit__icon-wrap--cloud {
+  background: #2e1065 !important;
+  color: #c4b5fd !important;
+}
+
+.dark .login-benefit__icon-wrap--shield,
+[data-theme="app-dark"] .login-benefit__icon-wrap--shield {
+  background: #052e16 !important;
+  color: #4ade80 !important;
+}
+
+.dark .login-privacy,
+[data-theme="app-dark"] .login-privacy {
+  background: #101520 !important;
+  border: 1px solid #1e293b !important;
+  color: #94a3b8 !important;
+}
+
+.dark .login-privacy span,
+[data-theme="app-dark"] .login-privacy span {
+  color: #94a3b8 !important;
+}
+
 @media (max-width: 1199px) {
   .login-main {
     grid-template-columns: minmax(320px, 460px) minmax(0, 1fr);
