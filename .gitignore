@@ -1,6 +1,7 @@
 graphify-out/
 docs/superpowers/
 frontend/dist/
+frontend/dev-dist/
 frontend/storybook-static/
 frontend/.cache/
 frontend/node_modules/
@@ -11,7 +12,7 @@ backend/node_modules/
 backend/.wrangler/
 .dev.vars
 .DS_Store
-frontend/dev-dist/diff-dev-vs-dev2/
 diff-dev-vs-dev2/
+dev-dist/
 
 scratch/

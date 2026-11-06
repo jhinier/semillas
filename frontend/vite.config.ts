@@ -67,22 +67,6 @@ export default defineConfig(({ mode }) => {
               },
             },
             {
-              // Cachear scripts, estilos y módulos de Vite (/src/, /node_modules/, /@vite/) para que recargar (F5) en modo offline funcione tanto en dev como en prod
-              urlPattern: ({ request, url }) =>
-                request.destination === "script" ||
-                request.destination === "style" ||
-                request.destination === "worker" ||
-                url.pathname.startsWith("/src/") ||
-                url.pathname.startsWith("/node_modules/") ||
-                url.pathname.startsWith("/@"),
-              handler: "StaleWhileRevalidate",
-              options: {
-                cacheName: "semillas-app-code-v1",
-                expiration: { maxEntries: 500, maxAgeSeconds: 60 * 60 * 24 * 30 },
-                cacheableResponse: { statuses: [0, 200] },
-              },
-            },
-            {
               urlPattern: ({ request }) => request.destination === "image",
               handler: "CacheFirst",
               options: {

@@ -65,6 +65,16 @@ async function calentarCacheAppShell() {
 
 export function PwaLifecycle() {
   useEffect(() => {
+    if (import.meta.env.DEV) {
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.getRegistrations().then((regs) => {
+          for (const reg of regs) {
+            void reg.unregister();
+          }
+        });
+      }
+      return;
+    }
     let cancelado = false;
 
     void import("virtual:pwa-register")

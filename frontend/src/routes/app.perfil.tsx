@@ -147,7 +147,7 @@ function ProfilePage() {
     );
   }
 
-  if ((tieneError || !perfil) && !usuario) {
+  if (tieneError || !perfil || !usuario) {
     return (
       <div className="profile-error-state" role="alert">
         <AlertCircle size={32} aria-hidden="true" />
