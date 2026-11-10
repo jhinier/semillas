@@ -45,25 +45,29 @@ export type RecursoMultimedia = z.infer<typeof RecursoMultimediaSchema>;
 
 // --- ReferenciaBiblica ---
 export const ReferenciaBiblicaSchema = z.object({
-  id: z.string().uuid(),
-  tema_id: z.string().uuid(),
+  id: z.string().optional(),
+  tema_id: z.string().optional(),
   libro_id: z.number(),
   capitulo: z.number(),
   versiculo_inicio: z.number(),
   versiculo_fin: z.number(),
-  principal: z.boolean(),
+  principal: z.boolean().optional(),
+  parte_historia: z.string().nullable().optional(),
 });
 
 export type ReferenciaBiblica = z.infer<typeof ReferenciaBiblicaSchema>;
 
 // --- VersiculoClave ---
 export const VersiculoClaveSchema = z.object({
-  id: z.string().uuid(),
-  tema_id: z.string().uuid(),
+  id: z.string().optional(),
+  tema_id: z.string().optional(),
   texto: z.string(),
   libro_id: z.number(),
   capitulo: z.number(),
   versiculo: z.number(),
+  versiculo_fin: z.number().nullable().optional(),
+  parte_historia: z.string().nullable().optional(),
+  libro_nombre: z.string().nullable().optional(),
 });
 
 export type VersiculoClave = z.infer<typeof VersiculoClaveSchema>;
@@ -89,6 +93,8 @@ export const TemaSchema = z.object({
   senda: SendaSchema.nullable().optional(),
   creado_por: z.object({ id: z.string(), nombre_visible: z.string() }).nullable().optional(),
   grupos_edad: z.array(z.object({ id: z.string(), codigo: z.string(), nombre: z.string() })).optional(),
+  versiculo_clave: VersiculoClaveSchema.nullable().optional(),
+  referencia_biblica: ReferenciaBiblicaSchema.nullable().optional(),
 });
 
 export type Tema = z.infer<typeof TemaSchema>;

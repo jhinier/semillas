@@ -3,17 +3,20 @@ import { z } from "zod";
 import {
   ArrowLeft,
   ArrowRight,
+  BookOpen,
   BookOpenCheck,
   Check,
   Clock3,
   Download,
   Play,
+  Quote,
   RefreshCw,
   Sparkles,
   Trash2,
   WifiOff,
 } from "lucide-react";
 import { StateView } from "@/componentes/ui/state-view";
+import { obtenerNombreLibroBiblico } from "@/features/catalog/catalog.api";
 import { FASES_CRECER } from "@/features/crecer/crecer-fases";
 import { useTemaDetalle } from "@/features/themes/hooks/use-tema-detalle";
 import { useResolvedMediaUrl, obtenerIlustracionFallback } from "@/features/media/use-resolved-media-url";
@@ -42,6 +45,17 @@ function ThemeDetailPage() {
   });
 
   const coverUrl = coverMedia.src || obtenerIlustracionFallback(fallbackHint);
+  const versiculo = theme?.versiculo_clave;
+  const referencia = theme?.referencia_biblica;
+  const libroNombre = obtenerNombreLibroBiblico(
+    versiculo?.libro_id ?? referencia?.libro_id ?? 43,
+  );
+  const citaBiblica = versiculo
+    ? `${libroNombre} ${versiculo.capitulo}:${versiculo.versiculo}`
+    : referencia
+      ? `${libroNombre} ${referencia.capitulo}:${referencia.versiculo_inicio}`
+      : null;
+  const parteHistoria = versiculo?.parte_historia ?? referencia?.parte_historia ?? null;
 
   return (
     <StateView
@@ -174,6 +188,35 @@ function ThemeDetailPage() {
             })}
           </ol>
         </section>
+
+        {versiculo?.texto || citaBiblica ? (
+          <section
+            aria-label="Versículo general del tema"
+            className="mt-6 rounded-3xl border border-emerald-200 bg-gradient-to-br from-emerald-50/90 via-white to-teal-50/60 p-6 shadow-sm"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3.5 py-1 text-xs font-extrabold uppercase tracking-wider text-emerald-800">
+                <BookOpen size={14} /> Versículo general {citaBiblica ? `· ${citaBiblica}` : ""}
+              </span>
+              {parteHistoria ? (
+                <span className="rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs font-bold text-slate-700">
+                  Historia: {parteHistoria}
+                </span>
+              ) : null}
+            </div>
+            {versiculo?.texto ? (
+              <blockquote className="mt-3 flex items-start gap-3 text-base font-bold italic leading-relaxed text-slate-800">
+                <Quote size={20} className="mt-0.5 shrink-0 text-emerald-600" />
+                <span>“{versiculo.texto}”</span>
+              </blockquote>
+            ) : null}
+            {citaBiblica ? (
+              <p className="mt-2 text-right text-xs font-extrabold uppercase tracking-wider text-emerald-700">
+                — {citaBiblica}{parteHistoria ? ` · ${parteHistoria}` : ""}
+              </p>
+            ) : null}
+          </section>
+        ) : null}
 
         <div className="theme-detail__mobile-dock">
           <Link to={detalle.rutaContinuacion} params={{ themeId }} onClick={detalle.handleIniciarClick}>

@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import {
   ArrowLeft,
   ArrowRight,
+  BookOpen,
   BookOpenCheck,
   Check,
   Clock3,
@@ -12,9 +13,11 @@ import {
   Image as ImageIcon,
   Layers3,
   Play,
+  Quote,
   Sparkles,
 } from "lucide-react";
 
+import { obtenerNombreLibroBiblico } from "@/features/catalog/catalog.api";
 import { FASES_CRECER } from "@/features/crecer/crecer-fases";
 import type { ActividadAdmin } from "@/features/admin/admin.api";
 import type { ThemePreviewMode } from "../../hooks/use-theme-preview-page";
@@ -64,6 +67,19 @@ type PreviewTheme = {
   } | null;
   portada_recurso?: {
     texto_alternativo?: string | null;
+  } | null;
+  versiculo_clave?: {
+    texto?: string | null;
+    libro_id?: number | null;
+    capitulo?: number | null;
+    versiculo?: number | null;
+    parte_historia?: string | null;
+  } | null;
+  referencia_biblica?: {
+    libro_id?: number | null;
+    capitulo?: number | null;
+    versiculo_inicio?: number | null;
+    parte_historia?: string | null;
   } | null;
 };
 
@@ -371,6 +387,8 @@ function ThemeOverviewPreview({
           })}
         </ol>
       </section>
+
+      <GeneralVerseFooterCard theme={theme} />
     </div>
   );
 }
@@ -523,6 +541,10 @@ function LessonPreview({
               </button>
             </div>
           )}
+
+          <div className="mt-6">
+            <GeneralVerseFooterCard theme={theme} />
+          </div>
         </section>
       </div>
 
@@ -534,5 +556,46 @@ function LessonPreview({
         </div>
       ) : null}
     </div>
+  );
+}
+
+function GeneralVerseFooterCard({ theme }: { theme: PreviewTheme }) {
+  const versiculo = theme.versiculo_clave;
+  const referencia = theme.referencia_biblica;
+  if (!versiculo?.texto && !referencia?.libro_id) return null;
+
+  const libroNombre = obtenerNombreLibroBiblico(
+    versiculo?.libro_id ?? referencia?.libro_id ?? 43,
+  );
+  const capitulo = versiculo?.capitulo ?? referencia?.capitulo ?? 1;
+  const numVersiculo = versiculo?.versiculo ?? referencia?.versiculo_inicio ?? 1;
+  const cita = `${libroNombre} ${capitulo}:${numVersiculo}`;
+  const parteHistoria = versiculo?.parte_historia ?? referencia?.parte_historia ?? null;
+
+  return (
+    <section
+      aria-label="Versículo general del tema"
+      className="mt-6 rounded-3xl border border-violet-200 bg-gradient-to-br from-violet-50/90 via-white to-indigo-50/70 p-6 shadow-sm"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="inline-flex items-center gap-2 rounded-full bg-violet-100 px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-violet-800">
+          <BookOpen size={14} /> Versículo general · {cita}
+        </span>
+        {parteHistoria ? (
+          <span className="rounded-full border border-violet-200 bg-white px-3 py-1 text-xs font-bold text-slate-700">
+            Historia: {parteHistoria}
+          </span>
+        ) : null}
+      </div>
+      {versiculo?.texto ? (
+        <blockquote className="mt-3 flex items-start gap-2.5 text-base font-bold italic leading-relaxed text-slate-800">
+          <Quote size={18} className="mt-0.5 shrink-0 text-violet-500" />
+          <span>“{versiculo.texto}”</span>
+        </blockquote>
+      ) : null}
+      <p className="mt-2 text-right text-xs font-extrabold uppercase tracking-wider text-violet-700">
+        — {cita}{parteHistoria ? ` · ${parteHistoria}` : ""}
+      </p>
+    </section>
   );
 }

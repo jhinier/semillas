@@ -2,10 +2,11 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
+  BookOpen,
   CheckCircle2,
-  FileImage,
   ImagePlus,
   Loader2,
+  Quote,
   Save,
   Sparkles,
 } from "lucide-react";
@@ -13,11 +14,20 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { crearTema, type CrearTemaSolicitud } from "../features/admin/admin.api";
-import { obtenerGruposEdad, obtenerVersionesBiblicas } from "../features/catalog/catalog.api";
-import { obtenerUrlFirmadaRecurso, subirArchivo, type RecursoMultimedia } from "../features/media/media.api";
+import {
+  LIBROS_BIBLICOS_CATALOGO,
+  obtenerGruposEdad,
+  obtenerNombreLibroBiblico,
+  obtenerVersionesBiblicas,
+} from "../features/catalog/catalog.api";
+import {
+  obtenerRecursosMultimedia,
+  obtenerUrlFirmadaRecurso,
+  subirArchivo,
+  type RecursoMultimedia,
+} from "../features/media/media.api";
 import { obtenerSendas } from "../features/sendas/sendas.api";
 import { CoverImageUpload } from "../features/admin/componentes/temas/cover-image-upload";
-import { obtenerRecursosMultimedia } from "../features/media/media.api";
 
 export const Route = createFileRoute("/admin/temas/new")({ component: NewThemePage });
 
@@ -40,6 +50,11 @@ function NewThemePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [form, setForm] = useState<CrearTemaSolicitud>(initialForm);
+  const [libroId, setLibroId] = useState(43);
+  const [capitulo, setCapitulo] = useState(3);
+  const [versiculo, setVersiculo] = useState(16);
+  const [parteHistoria, setParteHistoria] = useState("");
+  const [versiculoTexto, setVersiculoTexto] = useState("");
   const [cover, setCover] = useState<RecursoMultimedia | null>(null);
   const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
   const [destination, setDestination] = useState<Destination>("crecer");
@@ -67,7 +82,23 @@ function NewThemePage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: () => crearTema({ ...form, titulo: form.titulo.trim(), slug: form.slug.trim(), objetivo: form.objetivo.trim(), resumen: form.resumen.trim() }),
+    mutationFn: () =>
+      crearTema({
+        ...form,
+        titulo: form.titulo.trim(),
+        slug: form.slug.trim(),
+        objetivo: form.objetivo.trim(),
+        resumen: form.resumen.trim(),
+        versiculo_clave: versiculoTexto.trim()
+          ? {
+              libro_id: Number(libroId) || 43,
+              capitulo: Math.max(1, Number(capitulo) || 1),
+              versiculo: Math.max(1, Number(versiculo) || 1),
+              texto: versiculoTexto.trim(),
+              parte_historia: parteHistoria.trim() || undefined,
+            }
+          : undefined,
+      }),
     onSuccess: async (theme) => {
       await queryClient.invalidateQueries({ queryKey: ["admin", "themes"] });
       toast.success("Tema creado como borrador");
@@ -117,12 +148,15 @@ function NewThemePage() {
 
   if (isCatalogLoading) return <div className="admin-dashboard-state"><span><Loader2 className="animate-spin" /></span><h2>Preparando editor</h2><p>Cargando sendas, franjas y versiones bíblicas.</p></div>;
 
+  const libroNombre = obtenerNombreLibroBiblico(libroId);
+  const citaBiblica = `${libroNombre} ${capitulo || 1}:${versiculo || 1}`;
+
   return (
     <div className="admin-theme-studio">
       <header className="admin-theme-library__hero">
         <div className="flex items-center gap-4">
           <button type="button" className="admin-icon-button" onClick={() => navigate({ to: "/admin/temas" })}><ArrowLeft size={19} /></button>
-          <div><span className="admin-eyebrow">Nuevo contenido</span><h2>Crear tema</h2><p>Crea el borrador con datos reales y continúa al recorrido CRECER.</p></div>
+          <div><span className="admin-eyebrow">Nuevo contenido</span><h2>Crear tema</h2><p>Crea el borrador con datos reales, su versículo general y continúa al recorrido CRECER.</p></div>
         </div>
         <div className="flex gap-2">
           <button type="button" className="admin-secondary-button" disabled={createMutation.isPending} onClick={() => submit("detalle")}><Save size={17} /> Guardar borrador</button>
@@ -144,6 +178,43 @@ function NewThemePage() {
               <Field label="Duración estimada (minutos)"><input type="number" min={1} max={120} value={form.minutos_estimados} onChange={(event) => update("minutos_estimados", Number(event.target.value))} /></Field>
               <Field label="XP por completar"><input type="number" min={0} max={500} value={form.xp_recompensa} onChange={(event) => update("xp_recompensa", Number(event.target.value))} /></Field>
               <Field label="Franjas disponibles" wide><div className="grid grid-cols-3 gap-3">{edadesQuery.data?.map((group) => { const selected = form.grupo_edad_ids.includes(group.id); return <button key={group.id} type="button" onClick={() => update("grupo_edad_ids", selected ? form.grupo_edad_ids.filter((id) => id !== group.id) : [...form.grupo_edad_ids, group.id])} className={`rounded-2xl border p-4 text-left ${selected ? "border-violet-400 bg-violet-50" : "border-slate-200 bg-white"}`}><span className="flex items-center justify-between font-bold text-slate-800">{group.nombre}{selected ? <CheckCircle2 size={18} className="text-violet-600" /> : <span className="h-4 w-4 rounded-full border-2 border-slate-300" />}</span><small className="mt-1 block text-slate-400">{group.edad_minima}–{group.edad_maxima} años</small></button>; })}</div></Field>
+            </div>
+          </section>
+
+          <section className="admin-editor-section">
+            <div className="admin-editor-section__header"><div><h2>Historia bíblica y versículo general</h2><p>Indica de qué libro y parte de la historia bíblica se toma el tema e ingresa el versículo general.</p></div></div>
+            <div className="admin-form-grid">
+              <Field label="Libro de la Biblia">
+                <select value={libroId} onChange={(event) => setLibroId(Number(event.target.value))}>
+                  {LIBROS_BIBLICOS_CATALOGO.map((libro) => (
+                    <option key={libro.id} value={libro.id}>{libro.nombre} ({libro.testamento})</option>
+                  ))}
+                </select>
+              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Capítulo">
+                  <input type="number" min={1} max={150} value={capitulo} onChange={(event) => setCapitulo(Math.max(1, Number(event.target.value) || 1))} />
+                </Field>
+                <Field label="Versículo">
+                  <input type="number" min={1} max={176} value={versiculo} onChange={(event) => setVersiculo(Math.max(1, Number(event.target.value) || 1))} />
+                </Field>
+              </div>
+              <Field label="¿Qué parte de la historia bíblica se está tomando?" wide>
+                <input
+                  value={parteHistoria}
+                  maxLength={220}
+                  placeholder={`Ejemplo: Historia tomada de ${libroNombre} ${capitulo} (contexto del pasaje)`}
+                  onChange={(event) => setParteHistoria(event.target.value)}
+                />
+              </Field>
+              <Field label="Versículo general del tema" wide>
+                <textarea
+                  rows={3}
+                  value={versiculoTexto}
+                  placeholder="Escribe el texto completo del versículo general para que aparezca en la parte inferior del tema..."
+                  onChange={(event) => setVersiculoTexto(event.target.value)}
+                />
+              </Field>
             </div>
           </section>
 
@@ -170,6 +241,33 @@ function NewThemePage() {
               }}
             />
           </section>
+
+          <section
+            aria-label="Versículo general del tema"
+            className="rounded-3xl border border-violet-200 bg-gradient-to-br from-violet-50/90 via-white to-indigo-50/70 p-6 shadow-sm"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span className="inline-flex items-center gap-2 rounded-full bg-violet-100 px-3.5 py-1 text-xs font-extrabold uppercase tracking-wider text-violet-800">
+                <BookOpen size={14} /> Versículo general del tema · {citaBiblica}
+              </span>
+              {parteHistoria.trim() ? (
+                <span className="rounded-full border border-violet-200 bg-white px-3 py-1 text-xs font-bold text-slate-700">
+                  Historia: {parteHistoria.trim()}
+                </span>
+              ) : null}
+            </div>
+            <blockquote className="mt-3 flex items-start gap-3 text-base font-bold italic leading-relaxed text-slate-800">
+              <Quote size={20} className="mt-0.5 shrink-0 text-violet-500" />
+              <span>
+                {versiculoTexto.trim()
+                  ? `“${versiculoTexto.trim()}”`
+                  : "El versículo general que ingreses aparecerá aquí en la parte inferior del tema."}
+              </span>
+            </blockquote>
+            <p className="mt-2 text-right text-xs font-extrabold uppercase tracking-wider text-violet-700">
+              — {citaBiblica}{parteHistoria.trim() ? ` · ${parteHistoria.trim()}` : ""}
+            </p>
+          </section>
         </main>
 
         <aside className="admin-editor-aside">
@@ -180,7 +278,7 @@ function NewThemePage() {
               <div className="p-5"><small className="font-bold uppercase tracking-[.16em] text-violet-600">{sendasQuery.data?.find((senda) => senda.id === form.senda_id)?.nombre ?? "Sin senda"}</small><h3 className="mt-2 text-2xl font-black text-slate-900">{form.titulo || "Título del tema"}</h3><p className="mt-2 text-sm leading-6 text-slate-500">{form.resumen || "El resumen aparecerá aquí."}</p></div>
             </div>
           </section>
-          <section className="admin-editor-section"><span className="admin-eyebrow">Completitud inicial</span><p className="mt-3 text-sm leading-6 text-slate-500">Después de crear el tema deberás completar sus seis fases CRECER para cada franja, asignar al menos una actividad y enviarlo a revisión.</p><div className="admin-completeness-list mt-4"><div className={`admin-completeness-item ${validation.valid ? "admin-completeness-item--complete" : ""}`}><span>Información requerida</span>{validation.valid ? <CheckCircle2 size={16} /> : <span>{validation.missing.length} pendientes</span>}</div><div className={`admin-completeness-item ${cover ? "admin-completeness-item--complete" : ""}`}><span>Portada</span>{cover ? <CheckCircle2 size={16} /> : <span>Opcional ahora</span>}</div></div></section>
+          <section className="admin-editor-section"><span className="admin-eyebrow">Completitud inicial</span><p className="mt-3 text-sm leading-6 text-slate-500">Después de crear el tema deberás completar sus seis fases CRECER para cada franja, asignar al menos una actividad y publicarlo.</p><div className="admin-completeness-list mt-4"><div className={`admin-completeness-item ${validation.valid ? "admin-completeness-item--complete" : ""}`}><span>Información requerida</span>{validation.valid ? <CheckCircle2 size={16} /> : <span>{validation.missing.length} pendientes</span>}</div><div className={`admin-completeness-item ${versiculoTexto.trim() ? "admin-completeness-item--complete" : ""}`}><span>Versículo general</span>{versiculoTexto.trim() ? <CheckCircle2 size={16} /> : <span>Recomendado</span>}</div><div className={`admin-completeness-item ${cover ? "admin-completeness-item--complete" : ""}`}><span>Portada</span>{cover ? <CheckCircle2 size={16} /> : <span>Opcional ahora</span>}</div></div></section>
         </aside>
       </div>
     </div>

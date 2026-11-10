@@ -1,6 +1,15 @@
 import { peticion } from "../../shared/api/api";
 import type { Paso, Tema } from "../../shared/api/api";
 
+export type VersiculoClaveSolicitud = {
+  libro_id: number;
+  capitulo: number;
+  versiculo: number;
+  versiculo_fin?: number;
+  texto: string;
+  parte_historia?: string;
+};
+
 export type CrearTemaSolicitud = {
   senda_id: string;
   titulo: string;
@@ -12,6 +21,7 @@ export type CrearTemaSolicitud = {
   xp_recompensa: number;
   grupo_edad_ids: string[];
   portada_recurso_id?: string | null;
+  versiculo_clave?: VersiculoClaveSolicitud | null;
 };
 
 export type ActualizarTemaSolicitud = {
@@ -25,6 +35,7 @@ export type ActualizarTemaSolicitud = {
   version_biblica_id?: string;
   grupo_edad_ids?: string[];
   portada_recurso_id?: string | null;
+  versiculo_clave?: VersiculoClaveSolicitud | null;
 };
 
 export type GuardarParlanteSolicitud = {

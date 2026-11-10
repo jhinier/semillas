@@ -13,6 +13,15 @@ const preguntaReflexionSchema = z.object({
   orden: z.number().int().min(1)
 });
 
+const versiculoClaveInputSchema = z.object({
+  libro_id: z.number().int().min(1).max(66),
+  capitulo: z.number().int().min(1).max(150),
+  versiculo: z.number().int().min(1).max(176),
+  versiculo_fin: z.number().int().min(1).max(176).optional(),
+  texto: z.string().trim().min(3).max(1500),
+  parte_historia: z.string().trim().max(250).optional()
+});
+
 export const createThemeSchema = z.object({
   senda_id: z.string().uuid(),
   titulo: z.string().min(3).max(120),
@@ -23,7 +32,8 @@ export const createThemeSchema = z.object({
   minutos_estimados: z.number().int().min(1).max(120).default(10),
   xp_recompensa: z.number().int().min(0).max(500).default(50),
   grupo_edad_ids: z.array(z.string().uuid()).min(1),
-  portada_recurso_id: z.string().uuid().nullable().optional()
+  portada_recurso_id: z.string().uuid().nullable().optional(),
+  versiculo_clave: versiculoClaveInputSchema.nullable().optional()
 });
 
 export const updateThemeSchema = z.object({
@@ -37,6 +47,7 @@ export const updateThemeSchema = z.object({
   version_biblica_id: z.string().uuid().optional(),
   grupo_edad_ids: z.array(z.string().uuid()).min(1).optional(),
   portada_recurso_id: z.string().uuid().nullable().optional(),
+  versiculo_clave: versiculoClaveInputSchema.nullable().optional()
 });
 
 export const upsertStepContentSchema = z.object({

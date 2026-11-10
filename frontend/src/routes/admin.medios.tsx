@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AlertCircle, X } from "lucide-react";
+import { AlertCircle, Info, X } from "lucide-react";
 
 import {
   AdminMediaDetailPanel,
@@ -71,6 +71,19 @@ function AdminMediosPage() {
         isUploading={isUploading}
         onSubirRecurso={() => inputArchivoRef.current?.click()}
       />
+
+      <div
+        role="note"
+        className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-violet-200 bg-violet-50/70 px-4 py-3 text-xs font-semibold text-slate-700"
+      >
+        <div className="flex items-center gap-2">
+          <Info size={16} className="shrink-0 text-violet-600" />
+          <span>
+            <strong className="font-black text-slate-900">Límites máximos de subida por archivo:</strong>{" "}
+            Video: <strong className="text-violet-700">máx. 50 MB</strong> (MP4, WebM) · Audio: <strong className="text-violet-700">máx. 20 MB</strong> (MP3, AAC, OGG, WebM) · Imagen: <strong className="text-violet-700">máx. 5 MB</strong> (JPG, PNG, WebP) · Documento: <strong className="text-violet-700">máx. 10 MB</strong> (PDF)
+          </span>
+        </div>
+      </div>
 
       {uploadErrors.length > 0 ? (
         <div

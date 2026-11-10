@@ -17,7 +17,11 @@ import type { ReactNode } from "react";
 
 import type { ActivityDraft, OptionDraft } from "../../types";
 import type { RecursoMultimedia } from "../../../media/media.api";
-import { validarActividadParaGuardar } from "./activity-configuration";
+import {
+  normalizarConfiguracionActividad,
+  sincronizarOpcionesCuestionario,
+  validarActividadParaGuardar,
+} from "./activity-configuration";
 import { ActivityTypeConfigBuilder } from "./activity-type-config-builder";
 import { ActivityDraftPreview } from "./activity-draft-preview";
 import { getActivityTypeDefinition } from "./activity-type-catalog";
@@ -60,8 +64,26 @@ const TABS: Array<{ id: ActivityEditorTab; label: string; helper: string; icon: 
 export function ActivityEditorWorkspace(props: ActivityEditorWorkspaceProps) {
   const update = <K extends keyof ActivityDraft>(key: K, value: ActivityDraft[K]) => props.onChange({ ...props.draft, [key]: value });
   const updateConfig = (configuracion: Record<string, unknown>) => {
-    update("configuracion", configuracion);
-    props.onConfigTextChange(JSON.stringify(configuracion, null, 2));
+    if (props.selectedTypeCode === "cuestionario") {
+      const { configuracion: configNormalizada, opciones: opcionesSincronizadas } = sincronizarOpcionesCuestionario(
+        configuracion,
+        props.draft.opciones,
+      );
+      props.onChange({
+        ...props.draft,
+        configuracion: configNormalizada,
+        opciones: opcionesSincronizadas,
+      });
+      props.onConfigTextChange(JSON.stringify(configNormalizada, null, 2));
+      return;
+    }
+
+    const normalizada = normalizarConfiguracionActividad(props.selectedTypeCode, configuracion, props.draft.opciones);
+    props.onChange({
+      ...props.draft,
+      configuracion: normalizada,
+    });
+    props.onConfigTextChange(JSON.stringify(normalizada, null, 2));
   };
 
   const selectedType = props.types.find((type) => type.id === props.draft.tipo_actividad_id);
@@ -185,7 +207,9 @@ export function ActivityEditorWorkspace(props: ActivityEditorWorkspaceProps) {
               ) : (
                 <div className="activity-editor-mechanics">
                   <ActivityTypeConfigBuilder codigo={props.selectedTypeCode} configuracion={props.draft.configuracion} onChange={updateConfig} onUpload={props.onUpload} resources={props.resources} uploading={props.uploading} />
-                  {definition.requiereOpciones ? <OptionsBuilder options={props.draft.opciones} onChange={(opciones) => update("opciones", opciones)} /> : null}
+                  {definition.requiereOpciones && props.selectedTypeCode !== "cuestionario" ? (
+                    <OptionsBuilder options={props.draft.opciones} onChange={(opciones) => update("opciones", opciones)} />
+                  ) : null}
                 </div>
               )}
             </section>

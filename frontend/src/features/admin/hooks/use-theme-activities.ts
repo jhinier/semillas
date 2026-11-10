@@ -4,10 +4,10 @@ import { toast } from "sonner";
 import {
   actualizarActividad,
   crearActividad,
-  type ActividadAdmin,
 } from "../admin.api";
 import {
   normalizarConfiguracionActividad,
+  sincronizarOpcionesCuestionario,
   validarActividadParaGuardar,
 } from "../componentes/temas/activity-configuration";
 import type { ActivityDraft } from "../types";
@@ -50,16 +50,45 @@ export function useThemeActivitiesMutation({
         !draft.tipo_actividad_id
       )
         throw new Error("Completa los campos obligatorios");
-      const configuracion = normalizarConfiguracionActividad(
+
+      let configuracion = normalizarConfiguracionActividad(
         codigoTipoActividad,
-        configuracionAvanzada
+        configuracionAvanzada,
+        draft.opciones
       );
+      let opcionesPayload = draft.opciones;
+
+      if (codigoTipoActividad === "cuestionario") {
+        const sincronizadas = sincronizarOpcionesCuestionario(
+          configuracionAvanzada,
+          draft.opciones
+        );
+        const filtradas = sincronizadas.opciones
+          .filter((op) => op.texto.trim().length > 0)
+          .map((op, index) => ({
+            ...op,
+            etiqueta: String.fromCharCode(65 + index),
+            texto: op.texto.trim(),
+            orden: index + 1,
+          }));
+        opcionesPayload = filtradas;
+        configuracion = {
+          ...sincronizadas.configuracion,
+          opciones: filtradas.map((op, index) => ({
+            id: `opcion-${index + 1}`,
+            texto: op.texto,
+            correcta: op.correcta,
+          })),
+        };
+      }
+
       const errorConfiguracion = validarActividadParaGuardar({
         codigo: codigoTipoActividad,
         configuracion,
-        opciones: draft.opciones,
+        opciones: opcionesPayload,
       });
       if (errorConfiguracion) throw new Error(errorConfiguracion);
+
       const payload = {
         tema_id: themeId,
         paso_id: draft.paso_id,
@@ -74,10 +103,11 @@ export function useThemeActivitiesMutation({
         dificultad: draft.dificultad,
         obligatorio: draft.obligatorio,
         configuracion,
-        opciones: draft.opciones
+        opciones: opcionesPayload
           .filter((option) => option.texto.trim())
           .map((option, index) => ({
             ...option,
+            etiqueta: String.fromCharCode(65 + index),
             texto: option.texto.trim(),
             orden: index + 1,
           })),

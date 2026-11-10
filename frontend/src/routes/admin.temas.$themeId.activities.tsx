@@ -36,7 +36,10 @@ import {
 import { useThemeActivitiesMutation } from "../features/admin/hooks/use-theme-activities";
 import { obtenerGruposEdad, obtenerTiposActividad } from "../features/catalog/catalog.api";
 import { obtenerRecursosMultimedia, subirArchivo } from "../features/media/media.api";
-import { normalizarConfiguracionActividad } from "@/features/admin/componentes/temas/activity-configuration";
+import {
+  normalizarConfiguracionActividad,
+  sincronizarOpcionesCuestionario,
+} from "@/features/admin/componentes/temas/activity-configuration";
 import {
   ActivityEditorWorkspace,
   type ActivityEditorTab,
@@ -120,14 +123,15 @@ function AdminThemeActivitiesPage() {
     if (newFormInitialized.current || !selectedAge || !stepsQuery.data?.length || !typesQuery.data?.length) return;
 
     const firstType = typesQuery.data[0];
-    const initialConfig = normalizarConfiguracionActividad(firstType?.codigo ?? "", {});
+    const baseOptions = defaultOptions.map((option) => ({ ...option }));
+    const initialConfig = normalizarConfiguracionActividad(firstType?.codigo ?? "", {}, baseOptions);
     setDraft({
       ...emptyDraft,
       grupo_edad_id: selectedAge,
       paso_id: stepsQuery.data[0]?.id ?? "",
       tipo_actividad_id: firstType?.id ?? "",
       configuracion: initialConfig,
-      opciones: defaultOptions.map((option) => ({ ...option })),
+      opciones: baseOptions,
     });
     setConfigText(JSON.stringify(initialConfig, null, 2));
     setIsDirty(false);
@@ -137,6 +141,32 @@ function AdminThemeActivitiesPage() {
   useEffect(() => {
     const activity = editQuery.data;
     if (!activity || search.form !== "editar") return;
+
+    const opcionesRaw = activity.opciones.length
+      ? activity.opciones.map((option, index) => ({
+          etiqueta: option.etiqueta ?? String.fromCharCode(65 + index),
+          texto: option.texto,
+          correcta: option.correcta,
+          orden: option.orden,
+        }))
+      : defaultOptions.map((option) => ({ ...option }));
+
+    const codigoActividad =
+      activity.tipo_actividad?.codigo ??
+      typesQuery.data?.find((item) => item.id === activity.tipo_actividad_id)?.codigo ??
+      "";
+
+    const sincronizado =
+      codigoActividad === "cuestionario"
+        ? sincronizarOpcionesCuestionario(activity.configuracion ?? {}, opcionesRaw)
+        : {
+            configuracion: normalizarConfiguracionActividad(
+              codigoActividad,
+              activity.configuracion ?? {},
+              opcionesRaw,
+            ),
+            opciones: opcionesRaw,
+          };
 
     const nextDraft: ActivityDraft = {
       paso_id: activity.paso_id ?? "",
@@ -149,22 +179,15 @@ function AdminThemeActivitiesPage() {
       limite_tiempo_seg: activity.limite_tiempo_seg,
       dificultad: (activity.dificultad as ActivityDraft["dificultad"]) ?? "facil",
       obligatorio: activity.obligatorio,
-      configuracion: activity.configuracion ?? {},
-      opciones: activity.opciones.length
-        ? activity.opciones.map((option, index) => ({
-            etiqueta: option.etiqueta ?? String.fromCharCode(65 + index),
-            texto: option.texto,
-            correcta: option.correcta,
-            orden: option.orden,
-          }))
-        : defaultOptions.map((option) => ({ ...option })),
+      configuracion: sincronizado.configuracion,
+      opciones: sincronizado.opciones,
     };
 
     setSelectedAge(activity.grupo_edad_id);
     setDraft(nextDraft);
     setConfigText(JSON.stringify(nextDraft.configuracion, null, 2));
     setIsDirty(false);
-  }, [editQuery.data, search.form]);
+  }, [editQuery.data, search.form, typesQuery.data]);
 
   useEffect(() => {
     if (!isDirty) return;
@@ -192,6 +215,9 @@ function AdminThemeActivitiesPage() {
       queryClient.invalidateQueries({ queryKey: ["admin", "theme", themeId, "activities"] }),
       queryClient.invalidateQueries({ queryKey: ["admin", "theme", themeId, "studio"] }),
       queryClient.invalidateQueries({ queryKey: ["admin", "activities"] }),
+      ...(search.actividadId
+        ? [queryClient.invalidateQueries({ queryKey: ["admin", "activity", search.actividadId] })]
+        : []),
     ]);
   };
 
@@ -255,12 +281,13 @@ function AdminThemeActivitiesPage() {
     if (hasTypeData && !window.confirm("Cambiar el tipo reiniciará la mecánica y sus opciones. ¿Continuar?")) return;
 
     const type = typesQuery.data?.find((item) => item.id === typeId);
-    const nextConfig = normalizarConfiguracionActividad(type?.codigo ?? "", {});
+    const baseOptions = defaultOptions.map((option) => ({ ...option }));
+    const nextConfig = normalizarConfiguracionActividad(type?.codigo ?? "", {}, baseOptions);
     updateDraft({
       ...draft,
       tipo_actividad_id: typeId,
       configuracion: nextConfig,
-      opciones: defaultOptions.map((option) => ({ ...option })),
+      opciones: baseOptions,
     });
     setConfigText(JSON.stringify(nextConfig, null, 2));
   };

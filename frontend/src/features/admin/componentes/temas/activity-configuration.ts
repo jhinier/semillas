@@ -1,6 +1,6 @@
 type ConfiguracionActividad = Record<string, unknown>;
 
-type OpcionActividad = {
+export type OpcionActividad = {
   etiqueta: string;
   texto: string;
   correcta: boolean;
@@ -39,6 +39,74 @@ function esOpcionCorrecta(opcion: unknown): boolean {
   return esRegistro(opcion) && (opcion.correcta === true || opcion.esCorrecta === true);
 }
 
+export function sincronizarOpcionesCuestionario(
+  configuracion: ConfiguracionActividad,
+  opciones: OpcionActividad[],
+): {
+  configuracion: ConfiguracionActividad;
+  opciones: OpcionActividad[];
+} {
+  const opcionesEnConfig = obtenerArreglo(configuracion.opciones)
+    .filter(esRegistro)
+    .map((item, indice) => ({
+      id: typeof item.id === "string" && item.id.trim() ? item.id.trim() : `opcion-${indice + 1}`,
+      etiqueta: String.fromCharCode(65 + indice),
+      texto: typeof item.texto === "string" ? item.texto : "",
+      correcta: item.correcta === true || item.esCorrecta === true,
+      orden: indice + 1,
+    }));
+
+  const opcionesEnBorrador = (opciones ?? []).map((item, indice) => ({
+    id: `opcion-${indice + 1}`,
+    etiqueta: item.etiqueta || String.fromCharCode(65 + indice),
+    texto: typeof item.texto === "string" ? item.texto : "",
+    correcta: item.correcta === true,
+    orden: indice + 1,
+  }));
+
+  const configTieneTexto = opcionesEnConfig.some((item) => item.texto.trim().length > 0);
+  const borradorTieneTexto = opcionesEnBorrador.some((item) => item.texto.trim().length > 0);
+
+  const fuenteBase = configTieneTexto
+    ? opcionesEnConfig
+    : borradorTieneTexto
+      ? opcionesEnBorrador
+      : opcionesEnConfig.length >= 2
+        ? opcionesEnConfig
+        : opcionesEnBorrador.length >= 2
+          ? opcionesEnBorrador
+          : [
+              { id: "opcion-1", etiqueta: "A", texto: "", correcta: true, orden: 1 },
+              { id: "opcion-2", etiqueta: "B", texto: "", correcta: false, orden: 2 },
+            ];
+
+  const esPlantillaVacia = !configTieneTexto && !borradorTieneTexto && opcionesEnConfig.length === 0 && opcionesEnBorrador.length === 0;
+  const normalizadas = fuenteBase.map((item, indice) => ({
+    ...item,
+    id: item.id || `opcion-${indice + 1}`,
+    etiqueta: String.fromCharCode(65 + indice),
+    correcta: esPlantillaVacia ? indice === 0 : item.correcta,
+    orden: indice + 1,
+  }));
+
+  return {
+    configuracion: {
+      ...configuracion,
+      opciones: normalizadas.map((item) => ({
+        id: item.id,
+        texto: item.texto,
+        correcta: item.correcta,
+      })),
+    },
+    opciones: normalizadas.map((item) => ({
+      etiqueta: item.etiqueta,
+      texto: item.texto,
+      correcta: item.correcta,
+      orden: item.orden,
+    })),
+  };
+}
+
 export function afirmacionesAlineas(valor: unknown): string {
   return obtenerArreglo(valor)
     .map((afirmacion) => {
@@ -73,7 +141,12 @@ function tieneParesCompletos(pares: unknown[], minimo: number, campos: string[])
 export function normalizarConfiguracionActividad(
   codigo: string,
   configuracion: ConfiguracionActividad,
+  opciones: OpcionActividad[] = [],
 ): ConfiguracionActividad {
+  if (codigo === "cuestionario") {
+    return sincronizarOpcionesCuestionario(configuracion, opciones).configuracion;
+  }
+
   if (codigo === "verdadero_falso") {
     const afirmaciones = obtenerArreglo(configuracion.afirmaciones).map((afirmacion) => {
       if (!esRegistro(afirmacion)) return afirmacion;
@@ -183,7 +256,8 @@ export function validarActividadParaGuardar({
   }
 
   if (codigo === "cuestionario") {
-    const opcionesConTexto = opciones.filter((opcion) => opcion.texto.trim().length > 0);
+    const { opciones: opcionesSincronizadas } = sincronizarOpcionesCuestionario(configuracion, opciones);
+    const opcionesConTexto = opcionesSincronizadas.filter((opcion) => opcion.texto.trim().length > 0);
     if (opcionesConTexto.length < 2 || opcionesConTexto.length > 6) return "El cuestionario requiere entre 2 y 6 opciones no vacías.";
     if (opcionesConTexto.filter((opcion) => opcion.correcta).length !== 1) return "El cuestionario requiere exactamente una respuesta correcta.";
   }

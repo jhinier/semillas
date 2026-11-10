@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Activity,
   ArrowLeft,
+  BookOpen,
   BookOpenCheck,
   Check,
   CheckCircle2,
@@ -13,6 +14,7 @@ import {
   Gamepad2,
   Layers3,
   Loader2,
+  Quote,
   Send,
   Settings2,
   ShieldCheck,
@@ -25,6 +27,8 @@ import {
   publicarTema,
 } from "../features/admin/admin.api";
 import { resolverPortadaTemaAdmin, usePortadasFirmadasAdmin } from "../features/admin/admin-theme-cover";
+import { obtenerNombreLibroBiblico } from "../features/catalog/catalog.api";
+import { obtenerIlustracionFallback } from "../features/media/use-resolved-media-url";
 
 export const Route = createFileRoute("/admin/temas/$themeId/detalle")({ component: AdminThemeStudioPage });
 
@@ -45,14 +49,22 @@ function AdminThemeStudioPage() {
   const estudioQuery = useQuery({ queryKey: ["admin", "theme", themeId, "studio"], queryFn: () => obtenerEstudioTemaAdmin(themeId) });
   const portadasFirmadas = usePortadasFirmadasAdmin(estudioQuery.data ? [estudioQuery.data.tema] : []);
 
+  const invalidate = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["admin", "theme", themeId] }),
+      queryClient.invalidateQueries({ queryKey: ["admin", "theme", themeId, "studio"] }),
+      queryClient.invalidateQueries({ queryKey: ["admin", "themes"] }),
+    ]);
+  };
+
   const reviewMutation = useMutation({
     mutationFn: () => enviarTemaRevision(themeId),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin", "theme", themeId] }); toast.success("Tema enviado a revisión"); },
+    onSuccess: async () => { await invalidate(); toast.success("Tema enviado a revisión"); },
     onError: (error) => toast.error(error instanceof Error ? error.message : "No se pudo enviar a revisión"),
   });
   const publishMutation = useMutation({
     mutationFn: () => publicarTema(themeId),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin", "theme", themeId] }); toast.success("Tema publicado"); },
+    onSuccess: async () => { await invalidate(); toast.success("¡Tema publicado exitosamente!"); },
     onError: (error) => toast.error(error instanceof Error ? error.message : "No se pudo publicar"),
   });
 
@@ -62,13 +74,22 @@ function AdminThemeStudioPage() {
   const { tema, pasos, actividades, completitud, revisiones } = estudioQuery.data;
   const portada = resolverPortadaTemaAdmin({
     titulo: tema.titulo,
-    urlFirmada: portadasFirmadas.get(tema.id) ?? null,
+    urlFirmada: portadasFirmadas.get(tema.id) ?? tema.portada_recurso?.url_publica ?? null,
   });
   const grupos = tema.grupos_edad ?? [];
   const ultimaRevision = revisiones[0];
+  const versiculo = tema.versiculo_clave;
+  const referencia = tema.referencia_biblica;
+  const libroNombre = obtenerNombreLibroBiblico(versiculo?.libro_id ?? referencia?.libro_id ?? 43);
+  const citaBiblica = versiculo
+    ? `${libroNombre} ${versiculo.capitulo}:${versiculo.versiculo}`
+    : referencia
+      ? `${libroNombre} ${referencia.capitulo}:${referencia.versiculo_inicio}`
+      : null;
+  const parteHistoria = versiculo?.parte_historia ?? referencia?.parte_historia ?? null;
 
   const navCards = [
-    { to: "/admin/temas/$themeId/edit", icon: FilePenLine, title: "Información y portada", text: "Edita senda, objetivo, público, duración, XP y recurso de portada." },
+    { to: "/admin/temas/$themeId/edit", icon: FilePenLine, title: "Información, versículo y portada", text: "Edita senda, versículo general, historia bíblica, duración, XP y portada." },
     { to: "/admin/temas/$themeId/crecer", icon: Layers3, title: "Editor CRECER", text: "Construye los seis momentos por cada franja, con medios y reflexiones." },
     { to: "/admin/temas/$themeId/activities", icon: Gamepad2, title: "Actividades", text: "Asigna juegos, preguntas, videos y recursos a cada paso." },
   ] as const;
@@ -89,10 +110,33 @@ function AdminThemeStudioPage() {
           <div className="admin-theme-studio__hero-actions">
             <Link to="/admin/temas/$themeId/edit" params={{ themeId }}><FilePenLine size={16} /> Editar tema</Link>
             <Link to="/admin/temas/$themeId/preview" params={{ themeId }}><Eye size={16} /> Vista previa</Link>
-            {tema.estado === "aprobado" ? <button type="button" disabled={publishMutation.isPending} onClick={() => publishMutation.mutate()}><Send size={16} /> Publicar</button> : <button type="button" disabled={!completitud.listo_para_revision || reviewMutation.isPending || tema.estado === "revision"} onClick={() => reviewMutation.mutate()}><ShieldCheck size={16} /> {tema.estado === "revision" ? "En revisión" : "Enviar a revisión"}</button>}
+            <button
+              type="button"
+              disabled={!completitud.listo_para_revision || publishMutation.isPending}
+              onClick={() => publishMutation.mutate()}
+            >
+              <Send size={16} /> {tema.estado === "publicado" ? "Publicado" : "Publicar ahora"}
+            </button>
+            {tema.estado !== "publicado" ? (
+              <button
+                type="button"
+                disabled={!completitud.listo_para_revision || reviewMutation.isPending || tema.estado === "revision"}
+                onClick={() => reviewMutation.mutate()}
+              >
+                <ShieldCheck size={16} /> {tema.estado === "revision" ? "En revisión" : "Enviar a revisión"}
+              </button>
+            ) : null}
           </div>
         </div>
-        <div className="admin-theme-studio__cover"><img src={portada} alt="" /></div>
+        <div className="admin-theme-studio__cover">
+          <img
+            src={portada}
+            alt={tema.portada_recurso?.texto_alternativo || `Portada de ${tema.titulo}`}
+            onError={(event) => {
+              event.currentTarget.src = obtenerIlustracionFallback(tema.titulo);
+            }}
+          />
+        </div>
       </section>
 
       <div className="admin-theme-studio__grid">
@@ -125,6 +169,43 @@ function AdminThemeStudioPage() {
             </div>
             <Link to="/admin/temas/$themeId/activities" params={{ themeId }} className="admin-primary-button mt-4"><Gamepad2 size={17} /> Administrar actividades</Link>
           </section>
+
+          {/* Versículo general e historia bíblica en la parte inferior */}
+          <section
+            aria-label="Versículo general del tema"
+            className="rounded-3xl border border-violet-200 bg-gradient-to-br from-violet-50/90 via-white to-indigo-50/70 p-6 shadow-sm"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span className="inline-flex items-center gap-2 rounded-full bg-violet-100 px-3.5 py-1 text-xs font-extrabold uppercase tracking-wider text-violet-800">
+                <BookOpen size={14} /> Versículo general del tema {citaBiblica ? `· ${citaBiblica}` : ""}
+              </span>
+              <Link
+                to="/admin/temas/$themeId/edit"
+                params={{ themeId }}
+                className="text-xs font-extrabold text-violet-700 hover:underline"
+              >
+                {versiculo?.texto ? "Editar versículo" : "+ Agregar versículo general"}
+              </Link>
+            </div>
+            {parteHistoria ? (
+              <p className="mt-2 text-xs font-bold text-slate-600">
+                Historia bíblica tomada: <strong className="text-slate-900">{parteHistoria}</strong>
+              </p>
+            ) : null}
+            <blockquote className="mt-3 flex items-start gap-3 text-base font-bold italic leading-relaxed text-slate-800">
+              <Quote size={20} className="mt-0.5 shrink-0 text-violet-500" />
+              <span>
+                {versiculo?.texto
+                  ? `“${versiculo.texto}”`
+                  : "Aún no se ha registrado el versículo general del tema. Agrégalo en «Editar tema» para llegar al 100% de completitud y habilitar la publicación."}
+              </span>
+            </blockquote>
+            {citaBiblica ? (
+              <p className="mt-2 text-right text-xs font-extrabold uppercase tracking-wider text-violet-700">
+                — {citaBiblica}{parteHistoria ? ` · ${parteHistoria}` : ""}
+              </p>
+            ) : null}
+          </section>
         </div>
 
         <aside className="admin-studio-aside">
@@ -145,7 +226,7 @@ function AdminThemeStudioPage() {
 
           <section className="admin-studio-card">
             <h3>Flujo editorial</h3>
-            <p className="mt-2 text-sm leading-6 text-slate-500">{ultimaRevision ? `Último estado: ${ultimaRevision.estado}. ${ultimaRevision.notas ?? "Sin notas."}` : "Este tema todavía no se ha enviado a revisión."}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-500">{ultimaRevision ? `Último estado: ${ultimaRevision.estado}. ${ultimaRevision.notas ?? "Sin notas."}` : "Este tema está listo para publicarse cuando la completitud llegue al 100%."}</p>
             <Link to="/admin/revision" className="admin-secondary-button mt-4 w-full"><Settings2 size={16} /> Abrir cola de revisión</Link>
           </section>
         </aside>

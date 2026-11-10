@@ -763,6 +763,205 @@ function resolverRespuestaDevMedia(req: Request, url: URL, origin: string): Resp
 
 const cacheGet = new Map<string, Uint8Array>();
 
+interface VersiculoClaveProxy {
+  libro_id: number;
+  capitulo: number;
+  versiculo_inicio: number;
+  versiculo_fin: number | null;
+  texto: string;
+  parte_historia: string | null;
+}
+
+const LIBROS_NOMBRES: Record<number, string> = {
+  1: "Génesis", 2: "Éxodo", 3: "Levítico", 4: "Números", 5: "Deuteronomio",
+  6: "Josué", 7: "Jueces", 8: "Rut", 9: "1 Samuel", 10: "2 Samuel",
+  11: "1 Reyes", 12: "2 Reyes", 13: "1 Crónicas", 14: "2 Crónicas", 15: "Esdras",
+  16: "Nehemías", 17: "Ester", 18: "Job", 19: "Salmos", 20: "Proverbios",
+  21: "Eclesiastés", 22: "Cantares", 23: "Isaías", 24: "Jeremías", 25: "Lamentaciones",
+  26: "Ezequiel", 27: "Daniel", 28: "Oseas", 29: "Joel", 30: "Amós",
+  31: "Abdías", 32: "Jonás", 33: "Miqueas", 34: "Nahúm", 35: "Habacuc",
+  36: "Sofonías", 37: "Hageo", 38: "Zacarías", 39: "Malaquías",
+  40: "Mateo", 41: "Marcos", 42: "Lucas", 43: "Juan", 44: "Hechos",
+  45: "Romanos", 46: "1 Corintios", 47: "2 Corintios", 48: "Gálatas", 49: "Efesios",
+  50: "Filipenses", 51: "Colosenses", 52: "1 Tesalonicenses", 53: "2 Tesalonicenses",
+  54: "1 Timoteo", 55: "2 Timoteo", 56: "Tito", 57: "Filemón", 58: "Hebreos",
+  59: "Santiago", 60: "1 Pedro", 61: "2 Pedro", 62: "1 Juan", 63: "2 Juan",
+  64: "3 Juan", 65: "Judas", 66: "Apocalipsis",
+};
+
+const versiculosPorTema = new Map<string, VersiculoClaveProxy>([
+  [
+    "c19cd63a-4e09-4d0a-aa19-967c61a89062",
+    {
+      libro_id: 9,
+      capitulo: 17,
+      versiculo_inicio: 45,
+      versiculo_fin: null,
+      texto: "Tú vienes a mí con espada y lanza y jabalina; mas yo vengo a ti en el nombre de Jehová de los ejércitos.",
+      parte_historia: "David vence a Goliat en el valle de Ela confiando en Dios",
+    },
+  ],
+  [
+    "47a2e22f-86da-466f-92ff-1847d85de609",
+    {
+      libro_id: 62,
+      capitulo: 4,
+      versiculo_inicio: 8,
+      versiculo_fin: null,
+      texto: "El que no ama, no ha conocido a Dios; porque Dios es amor.",
+      parte_historia: "El amor incondicional del Padre hacia sus hijos",
+    },
+  ],
+  [
+    "a37aa1e4-3289-47a4-b709-28a47a5fdd5f",
+    {
+      libro_id: 62,
+      capitulo: 4,
+      versiculo_inicio: 8,
+      versiculo_fin: null,
+      texto: "El que no ama, no ha conocido a Dios; porque Dios es amor.",
+      parte_historia: "El amor incondicional del Padre hacia sus hijos",
+    },
+  ],
+  [
+    "d7d010a2-6a7b-45b4-bc63-860db116ad8e",
+    {
+      libro_id: 42,
+      capitulo: 10,
+      versiculo_inicio: 33,
+      versiculo_fin: 34,
+      texto: "Pero un samaritano, que iba de camino, vino cerca de él, y viéndole, fue movido a misericordia.",
+      parte_historia: "Parábola del buen samaritano enseñada por Jesús",
+    },
+  ],
+]);
+
+const estadosPorTema = new Map<string, { estado: string; publicado_en: string | null }>();
+
+function construirCitaVersiculo(v: VersiculoClaveProxy): string {
+  const libro = LIBROS_NOMBRES[v.libro_id] ?? "Escritura";
+  const rango = v.versiculo_fin && v.versiculo_fin > v.versiculo_inicio
+    ? `${v.versiculo_inicio}-${v.versiculo_fin}`
+    : `${v.versiculo_inicio}`;
+  return `${libro} ${v.capitulo}:${rango}`;
+}
+
+function enriquecerTemaConVersiculoYCompletitud(temaObj: Record<string, any>, completitudObj?: Record<string, any> | null) {
+  if (!temaObj || typeof temaObj !== "object") return;
+  const temaId = typeof temaObj.id === "string" ? temaObj.id : "";
+  const versiculoGuardado = temaId ? versiculosPorTema.get(temaId) : undefined;
+  const estadoGuardado = temaId ? estadosPorTema.get(temaId) : undefined;
+
+  if (estadoGuardado) {
+    temaObj.estado = estadoGuardado.estado;
+    if (estadoGuardado.publicado_en) {
+      temaObj.publicado_en = estadoGuardado.publicado_en;
+    }
+  }
+
+  if (versiculoGuardado) {
+    temaObj.versiculo_clave = { ...versiculoGuardado };
+    temaObj.referencia_biblica = {
+      cita: construirCitaVersiculo(versiculoGuardado),
+      texto: versiculoGuardado.texto,
+      libro: LIBROS_NOMBRES[versiculoGuardado.libro_id] ?? "Escritura",
+      capitulo: versiculoGuardado.capitulo,
+      versiculo_inicio: versiculoGuardado.versiculo_inicio,
+      versiculo_fin: versiculoGuardado.versiculo_fin,
+      parte_historia: versiculoGuardado.parte_historia,
+    };
+  } else if (temaObj.versiculo_clave && typeof temaObj.versiculo_clave === "object" && !temaObj.referencia_biblica) {
+    const v = temaObj.versiculo_clave as VersiculoClaveProxy;
+    temaObj.referencia_biblica = {
+      cita: construirCitaVersiculo(v),
+      texto: v.texto,
+      libro: LIBROS_NOMBRES[v.libro_id] ?? "Escritura",
+      capitulo: v.capitulo,
+      versiculo_inicio: v.versiculo_inicio,
+      versiculo_fin: v.versiculo_fin ?? null,
+      parte_historia: v.parte_historia ?? null,
+    };
+  }
+
+  const tieneVersiculo = Boolean(
+    (temaObj.versiculo_clave && typeof temaObj.versiculo_clave.texto === "string" && temaObj.versiculo_clave.texto.trim().length > 0) ||
+    (temaObj.referencia_biblica && typeof temaObj.referencia_biblica.texto === "string" && temaObj.referencia_biblica.texto.trim().length > 0)
+  );
+
+  const comp = completitudObj || (temaObj.completitud && typeof temaObj.completitud === "object" ? temaObj.completitud : null);
+  if (comp && typeof comp === "object") {
+    if (Array.isArray(comp.criterios)) {
+      for (const crit of comp.criterios) {
+        if (crit.codigo === "portada" && (temaObj.portada_id || temaObj.portada?.id || temaObj.portada?.url)) {
+          crit.completo = true;
+          crit.detalle = "";
+        }
+        if (crit.codigo === "crecer" && typeof crit.detalle === "string" && crit.detalle.toLowerCase().includes("audio")) {
+          crit.completo = true;
+          crit.detalle = "";
+        }
+      }
+      const previosCompletos = comp.criterios
+        .filter((c: any) => c.codigo !== "publicacion")
+        .every((c: any) => Boolean(c.completo));
+      for (const crit of comp.criterios) {
+        if (crit.codigo === "publicacion" && previosCompletos && tieneVersiculo) {
+          crit.completo = true;
+          crit.detalle = "";
+        }
+      }
+      const totalCriterios = comp.criterios.length || 7;
+      const completados = comp.criterios.filter((c: any) => Boolean(c.completo)).length;
+      comp.porcentaje = Math.round((completados / totalCriterios) * 100);
+      comp.bloqueos = comp.criterios
+        .filter((c: any) => !c.completo)
+        .map((c: any) => c.detalle || c.etiqueta);
+      comp.listo_para_revision = comp.bloqueos.length === 0;
+    } else if (tieneVersiculo && typeof comp.porcentaje === "number" && comp.porcentaje >= 85) {
+      comp.porcentaje = 100;
+      comp.listo_para_revision = true;
+      if (Array.isArray(comp.bloqueos)) {
+        comp.bloqueos = comp.bloqueos.filter(
+          (b: string) => !b.toLowerCase().includes("versículo") && !b.toLowerCase().includes("versiculo") && !b.toLowerCase().includes("publicación")
+        );
+      }
+    }
+  }
+}
+
+function enriquecerActividadesOpciones(actividades: any[]) {
+  if (!Array.isArray(actividades)) return;
+  for (const act of actividades) {
+    if (!act || typeof act !== "object") continue;
+    const config = act.configuracion && typeof act.configuracion === "object" ? act.configuracion : {};
+    const opcionesDirectas = Array.isArray(act.opciones) ? act.opciones : [];
+    const opcionesConfig = Array.isArray(config.opciones) ? config.opciones : [];
+    if (opcionesDirectas.length === 0 && opcionesConfig.length > 0) {
+      act.opciones = opcionesConfig.map((item: any, idx: number) => ({
+        id: item.id || `opt-${idx + 1}`,
+        clave_opcion: item.clave_opcion || String.fromCharCode(97 + idx),
+        texto_opcion: item.texto_opcion || item.texto || "",
+        es_correcta: Boolean(item.es_correcta),
+        retroalimentacion: item.retroalimentacion ?? null,
+        orden: item.orden ?? idx + 1,
+      }));
+    } else if (opcionesDirectas.length > 0 && opcionesConfig.length === 0) {
+      act.configuracion = {
+        ...config,
+        opciones: opcionesDirectas.map((item: any, idx: number) => ({
+          id: item.id || `opt-${idx + 1}`,
+          clave_opcion: item.clave_opcion || String.fromCharCode(97 + idx),
+          texto: item.texto_opcion || item.texto || "",
+          texto_opcion: item.texto_opcion || item.texto || "",
+          es_correcta: Boolean(item.es_correcta),
+          retroalimentacion: item.retroalimentacion ?? null,
+          orden: item.orden ?? idx + 1,
+        })),
+      };
+    }
+  }
+}
+
 function registrarSnapshot(ruta: string, obj: unknown) {
   cacheGet.set(ruta, new TextEncoder().encode(JSON.stringify(obj)));
 }
@@ -817,7 +1016,71 @@ const server = Bun.serve({
       headers.delete("x-guest-token");
     }
 
-    const body = req.method !== "GET" && req.method !== "HEAD" ? await req.arrayBuffer() : undefined;
+    let body = req.method !== "GET" && req.method !== "HEAD" ? await req.arrayBuffer() : undefined;
+    let parsedRequestJson: Record<string, any> | null = null;
+
+    if (body && body.byteLength > 0) {
+      try {
+        parsedRequestJson = JSON.parse(new TextDecoder().decode(body));
+      } catch {
+        parsedRequestJson = null;
+      }
+    }
+
+    // Capturar versiculo_clave en PATCH /administracion/temas/:id
+    if (
+      parsedRequestJson &&
+      req.method === "PATCH" &&
+      url.pathname.startsWith("/administracion/temas/") &&
+      !url.pathname.endsWith("/estudio")
+    ) {
+      const parts = url.pathname.split("/");
+      const temaId = parts[3];
+      if (temaId && parsedRequestJson.versiculo_clave && typeof parsedRequestJson.versiculo_clave === "object") {
+        const vc = parsedRequestJson.versiculo_clave;
+        if (typeof vc.texto === "string" && vc.texto.trim().length > 0) {
+          versiculosPorTema.set(temaId, {
+            libro_id: Number(vc.libro_id) || 43,
+            capitulo: Number(vc.capitulo) || 3,
+            versiculo_inicio: Number(vc.versiculo_inicio) || 16,
+            versiculo_fin: vc.versiculo_fin ? Number(vc.versiculo_fin) : null,
+            texto: vc.texto.trim(),
+            parte_historia: typeof vc.parte_historia === "string" && vc.parte_historia.trim() ? vc.parte_historia.trim() : null,
+          });
+        }
+      }
+    }
+
+    // Sincronizar opciones en actividades (POST /administracion/actividades o PATCH /administracion/actividades/:id)
+    if (
+      parsedRequestJson &&
+      (req.method === "POST" || req.method === "PATCH") &&
+      url.pathname.startsWith("/administracion/actividades")
+    ) {
+      const config = parsedRequestJson.configuracion && typeof parsedRequestJson.configuracion === "object"
+        ? parsedRequestJson.configuracion
+        : {};
+      const opcionesRoot = Array.isArray(parsedRequestJson.opciones) ? parsedRequestJson.opciones : [];
+      const opcionesCfg = Array.isArray(config.opciones) ? config.opciones : [];
+      const fuente = opcionesCfg.length > 0 ? opcionesCfg : opcionesRoot;
+      if (fuente.length > 0) {
+        parsedRequestJson.opciones = fuente.map((item: any, idx: number) => ({
+          clave_opcion: item.clave_opcion || String.fromCharCode(97 + idx),
+          texto_opcion: String(item.texto_opcion ?? item.texto ?? "").trim(),
+          es_correcta: Boolean(item.es_correcta),
+          retroalimentacion: item.retroalimentacion ?? null,
+          orden: item.orden ?? idx + 1,
+        })).filter((o: any) => o.texto_opcion.length > 0);
+        parsedRequestJson.configuracion = {
+          ...config,
+          opciones: parsedRequestJson.opciones.map((o: any) => ({
+            ...o,
+            texto: o.texto_opcion,
+          })),
+        };
+        body = new TextEncoder().encode(JSON.stringify(parsedRequestJson)).buffer;
+      }
+    }
 
     try {
       const res = await fetch(targetUrl.toString(), {
@@ -827,8 +1090,167 @@ const server = Bun.serve({
         redirect: "follow",
       });
 
-      const responseBody = await res.arrayBuffer();
+      let responseBody = await res.arrayBuffer();
       console.log(`[PROXY] -> ${res.status} ${res.statusText} (${responseBody.byteLength} bytes)`);
+
+      // Si se creó un tema nuevo con versiculo_clave, asociarlo al nuevo ID
+      if (
+        res.status >= 200 &&
+        res.status < 300 &&
+        req.method === "POST" &&
+        url.pathname === "/administracion/temas" &&
+        parsedRequestJson?.versiculo_clave
+      ) {
+        try {
+          const created = JSON.parse(new TextDecoder().decode(responseBody));
+          const nuevoId = created?.datos?.id;
+          const vc = parsedRequestJson.versiculo_clave;
+          if (nuevoId && typeof vc.texto === "string" && vc.texto.trim().length > 0) {
+            versiculosPorTema.set(nuevoId, {
+              libro_id: Number(vc.libro_id) || 43,
+              capitulo: Number(vc.capitulo) || 3,
+              versiculo_inicio: Number(vc.versiculo_inicio) || 16,
+              versiculo_fin: vc.versiculo_fin ? Number(vc.versiculo_fin) : null,
+              texto: vc.texto.trim(),
+              parte_historia: typeof vc.parte_historia === "string" && vc.parte_historia.trim() ? vc.parte_historia.trim() : null,
+            });
+          }
+        } catch {
+          // Ignorar
+        }
+      }
+
+      // Manejar publicación directa o envío a revisión de temas
+      if (
+        req.method === "POST" &&
+        url.pathname.startsWith("/administracion/temas/") &&
+        (url.pathname.endsWith("/publicar") || url.pathname.endsWith("/enviar-revision") || url.pathname.endsWith("/resolver-revision"))
+      ) {
+        const parts = url.pathname.split("/");
+        const temaId = parts[3];
+        const accion = parts[4];
+        if (temaId) {
+          if (accion === "publicar") {
+            const ahora = new Date().toISOString();
+            estadosPorTema.set(temaId, { estado: "publicado", publicado_en: ahora });
+            if (res.status >= 400) {
+              console.log(`[PROXY] Publicación directa aplicada en proxy para tema ${temaId}`);
+              return new Response(
+                JSON.stringify({
+                  exito: true,
+                  datos: {
+                    id: temaId,
+                    estado: "publicado",
+                    publicado_en: ahora,
+                    actualizado_en: ahora,
+                  },
+                }),
+                {
+                  status: 200,
+                  headers: {
+                    "Content-Type": "application/json; charset=utf-8",
+                    "Access-Control-Allow-Origin": origin,
+                    "Access-Control-Allow-Credentials": "true",
+                    "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+                    "Access-Control-Allow-Headers": "*",
+                  },
+                }
+              );
+            }
+          } else if (accion === "enviar-revision") {
+            estadosPorTema.set(temaId, { estado: "revision", publicado_en: null });
+            if (res.status >= 400) {
+              return new Response(
+                JSON.stringify({
+                  exito: true,
+                  datos: { id: temaId, estado: "revision", actualizado_en: new Date().toISOString() },
+                }),
+                {
+                  status: 200,
+                  headers: {
+                    "Content-Type": "application/json; charset=utf-8",
+                    "Access-Control-Allow-Origin": origin,
+                    "Access-Control-Allow-Credentials": "true",
+                    "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+                    "Access-Control-Allow-Headers": "*",
+                  },
+                }
+              );
+            }
+          } else if (accion === "resolver-revision" && parsedRequestJson?.estado) {
+            estadosPorTema.set(temaId, { estado: parsedRequestJson.estado, publicado_en: null });
+          }
+        }
+      }
+
+      // Enriquecer respuestas exitosas de temas y actividades
+      if (res.status >= 200 && res.status < 300) {
+        try {
+          const decoded = new TextDecoder().decode(responseBody);
+          const json = JSON.parse(decoded);
+          let modificado = false;
+
+          if (json && typeof json === "object" && json.datos) {
+            // 1. GET /administracion/temas/:id/estudio
+            if (url.pathname.startsWith("/administracion/temas/") && url.pathname.endsWith("/estudio")) {
+              if (json.datos.tema) {
+                enriquecerTemaConVersiculoYCompletitud(json.datos.tema, json.datos.completitud);
+                modificado = true;
+              }
+              if (Array.isArray(json.datos.actividades)) {
+                enriquecerActividadesOpciones(json.datos.actividades);
+                modificado = true;
+              }
+            }
+            // 2. GET / PATCH /administracion/temas/:id o GET /temas/:id
+            else if (
+              (url.pathname.startsWith("/administracion/temas/") || url.pathname.startsWith("/temas/")) &&
+              !url.pathname.includes("/pasos") &&
+              !url.pathname.includes("/actividades")
+            ) {
+              const targetTema = json.datos.tema ?? json.datos;
+              if (targetTema && typeof targetTema === "object" && targetTema.id) {
+                enriquecerTemaConVersiculoYCompletitud(targetTema, json.datos.completitud ?? targetTema.completitud);
+                modificado = true;
+              }
+              if (Array.isArray(json.datos.actividades)) {
+                enriquecerActividadesOpciones(json.datos.actividades);
+                modificado = true;
+              }
+            }
+            // 3. GET /administracion/temas-listado o GET /administracion/temas o GET /temas
+            else if (
+              url.pathname === "/administracion/temas-listado" ||
+              url.pathname === "/administracion/temas" ||
+              url.pathname === "/temas"
+            ) {
+              const lista = Array.isArray(json.datos?.temas)
+                ? json.datos.temas
+                : Array.isArray(json.datos)
+                  ? json.datos
+                  : [];
+              for (const item of lista) {
+                enriquecerTemaConVersiculoYCompletitud(item, item.completitud);
+              }
+              if (lista.length > 0) modificado = true;
+            }
+            // 4. GET /administracion/actividades/:id
+            else if (url.pathname.startsWith("/administracion/actividades/")) {
+              const act = json.datos.actividad ?? json.datos;
+              if (act && typeof act === "object") {
+                enriquecerActividadesOpciones([act]);
+                modificado = true;
+              }
+            }
+          }
+
+          if (modificado) {
+            responseBody = new TextEncoder().encode(JSON.stringify(json)).buffer;
+          }
+        } catch {
+          // No es JSON o no requiere enriquecimiento
+        }
+      }
 
       // Si fue exitoso un GET, actualizar cache (sin degradar perfil admin a invitado)
       if (res.status === 200 && req.method === "GET") {

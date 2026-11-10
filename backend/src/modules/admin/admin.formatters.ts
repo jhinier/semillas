@@ -15,6 +15,13 @@ export function mapTheme(theme: Record<string, unknown>) {
       })
     : [];
 
+  const versiculoRaw = Array.isArray(theme.versiculo_clave)
+    ? (theme.versiculo_clave[0] as Record<string, unknown> | undefined)
+    : (theme.versiculo_clave as Record<string, unknown> | undefined);
+  const referenciaRaw = Array.isArray(theme.referencia_biblica)
+    ? (theme.referencia_biblica[0] as Record<string, unknown> | undefined)
+    : (theme.referencia_biblica as Record<string, unknown> | undefined);
+
   return {
     id: String(theme.id),
     senda_id: String(theme.senda_id ?? ""),
@@ -51,6 +58,29 @@ export function mapTheme(theme: Record<string, unknown>) {
           url_publica: String(portadaRaw.url_publica ?? ""),
           texto_alternativo: (portadaRaw.texto_alternativo ?? null) as string | null,
           titulo: (portadaRaw.titulo ?? null) as string | null
+        }
+      : null,
+    versiculo_clave: versiculoRaw
+      ? {
+          id: versiculoRaw.id ? String(versiculoRaw.id) : undefined,
+          tema_id: versiculoRaw.tema_id ? String(versiculoRaw.tema_id) : String(theme.id),
+          texto: String(versiculoRaw.texto ?? ""),
+          libro_id: Number(versiculoRaw.libro_id ?? 43),
+          capitulo: Number(versiculoRaw.capitulo ?? 1),
+          versiculo: Number(versiculoRaw.versiculo ?? 1),
+          parte_historia: (versiculoRaw.parte_historia ?? null) as string | null
+        }
+      : null,
+    referencia_biblica: referenciaRaw
+      ? {
+          id: referenciaRaw.id ? String(referenciaRaw.id) : undefined,
+          tema_id: referenciaRaw.tema_id ? String(referenciaRaw.tema_id) : String(theme.id),
+          libro_id: Number(referenciaRaw.libro_id ?? 43),
+          capitulo: Number(referenciaRaw.capitulo ?? 1),
+          versiculo_inicio: Number(referenciaRaw.versiculo_inicio ?? 1),
+          versiculo_fin: Number(referenciaRaw.versiculo_fin ?? referenciaRaw.versiculo_inicio ?? 1),
+          principal: Boolean(referenciaRaw.principal ?? true),
+          parte_historia: (referenciaRaw.parte_historia ?? null) as string | null
         }
       : null,
     grupos_edad: gruposEdad
