@@ -343,10 +343,10 @@ function ThemeMetadataEditorPage() {
   return (
     <div className="admin-theme-studio">
       <header className="admin-theme-library__hero">
-        <div className="flex items-center gap-4">
+        <div className="flex min-w-0 items-center gap-4">
           <button
             type="button"
-            className="admin-icon-button"
+            className="admin-icon-button shrink-0"
             onClick={() =>
               navigate({
                 to: "/admin/temas/$themeId/detalle",
@@ -356,16 +356,16 @@ function ThemeMetadataEditorPage() {
           >
             <ArrowLeft size={19} />
           </button>
-          <div>
+          <div className="min-w-0">
             <span className="admin-eyebrow">Editor de tema</span>
-            <h2 className="!text-2xl">{tema.titulo}</h2>
+            <h2 className="!text-2xl truncate">{tema.titulo}</h2>
             <p>
               Configura la información general, el versículo bíblico, la portada
               y la publicación del tema.
             </p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex shrink-0 gap-2">
           <button
             type="button"
             className="admin-secondary-button"

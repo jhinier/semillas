@@ -892,7 +892,10 @@ function enriquecerTemaConVersiculoYCompletitud(temaObj: Record<string, any>, co
   }
 
   if (versiculoGuardado) {
-    temaObj.versiculo_clave = { ...versiculoGuardado };
+    temaObj.versiculo_clave = {
+      ...versiculoGuardado,
+      versiculo: versiculoGuardado.versiculo_inicio,
+    };
     temaObj.referencia_biblica = {
       cita: construirCitaVersiculo(versiculoGuardado),
       texto: versiculoGuardado.texto,
@@ -903,13 +906,16 @@ function enriquecerTemaConVersiculoYCompletitud(temaObj: Record<string, any>, co
       parte_historia: versiculoGuardado.parte_historia,
     };
   } else if (temaObj.versiculo_clave && typeof temaObj.versiculo_clave === "object" && !temaObj.referencia_biblica) {
-    const v = temaObj.versiculo_clave as VersiculoClaveProxy;
+    const v = temaObj.versiculo_clave as VersiculoClaveProxy & { versiculo?: number };
+    const versiculoInicio = v.versiculo_inicio ?? v.versiculo ?? 1;
+    v.versiculo = versiculoInicio;
+    v.versiculo_inicio = versiculoInicio;
     temaObj.referencia_biblica = {
-      cita: construirCitaVersiculo(v),
+      cita: construirCitaVersiculo({ ...v, versiculo_inicio: versiculoInicio }),
       texto: v.texto,
       libro: LIBROS_NOMBRES[v.libro_id] ?? "Escritura",
       capitulo: v.capitulo,
-      versiculo_inicio: v.versiculo_inicio,
+      versiculo_inicio: versiculoInicio,
       versiculo_fin: v.versiculo_fin ?? null,
       parte_historia: v.parte_historia ?? null,
     };

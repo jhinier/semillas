@@ -6,15 +6,17 @@ export function CampoConfiguracion({
   onChange,
   type = "text",
   help,
+  wide = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   type?: "text" | "number";
   help?: string;
+  wide?: boolean;
 }) {
   return (
-    <label className="admin-field">
+    <label className={`admin-field ${wide ? "admin-field--wide" : ""}`}>
       <span>{label}</span>
       <input
         type={type}

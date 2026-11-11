@@ -64,7 +64,7 @@ export function SelectorMedioBiblioteca({
       : null;
 
   return (
-    <div className="admin-media-picker">
+    <div className="admin-media-picker admin-field--wide">
       <button
         type="button"
         className="admin-media-slot text-left"
@@ -81,7 +81,7 @@ export function SelectorMedioBiblioteca({
             icono
           )}
         </div>
-        <div>
+        <div className="admin-media-slot__content">
           <strong>{recursoSeleccionado?.titulo ?? vacio}</strong>
           <small>{descripcion}</small>
           <span className="mt-2 inline-flex items-center gap-2 text-xs font-bold text-violet-600">

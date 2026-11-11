@@ -1,7 +1,5 @@
 /* Activity studio v2 — desktop-first admin workspace. */
-:root,
-.admin-activity-studio-page,
-.activity-library-v2 {
+:root {
   --activity-ink: #102036;
   --activity-muted: #687993;
   --activity-line: #dfe6f0;
@@ -10,9 +8,14 @@
   --activity-purple: #6c35ed;
   --activity-purple-dark: #5524cc;
   --activity-green: #16a34a;
-  width: min(100%, 1500px);
+}
+
+.admin-activity-studio-page,
+.activity-library-v2 {
+  width: 100%;
+  max-width: 1480px;
   margin: 0 auto;
-  padding: 28px 36px 56px;
+  padding: 8px 0 40px;
   color: var(--activity-ink);
   text-align: left;
 }
@@ -581,7 +584,7 @@
   text-transform: uppercase;
 }
 .activity-editor-field > small { color: #8a97aa; font-size: 10px; line-height: 1.45; }
-.activity-editor-field input,
+.activity-editor-field input:not([type="radio"]):not([type="checkbox"]),
 .activity-editor-field textarea,
 .activity-editor-field select,
 .activity-editor-advanced textarea,
@@ -597,10 +600,10 @@
   outline: none;
   transition: border-color .16s ease, box-shadow .16s ease;
 }
-.activity-editor-field input,
+.activity-editor-field input:not([type="radio"]):not([type="checkbox"]),
 .activity-editor-field select { min-height: 46px; padding: 0 13px; }
 .activity-editor-field textarea { resize: vertical; padding: 12px 13px; line-height: 1.55; }
-.activity-editor-field input:focus,
+.activity-editor-field input:not([type="radio"]):not([type="checkbox"]):focus,
 .activity-editor-field textarea:focus,
 .activity-editor-field select:focus,
 .activity-editor-advanced textarea:focus,
@@ -656,12 +659,12 @@
 .activity-options-builder__list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
 .activity-option-row { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto 36px; align-items: center; gap: 10px; }
 .activity-option-row__label { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 9px; background: #f0ebff; color: #6534d7; font-size: 11px; font-weight: 850; }
-.activity-option-row input[type="text"], .activity-option-row > input { min-width: 0; min-height: 44px; padding: 0 13px; font-size: 13px; }
-.activity-option-row__correct { display: inline-flex; align-items: center; gap: 7px; padding: 7px 12px; border: 1px solid #e2e8f0; border-radius: 999px; background: #f8fafc; color: #475569; font-size: 11px; font-weight: 750; cursor: pointer; user-select: none; white-space: nowrap; transition: all .15s ease; }
+.activity-option-row input[type="text"], .activity-option-row > input:not([type="radio"]):not([type="checkbox"]) { min-width: 0; min-height: 44px; padding: 0 13px; font-size: 13px; }
+.activity-option-row__correct { display: inline-flex; flex-shrink: 0; align-items: center; gap: 7px; padding: 7px 12px; border: 1px solid #e2e8f0; border-radius: 999px; background: #f8fafc; color: #475569; font-size: 11px; font-weight: 750; cursor: pointer; user-select: none; white-space: nowrap; transition: all .15s ease; }
 .activity-option-row__correct:hover { border-color: #c4b5fd; background: #f5f3ff; color: #5b21b6; }
 .activity-option-row__correct--active { border-color: #8b5cf6; background: #f3e8ff; color: #6d28d9; }
-.activity-option-row__correct input[type="radio"] { width: 16px; height: 16px; min-height: 16px; margin: 0; padding: 0; flex-shrink: 0; border: 0; box-shadow: none; accent-color: #6c35ed; cursor: pointer; }
-.activity-option-row > button { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 9px; color: #d24a4a; }
+.activity-option-row__correct input[type="radio"] { width: 16px !important; height: 16px !important; min-height: 16px !important; flex: 0 0 16px !important; margin: 0 !important; padding: 0 !important; border: 0 !important; box-shadow: none !important; accent-color: #6c35ed; cursor: pointer; }
+.activity-option-row > button { display: grid; width: 34px; height: 34px; flex-shrink: 0; place-items: center; border-radius: 9px; color: #d24a4a; }
 .activity-option-row > button:hover:not(:disabled) { background: #fff0f0; }
 .activity-option-row > button:disabled { opacity: .25; }
 .activity-editor-advanced { border-top: 1px solid #e3e8f0; padding-top: 14px; }
@@ -699,15 +702,15 @@
 .activity-editor-summary > p { margin: 0 0 14px; color: #7a899f; font-size: 11px; }
 .activity-editor-summary dl { display: flex; margin: 0; flex-direction: column; }
 .activity-editor-summary dl > div { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px solid #edf0f4; padding: 10px 0; }
-.activity-editor-summary dt { color: #8a97a9; font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
-.activity-editor-summary dd { overflow: hidden; margin: 0; color: #2e3d54; font-size: 10px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.activity-editor-summary dt { flex-shrink: 0; color: #8a97a9; font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.activity-editor-summary dd { min-width: 0; overflow: hidden; margin: 0; color: #2e3d54; font-size: 10px; font-weight: 800; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
 .activity-editor-checklist h3 { margin: 0 0 10px; font-size: 13px; }
-.activity-editor-checklist > button { display: grid; width: 100%; grid-template-columns: 28px minmax(0, 1fr); align-items: center; gap: 7px; border-radius: 10px; padding: 8px; color: #a25a18; text-align: left; }
+.activity-editor-checklist > button { display: grid; width: 100%; grid-template-columns: 28px minmax(0, 1fr); align-items: start; gap: 8px; border-radius: 10px; padding: 8px; color: #a25a18; text-align: left; }
 .activity-editor-checklist > button:hover { background: #f7f8fa; }
-.activity-editor-checklist > button > span { display: grid; width: 26px; height: 26px; place-items: center; border-radius: 8px; background: #fff3e5; }
+.activity-editor-checklist > button > span { display: grid; width: 26px; height: 26px; flex-shrink: 0; place-items: center; border-radius: 8px; background: #fff3e5; }
 .activity-editor-checklist > button > div { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.activity-editor-checklist strong { font-size: 10px; }
-.activity-editor-checklist small { overflow: hidden; color: #8a97a8; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.activity-editor-checklist strong { font-size: 11px; line-height: 1.25; }
+.activity-editor-checklist small { color: #8a97a8; font-size: 10px; line-height: 1.35; white-space: normal; }
 .activity-editor-checklist__complete { color: #238653 !important; }
 .activity-editor-checklist__complete > span { background: #e9f8ef !important; }
 
@@ -787,9 +790,8 @@
 .activity-theme-picker__empty { display: flex; min-height: 150px; flex-direction: column; align-items: center; justify-content: center; color: #8996a8; font-size: 11px; }
 
 @media (max-width: 1180px) {
-  :root,
-.admin-activity-studio-page,
-  .activity-library-v2 { padding-inline: 22px; }
+  .admin-activity-studio-page,
+  .activity-library-v2 { padding-inline: 0; }
   .activity-library-filter-grid { grid-template-columns: minmax(240px, 1fr) repeat(2, minmax(150px, .65fr)); }
   .activity-editor-workspace__layout { grid-template-columns: minmax(0, 1fr) 245px; }
   .activity-type-picker__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

@@ -44,6 +44,7 @@ export function AudioBuilder({
         label="Pregunta"
         value={String(configuracion.pregunta ?? "")}
         onChange={(valor) => actualizar("pregunta", valor)}
+        wide
       />
       <ListaOpcionesConCorrecta
         titulo="Opciones"
@@ -56,6 +57,7 @@ export function AudioBuilder({
         value={String(configuracion.transcripcion ?? "")}
         onChange={(valor) => actualizar("transcripcion", valor)}
         help="Opcional. Útil para accesibilidad y seguimiento."
+        wide
       />
     </div>
   );

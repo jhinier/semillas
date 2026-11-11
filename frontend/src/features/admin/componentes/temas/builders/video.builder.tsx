@@ -45,6 +45,7 @@ export function VideoBuilder({
         label="Pregunta"
         value={String(configuracion.pregunta ?? "")}
         onChange={(valor) => actualizar("pregunta", valor)}
+        wide
       />
       <ListaOpcionesTexto
         titulo="Opciones"
@@ -58,6 +59,7 @@ export function VideoBuilder({
         value={String(configuracion.respuesta_correcta ?? 0)}
         onChange={(valor) => actualizar("respuesta_correcta", Number(valor))}
         help="Índice de la opción correcta, empezando en 0."
+        wide
       />
     </div>
   );

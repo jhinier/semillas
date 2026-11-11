@@ -50,10 +50,15 @@ function ThemeDetailPage() {
   const libroNombre = obtenerNombreLibroBiblico(
     versiculo?.libro_id ?? referencia?.libro_id ?? 43,
   );
+  const versiculoNumero =
+    versiculo?.versiculo ??
+    (versiculo as { versiculo_inicio?: number } | null)?.versiculo_inicio ??
+    referencia?.versiculo_inicio ??
+    1;
   const citaBiblica = versiculo
-    ? `${libroNombre} ${versiculo.capitulo}:${versiculo.versiculo}`
+    ? `${libroNombre} ${versiculo.capitulo}:${versiculoNumero}`
     : referencia
-      ? `${libroNombre} ${referencia.capitulo}:${referencia.versiculo_inicio}`
+      ? `${libroNombre} ${referencia.capitulo}:${referencia.versiculo_inicio ?? 1}`
       : null;
   const parteHistoria = versiculo?.parte_historia ?? referencia?.parte_historia ?? null;
 

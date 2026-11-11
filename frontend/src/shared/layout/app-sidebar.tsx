@@ -89,7 +89,7 @@ export function AppSidebar({
       />
 
       <aside
-        className={`app-sidebar fixed left-0 top-0 z-[110] flex h-[100dvh] w-[280px] max-w-[82vw] flex-col overflow-hidden overscroll-contain border-r px-4 pb-[calc(env(safe-area-inset-bottom)+0.85rem)] pt-[calc(env(safe-area-inset-top)+0.85rem)] shadow-2xl transition-[transform,opacity] duration-300 ease-out will-change-transform motion-reduce:transition-none md:sticky md:top-0 md:flex md:w-[88px] md:shrink-0 md:translate-x-0 md:px-3 md:py-3.5 md:opacity-100 md:shadow-none xl:w-[248px] xl:px-4 ${
+        className={`app-sidebar fixed left-0 top-0 z-[110] flex h-[100dvh] w-[280px] max-w-[82vw] flex-col overflow-hidden overscroll-contain border-r px-4 pb-[calc(env(safe-area-inset-bottom)+0.85rem)] pt-[calc(env(safe-area-inset-top)+0.85rem)] shadow-2xl transition-[transform,opacity] duration-300 ease-out will-change-transform motion-reduce:transition-none md:sticky md:top-0 md:flex md:w-[88px] md:shrink-0 md:translate-x-0 md:px-3 md:py-3.5 md:opacity-100 md:shadow-none lg:w-[236px] lg:px-3.5 xl:w-[248px] xl:px-4 ${
           variant === "admin"
             ? "border-[#e7ebf2] bg-white"
             : "border-slate-200 bg-white"
@@ -97,10 +97,10 @@ export function AppSidebar({
           isOpen ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0 md:translate-x-0 md:opacity-100"
         }`}
       >
-        <div className="flex min-h-11 shrink-0 items-center justify-center gap-2.5 py-0.5 xl:justify-between">
+        <div className="flex min-h-11 shrink-0 items-center justify-center gap-2.5 py-0.5 lg:justify-between">
           <div className="flex items-center gap-2.5">
             <img src={logoImg} alt="Semillas" className="h-9 w-9 shrink-0 object-contain" />
-            <span className={`hidden text-[1.45rem] font-black leading-none xl:inline ${variant === "admin" ? "text-violet-600" : "text-primario"}`}>Semillas</span>
+            <span className={`hidden text-[1.45rem] font-black leading-none lg:inline ${variant === "admin" ? "text-violet-600" : "text-primario"}`}>Semillas</span>
           </div>
           <Boton
             type="button"
@@ -114,7 +114,7 @@ export function AppSidebar({
           </Boton>
         </div>
 
-        <p className="mb-3 ml-[46px] hidden max-w-[155px] shrink-0 text-[11px] font-semibold leading-snug text-neutro xl:block">
+        <p className="mb-3 ml-[46px] hidden max-w-[155px] shrink-0 text-[11px] font-semibold leading-snug text-neutro lg:block">
           Crecer en la Palabra, vivir su verdad
         </p>
 
@@ -125,7 +125,7 @@ export function AppSidebar({
           {secciones.map((seccion) => (
             <div key={seccion.titulo ?? "principal"} className="flex flex-col gap-1">
               {seccion.titulo ? (
-                <p className={`mb-0.5 hidden px-1 text-[10px] font-black uppercase tracking-[0.18em] xl:block ${variant === "admin" ? "text-slate-400" : "text-neutro/50"}`}>
+                <p className={`mb-0.5 hidden px-1 text-[10px] font-black uppercase tracking-[0.18em] lg:block ${variant === "admin" ? "text-slate-400" : "text-neutro/50"}`}>
                   {seccion.titulo}
                 </p>
               ) : null}
@@ -140,7 +140,7 @@ export function AppSidebar({
                     title={item.label}
                     aria-label={item.label}
                     aria-current={activo ? "page" : undefined}
-                    className={`group relative flex ${variant === "admin" ? "min-h-10 py-1.5" : "min-h-11 py-2"} items-center justify-center gap-3 rounded-2xl px-3 text-[13px] font-semibold transition-all xl:justify-start xl:px-3.5 ${
+                    className={`group relative flex ${variant === "admin" ? "min-h-10 py-1.5" : "min-h-11 py-2"} items-center justify-center gap-3 rounded-2xl px-3 text-[13px] font-semibold transition-all lg:justify-start lg:px-3.5 ${
                       activo
                         ? variant === "admin"
                           ? "bg-violet-50 text-violet-700 shadow-[inset_0_0_0_1px_rgba(95,54,232,.12)]"
@@ -159,8 +159,8 @@ export function AppSidebar({
                         />
                       )}
                     </span>
-                    <span className="hidden xl:inline">{item.label}</span>
-                    {activo ? <span className={`absolute left-0 h-5 w-1 rounded-r-full xl:-left-1 ${variant === "admin" ? "bg-violet-600" : "bg-primario"}`} aria-hidden="true" /> : null}
+                    <span className="hidden lg:inline">{item.label}</span>
+                    {activo ? <span className={`absolute left-0 h-5 w-1 rounded-r-full lg:-left-1 ${variant === "admin" ? "bg-violet-600" : "bg-primario"}`} aria-hidden="true" /> : null}
                   </Link>
                 );
               })}
@@ -170,7 +170,7 @@ export function AppSidebar({
 
         <div className="mt-auto flex shrink-0 flex-col gap-2.5 border-t border-slate-100 pt-2.5">
           {isOffline ? (
-            <Card sombra="sm" className={`hidden p-3 xl:block ${variant === "admin" ? "bg-slate-50 border-slate-200" : ""}`}>
+            <Card sombra="sm" className={`hidden p-3 lg:block ${variant === "admin" ? "bg-slate-50 border-slate-200" : ""}`}>
               <div className={`mb-1.5 flex items-center gap-2 text-xs font-bold ${variant === "admin" ? "text-slate-700" : "text-neutro-oscuro-max"}`}>
                 <i className="fa-solid fa-cloud-arrow-up text-primario" aria-hidden="true" />
                 Sin conexión
@@ -189,7 +189,7 @@ export function AppSidebar({
             className="h-10 w-full justify-center gap-2 rounded-2xl bg-violet-600 px-3 text-xs font-bold text-white shadow-none hover:bg-violet-700"
           >
             <i className="fa-solid fa-right-from-bracket" aria-hidden="true" />
-            <span className="hidden xl:inline">Cerrar sesión</span>
+            <span className="hidden lg:inline">Cerrar sesión</span>
           </Boton>
         </div>
       </aside>
