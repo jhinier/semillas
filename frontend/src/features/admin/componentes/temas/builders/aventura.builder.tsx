@@ -49,7 +49,7 @@ export function AventuraBuilder({
   return (
     <div className="admin-config-builder__columns">
       {escenas.map((escena, indice) => (
-        <fieldset key={escena.id} className="admin-config-builder__group">
+        <fieldset key={escena.id} className="admin-config-builder__group admin-field--wide">
           <legend>Escena {indice + 1}</legend>
           <AreaConfiguracion
             label="Texto"

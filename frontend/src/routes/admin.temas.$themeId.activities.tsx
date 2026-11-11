@@ -72,6 +72,7 @@ function AdminThemeActivitiesPage() {
   const [configText, setConfigText] = useState("{}");
   const [isDirty, setIsDirty] = useState(false);
   const newFormInitialized = useRef(false);
+  const editFormInitializedId = useRef<string | null>(null);
 
   const themeQuery = useQuery({
     queryKey: ["admin", "theme", themeId],
@@ -139,8 +140,13 @@ function AdminThemeActivitiesPage() {
   }, [search.form, selectedAge, stepsQuery.data, typesQuery.data]);
 
   useEffect(() => {
+    if (search.form !== "editar") {
+      editFormInitializedId.current = null;
+      return;
+    }
     const activity = editQuery.data;
-    if (!activity || search.form !== "editar") return;
+    if (!activity) return;
+    if (editFormInitializedId.current === activity.id) return;
 
     const opcionesRaw = activity.opciones.length
       ? activity.opciones.map((option, index) => ({
@@ -183,6 +189,7 @@ function AdminThemeActivitiesPage() {
       opciones: sincronizado.opciones,
     };
 
+    editFormInitializedId.current = activity.id;
     setSelectedAge(activity.grupo_edad_id);
     setDraft(nextDraft);
     setConfigText(JSON.stringify(nextDraft.configuracion, null, 2));

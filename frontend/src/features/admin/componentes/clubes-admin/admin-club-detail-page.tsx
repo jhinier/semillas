@@ -282,16 +282,16 @@ export function AdminClubDetailPage({ clubId }: { clubId: string }) {
           role="dialog"
           aria-modal="true"
           aria-labelledby="nuevo-reto-title"
-          className="fixed inset-0 z-50 grid place-items-center p-6"
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4 sm:p-6"
         >
           <button
             type="button"
-            className="absolute inset-0 bg-slate-950/45"
+            className="fixed inset-0 bg-slate-950/45"
             aria-label="Cerrar creación de reto"
             onClick={() => setRetoAbierto(false)}
           />
-          <div className="relative w-full max-w-2xl rounded-2xl border border-slate-200 bg-white shadow-2xl">
-            <header className="flex items-start justify-between border-b border-slate-200 px-6 py-5">
+          <div className="relative z-10 flex max-h-[calc(100dvh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            <header className="flex shrink-0 items-start justify-between border-b border-slate-200 px-6 py-4">
               <div>
                 <h2 id="nuevo-reto-title" className="text-xl font-black text-slate-950">
                   Nuevo reto cooperativo
@@ -309,7 +309,7 @@ export function AdminClubDetailPage({ clubId }: { clubId: string }) {
                 <X className="size-5" aria-hidden="true" />
               </button>
             </header>
-            <div className="p-6">
+            <div className="overflow-y-auto p-6">
               <FormularioCrearReto
                 clubId={clubId}
                 deshabilitado={club.crearReto.isPending}

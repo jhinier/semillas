@@ -72,10 +72,10 @@ export function CrearClubDialog({ abierto, guardando, onCerrar, onCrear }: Crear
   };
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center p-6" role="dialog" aria-modal="true" aria-labelledby="crear-club-title">
-      <button type="button" className="absolute inset-0 bg-slate-950/45" aria-label="Cerrar creación de club" onClick={cerrar} />
-      <form onSubmit={enviar} className="relative w-full max-w-2xl rounded-2xl border border-slate-200 bg-white shadow-2xl">
-        <header className="flex items-start justify-between border-b border-slate-200 px-6 py-5">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="crear-club-title">
+      <button type="button" className="fixed inset-0 bg-slate-950/45" aria-label="Cerrar creación de club" onClick={cerrar} />
+      <form onSubmit={enviar} className="relative z-10 flex max-h-[calc(100dvh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+        <header className="flex shrink-0 items-start justify-between border-b border-slate-200 px-6 py-4">
           <div>
             <h2 id="crear-club-title" className="text-xl font-black text-slate-950">Crear club</h2>
             <p className="mt-1 text-sm text-slate-500">Define la identidad del club y asigna una persona responsable.</p>
@@ -85,7 +85,7 @@ export function CrearClubDialog({ abierto, guardando, onCerrar, onCrear }: Crear
           </button>
         </header>
 
-        <div className="grid gap-5 px-6 py-5">
+        <div className="grid gap-4 overflow-y-auto px-6 py-4">
           <label className="grid gap-1.5 text-sm font-bold text-slate-700">
             Nombre del club
             <input
@@ -105,7 +105,7 @@ export function CrearClubDialog({ abierto, guardando, onCerrar, onCrear }: Crear
               value={descripcion}
               onChange={(evento) => setDescripcion(evento.target.value)}
               maxLength={300}
-              rows={3}
+              rows={2}
               disabled={guardando}
               className="resize-none rounded-xl border border-slate-300 px-3.5 py-2.5 font-normal text-slate-900 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
               placeholder="Propósito o contexto del club"
@@ -127,7 +127,7 @@ export function CrearClubDialog({ abierto, guardando, onCerrar, onCrear }: Crear
               />
             </label>
 
-            <div className="max-h-56 overflow-y-auto rounded-xl border border-slate-200">
+            <div className="max-h-48 overflow-y-auto rounded-xl border border-slate-200">
               {usuariosQuery.isLoading ? (
                 <p className="px-4 py-6 text-center text-sm text-slate-500">Cargando usuarios…</p>
               ) : usuariosQuery.isError ? (
@@ -163,7 +163,7 @@ export function CrearClubDialog({ abierto, guardando, onCerrar, onCrear }: Crear
           {error ? <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">{error}</p> : null}
         </div>
 
-        <footer className="flex justify-end gap-3 border-t border-slate-200 px-6 py-4">
+        <footer className="flex shrink-0 justify-end gap-3 border-t border-slate-200 bg-white px-6 py-4">
           <button type="button" onClick={cerrar} disabled={guardando} className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50">
             Cancelar
           </button>

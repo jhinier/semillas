@@ -15,12 +15,13 @@ export function ListaOpcionesTexto({
   const filas = valores.length ? valores : [""];
 
   return (
-    <fieldset className="admin-config-builder__group">
+    <fieldset className="admin-config-builder__group admin-field--wide">
       <legend>{titulo}</legend>
       {filas.map((valor, indice) => (
         <div className="admin-config-row" key={`${titulo}-${indice}`}>
           <span aria-hidden="true">{indice + 1}</span>
           <input
+            type="text"
             aria-label={`${titulo} ${indice + 1}`}
             value={valor}
             onChange={(event) => onChange(actualizarFilaTexto(filas, indice, event.target.value))}
@@ -62,12 +63,21 @@ export function ListaOpcionesConCorrecta({
   const filas = opciones.length
     ? opciones
     : [
-        { id: crearIdFila("opcion"), texto: "", correcta: true },
-        { id: crearIdFila("opcion"), texto: "", correcta: false },
+        { id: "opcion-1", texto: "", correcta: true },
+        { id: "opcion-2", texto: "", correcta: false },
       ];
 
+  const seleccionarCorrecta = (indiceSeleccionado: number) => {
+    onChange(
+      filas.map((fila, posicion) => ({
+        ...fila,
+        correcta: posicion === indiceSeleccionado,
+      }))
+    );
+  };
+
   return (
-    <fieldset className="activity-options-builder admin-config-builder__group">
+    <fieldset className="activity-options-builder admin-config-builder__group admin-field--wide">
       <legend>{titulo}</legend>
       <p>Escribe de dos a seis opciones y marca una respuesta correcta.</p>
       <div className="activity-options-builder__list">
@@ -77,6 +87,7 @@ export function ListaOpcionesConCorrecta({
               {String.fromCharCode(65 + indice)}
             </span>
             <input
+              type="text"
               aria-label={`${titulo} ${indice + 1}`}
               placeholder={`Opción ${String.fromCharCode(65 + indice)}`}
               value={opcion.texto}
@@ -88,19 +99,16 @@ export function ListaOpcionesConCorrecta({
                 )
               }
             />
-            <label className="activity-option-row__correct">
+            <label
+              className={`activity-option-row__correct ${
+                opcion.correcta ? "activity-option-row__correct--active" : ""
+              }`}
+            >
               <input
                 type="radio"
                 name={titulo}
                 checked={opcion.correcta}
-                onChange={() =>
-                  onChange(
-                    filas.map((fila, posicion) => ({
-                      ...fila,
-                      correcta: posicion === indice,
-                    }))
-                  )
-                }
+                onChange={() => seleccionarCorrecta(indice)}
               />
               <span>Correcta</span>
             </label>
@@ -156,12 +164,13 @@ export function ListaTextoEditor({
   const filas = valores.length ? valores : [""];
 
   return (
-    <fieldset className="admin-config-builder__group">
+    <fieldset className="admin-config-builder__group admin-field--wide">
       <legend>{titulo}</legend>
       {filas.map((valor, indice) => (
         <div className="admin-config-row" key={`${titulo}-${indice}`}>
           <span aria-hidden="true">{indice + 1}</span>
           <input
+            type="text"
             aria-label={`${titulo} ${indice + 1}`}
             value={valor}
             onChange={(event) => onChange(actualizarFilaTexto(filas, indice, event.target.value))}

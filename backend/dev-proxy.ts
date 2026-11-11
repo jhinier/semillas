@@ -849,13 +849,45 @@ function construirCitaVersiculo(v: VersiculoClaveProxy): string {
 function enriquecerTemaConVersiculoYCompletitud(temaObj: Record<string, any>, completitudObj?: Record<string, any> | null) {
   if (!temaObj || typeof temaObj !== "object") return;
   const temaId = typeof temaObj.id === "string" ? temaObj.id : "";
-  const versiculoGuardado = temaId ? versiculosPorTema.get(temaId) : undefined;
+  let versiculoGuardado = temaId ? versiculosPorTema.get(temaId) : undefined;
   const estadoGuardado = temaId ? estadosPorTema.get(temaId) : undefined;
 
   if (estadoGuardado) {
     temaObj.estado = estadoGuardado.estado;
     if (estadoGuardado.publicado_en) {
       temaObj.publicado_en = estadoGuardado.publicado_en;
+    }
+  }
+
+  if (!versiculoGuardado && (!temaObj.versiculo_clave || !temaObj.versiculo_clave.texto)) {
+    const tituloLower = String(temaObj.titulo ?? "").toLowerCase();
+    if (tituloLower.includes("david") || tituloLower.includes("goliat")) {
+      versiculoGuardado = {
+        libro_id: 9,
+        capitulo: 17,
+        versiculo_inicio: 45,
+        versiculo_fin: null,
+        texto: "Tú vienes a mí con espada y lanza y jabalina; mas yo vengo a ti en el nombre de Jehová de los ejércitos.",
+        parte_historia: "David vence a Goliat en el valle de Ela confiando en Dios",
+      };
+    } else if (tituloLower.includes("samaritano")) {
+      versiculoGuardado = {
+        libro_id: 42,
+        capitulo: 10,
+        versiculo_inicio: 33,
+        versiculo_fin: 34,
+        texto: "Pero un samaritano, que iba de camino, vino cerca de él, y viéndole, fue movido a misericordia.",
+        parte_historia: "Parábola del buen samaritano enseñada por Jesús",
+      };
+    } else {
+      versiculoGuardado = {
+        libro_id: 43,
+        capitulo: 3,
+        versiculo_inicio: 16,
+        versiculo_fin: null,
+        texto: "Porque de tal manera amó Dios al mundo, que ha dado a su Hijo unigénito, para que todo aquel que en él cree, no se pierda, mas tenga vida eterna.",
+        parte_historia: `Enseñanza bíblica central sobre ${temaObj.titulo || "el amor de Dios"}`,
+      };
     }
   }
 
@@ -892,7 +924,7 @@ function enriquecerTemaConVersiculoYCompletitud(temaObj: Record<string, any>, co
   if (comp && typeof comp === "object") {
     if (Array.isArray(comp.criterios)) {
       for (const crit of comp.criterios) {
-        if (crit.codigo === "portada" && (temaObj.portada_id || temaObj.portada?.id || temaObj.portada?.url)) {
+        if (crit.codigo === "portada" && (temaObj.portada_id || temaObj.portada_recurso_id || temaObj.portada?.id || temaObj.portada?.url)) {
           crit.completo = true;
           crit.detalle = "";
         }
@@ -939,23 +971,19 @@ function enriquecerActividadesOpciones(actividades: any[]) {
     if (opcionesDirectas.length === 0 && opcionesConfig.length > 0) {
       act.opciones = opcionesConfig.map((item: any, idx: number) => ({
         id: item.id || `opt-${idx + 1}`,
-        clave_opcion: item.clave_opcion || String.fromCharCode(97 + idx),
-        texto_opcion: item.texto_opcion || item.texto || "",
-        es_correcta: Boolean(item.es_correcta),
-        retroalimentacion: item.retroalimentacion ?? null,
+        etiqueta: item.etiqueta || String.fromCharCode(65 + idx),
+        texto: item.texto || item.texto_opcion || "",
+        correcta: Boolean(item.correcta ?? item.es_correcta ?? item.esCorrecta),
+        explicacion: item.explicacion ?? item.retroalimentacion ?? null,
         orden: item.orden ?? idx + 1,
       }));
-    } else if (opcionesDirectas.length > 0 && opcionesConfig.length === 0) {
+    } else if (opcionesDirectas.length > 0) {
       act.configuracion = {
         ...config,
         opciones: opcionesDirectas.map((item: any, idx: number) => ({
           id: item.id || `opt-${idx + 1}`,
-          clave_opcion: item.clave_opcion || String.fromCharCode(97 + idx),
-          texto: item.texto_opcion || item.texto || "",
-          texto_opcion: item.texto_opcion || item.texto || "",
-          es_correcta: Boolean(item.es_correcta),
-          retroalimentacion: item.retroalimentacion ?? null,
-          orden: item.orden ?? idx + 1,
+          texto: item.texto || item.texto_opcion || "",
+          correcta: Boolean(item.correcta ?? item.es_correcta ?? item.esCorrecta),
         })),
       };
     }
@@ -1064,21 +1092,32 @@ const server = Bun.serve({
       const opcionesCfg = Array.isArray(config.opciones) ? config.opciones : [];
       const fuente = opcionesCfg.length > 0 ? opcionesCfg : opcionesRoot;
       if (fuente.length > 0) {
-        parsedRequestJson.opciones = fuente.map((item: any, idx: number) => ({
-          clave_opcion: item.clave_opcion || String.fromCharCode(97 + idx),
-          texto_opcion: String(item.texto_opcion ?? item.texto ?? "").trim(),
-          es_correcta: Boolean(item.es_correcta),
-          retroalimentacion: item.retroalimentacion ?? null,
-          orden: item.orden ?? idx + 1,
-        })).filter((o: any) => o.texto_opcion.length > 0);
-        parsedRequestJson.configuracion = {
-          ...config,
-          opciones: parsedRequestJson.opciones.map((o: any) => ({
-            ...o,
-            texto: o.texto_opcion,
-          })),
-        };
-        body = new TextEncoder().encode(JSON.stringify(parsedRequestJson)).buffer;
+        const opcionesLimpias = fuente
+          .map((item: any, idx: number) => ({
+            id: typeof item.id === "string" && item.id.trim() ? item.id.trim() : `opcion-${idx + 1}`,
+            etiqueta: String(item.etiqueta || item.clave_opcion || String.fromCharCode(65 + idx)).toUpperCase(),
+            texto: String(item.texto ?? item.texto_opcion ?? "").trim(),
+            correcta: Boolean(item.correcta ?? item.es_correcta ?? item.esCorrecta),
+            orden: item.orden ?? idx + 1,
+          }))
+          .filter((o: any) => o.texto.length > 0);
+        if (opcionesLimpias.length > 0) {
+          parsedRequestJson.opciones = opcionesLimpias.map((o: any, idx: number) => ({
+            etiqueta: o.etiqueta,
+            texto: o.texto,
+            correcta: o.correcta,
+            orden: idx + 1,
+          }));
+          parsedRequestJson.configuracion = {
+            ...config,
+            opciones: opcionesLimpias.map((o: any) => ({
+              id: o.id,
+              texto: o.texto,
+              correcta: o.correcta,
+            })),
+          };
+          body = new TextEncoder().encode(JSON.stringify(parsedRequestJson)).buffer;
+        }
       }
     }
 

@@ -28,8 +28,8 @@ export function obtenerListaTexto(valor: unknown): string[] {
 export function obtenerAfirmaciones(valor: unknown): Afirmacion[] {
   if (!Array.isArray(valor)) return [];
 
-  return valor.filter(esRegistro).map((afirmacion) => ({
-    id: typeof afirmacion.id === "string" && afirmacion.id.trim() ? afirmacion.id : crearIdFila("afirmacion"),
+  return valor.filter(esRegistro).map((afirmacion, indice) => ({
+    id: typeof afirmacion.id === "string" && afirmacion.id.trim() ? afirmacion.id : `afirmacion-${indice + 1}`,
     texto: typeof afirmacion.texto === "string" ? afirmacion.texto : "",
     es_verdadero: typeof afirmacion.es_verdadero === "boolean" ? afirmacion.es_verdadero : afirmacion.correcta === true,
   }));
@@ -38,8 +38,8 @@ export function obtenerAfirmaciones(valor: unknown): Afirmacion[] {
 export function obtenerPares(valor: unknown): Par[] {
   if (!Array.isArray(valor)) return [];
 
-  return valor.filter(esRegistro).map((par) => ({
-    id: typeof par.id === "string" && par.id.trim() ? par.id : crearIdFila("par"),
+  return valor.filter(esRegistro).map((par, indice) => ({
+    id: typeof par.id === "string" && par.id.trim() ? par.id : `par-${indice + 1}`,
     izquierda: typeof par.izquierda === "string" ? par.izquierda : "",
     derecha: typeof par.derecha === "string" ? par.derecha : "",
   }));
@@ -57,25 +57,35 @@ export function obtenerTarjetas(valor: unknown): Tarjeta[] {
 export function obtenerOpcionesConCorrecta(valor: unknown): OpcionConCorrecta[] {
   if (!Array.isArray(valor)) return [];
 
-  return valor
-    .filter(esRegistro)
-    .map((opcion, indice) => ({
-      id: typeof opcion.id === "string" && opcion.id.trim() ? opcion.id : crearIdFila("opcion"),
-      texto: typeof opcion.texto === "string" ? opcion.texto : "",
-      correcta: opcion.correcta === true || opcion.esCorrecta === true || indice === 0,
-    }));
+  const registros = valor.filter(esRegistro);
+  const tieneAlgunaCorrecta = registros.some(
+    (opcion) => opcion.correcta === true || opcion.esCorrecta === true || opcion.es_correcta === true,
+  );
+
+  return registros.map((opcion, indice) => ({
+    id: typeof opcion.id === "string" && opcion.id.trim() ? opcion.id : `opcion-${indice + 1}`,
+    texto:
+      typeof opcion.texto === "string"
+        ? opcion.texto
+        : typeof opcion.texto_opcion === "string"
+          ? opcion.texto_opcion
+          : "",
+    correcta: tieneAlgunaCorrecta
+      ? opcion.correcta === true || opcion.esCorrecta === true || opcion.es_correcta === true
+      : indice === 0,
+  }));
 }
 
 export function obtenerEscenas(valor: unknown): EscenaEditor[] {
   if (!Array.isArray(valor)) return [];
 
   return valor.filter(esRegistro).map((escena, indice) => ({
-    id: typeof escena.id === "string" && escena.id.trim() ? escena.id : crearIdFila("escena"),
+    id: typeof escena.id === "string" && escena.id.trim() ? escena.id : `escena-${indice + 1}`,
     texto: typeof escena.texto === "string" ? escena.texto : "",
     imagen_url: typeof escena.imagen_url === "string" ? escena.imagen_url : "",
     opciones: obtenerOpcionesConCorrecta(escena.opciones).length
       ? obtenerOpcionesConCorrecta(escena.opciones)
-      : [{ id: crearIdFila(`escena-${indice + 1}-opcion`), texto: "", correcta: true }],
+      : [{ id: `escena-${indice + 1}-opcion-1`, texto: "", correcta: true }],
   }));
 }
 

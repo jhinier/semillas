@@ -1,5 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { X } from "lucide-react";
+import { Medal, X } from "lucide-react";
+import in1Img from "@/assets/images/Ilustraciones/in1.webp";
+import in2Img from "@/assets/images/Ilustraciones/in2.webp";
 import type { CodigoCriterioLogro, LogroAdminResumen } from "../../admin-logros.api";
 import { CRITERIOS_LOGRO, validarCodigoLogro } from "./logros-admin-utils";
 
@@ -35,16 +37,48 @@ const VALORES_INICIALES: ValoresFormulario = {
   valor_criterio: 1,
 };
 
+const CODIGOS_CRITERIO_VALIDOS = new Set<CodigoCriterioLogro>([
+  "temas_completados",
+  "actividades_completadas",
+  "dias_racha",
+]);
+
 function valoresDesdeLogro(logro: LogroAdminResumen): ValoresFormulario {
+  const criterioValido: CodigoCriterioLogro = CODIGOS_CRITERIO_VALIDOS.has(logro.codigo_criterio)
+    ? logro.codigo_criterio
+    : "temas_completados";
+  const valorNormalizado =
+    typeof logro.valor_criterio === "number" && Number.isFinite(logro.valor_criterio) && logro.valor_criterio >= 1
+      ? Math.round(logro.valor_criterio)
+      : 1;
+  const bonoNormalizado =
+    typeof logro.bono_xp === "number" && Number.isFinite(logro.bono_xp) && logro.bono_xp >= 0
+      ? Math.round(logro.bono_xp)
+      : 0;
+
   return {
-    codigo: logro.codigo,
-    nombre: logro.nombre,
+    codigo: logro.codigo ?? "",
+    nombre: logro.nombre ?? "",
     descripcion: logro.descripcion ?? "",
     url_icono: logro.url_icono ?? "",
-    bono_xp: logro.bono_xp,
-    codigo_criterio: logro.codigo_criterio,
-    valor_criterio: logro.valor_criterio,
+    bono_xp: bonoNormalizado,
+    codigo_criterio: criterioValido,
+    valor_criterio: valorNormalizado,
   };
+}
+
+function normalizarUrlIconoParaEnvio(rawUrl: string): string {
+  const limpia = rawUrl.trim();
+  if (!limpia) return "";
+  if (/^https?:\/\//i.test(limpia)) return limpia;
+  if (typeof window !== "undefined" && limpia.startsWith("/")) {
+    try {
+      return new URL(limpia, window.location.origin).toString();
+    } catch {
+      return "";
+    }
+  }
+  return "";
 }
 
 export function FormularioLogro({
@@ -56,27 +90,36 @@ export function FormularioLogro({
   onCerrar,
   onGuardar,
 }: Props) {
-  const [valores, setValores] = useState<ValoresFormulario>(VALORES_INICIALES);
+  const [valores, setValores] = useState<ValoresFormulario>(
+    modo === "editar" && logro ? valoresDesdeLogro(logro) : VALORES_INICIALES,
+  );
+  const [errorImagen, setErrorImagen] = useState(false);
 
   useEffect(() => {
     if (!abierto) return;
+    setErrorImagen(false);
     if (modo === "editar" && logro) {
       setValores(valoresDesdeLogro(logro));
     } else {
       setValores(VALORES_INICIALES);
     }
-  }, [abierto, modo, logro]);
+    // Solo reinicializar cuando cambia el estado de apertura, modo o el ID del logro
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [abierto, modo, logro?.id]);
 
   if (!abierto) return null;
 
   const errorCodigo = modo === "crear" ? validarCodigoLogro(valores.codigo) : null;
   const errorNombre = valores.nombre.trim().length < 3 ? "Mínimo 3 caracteres." : null;
-  const errorValor = valores.valor_criterio < 1 ? "Debe ser al menos 1." : null;
+  const errorValor = !Number.isFinite(valores.valor_criterio) || valores.valor_criterio < 1 ? "Debe ser al menos 1." : null;
 
   const formularioValido =
     !errorCodigo && !errorNombre && !errorValor && valores.nombre.trim().length > 0;
 
   function actualizar<K extends keyof ValoresFormulario>(clave: K, valor: ValoresFormulario[K]) {
+    if (clave === "url_icono") {
+      setErrorImagen(false);
+    }
     setValores((actual) => ({ ...actual, [clave]: valor }));
   }
 
@@ -88,11 +131,15 @@ export function FormularioLogro({
       codigo: valores.codigo.trim().toLowerCase(),
       nombre: valores.nombre.trim(),
       descripcion: valores.descripcion.trim(),
-      url_icono: valores.url_icono.trim(),
+      url_icono: normalizarUrlIconoParaEnvio(valores.url_icono),
+      bono_xp: Math.max(0, Math.round(Number(valores.bono_xp) || 0)),
+      valor_criterio: Math.max(1, Math.round(Number(valores.valor_criterio) || 1)),
     });
   }
 
   const titulo = modo === "crear" ? "Nuevo logro" : `Editar ${logro?.nombre ?? "logro"}`;
+  const fallbackIcono = valores.codigo.includes("1") ? in1Img : in2Img;
+  const previewSrc = !errorImagen && valores.url_icono.trim() ? valores.url_icono.trim() : fallbackIcono;
 
   const contenidoFormulario = (
     <form
@@ -100,15 +147,15 @@ export function FormularioLogro({
       className={
         presentacion === "pagina"
           ? "mx-auto w-full max-w-3xl rounded-2xl border border-slate-200 bg-white shadow-sm"
-          : "relative w-full max-w-2xl rounded-2xl bg-white shadow-2xl"
+          : "relative z-10 flex max-h-[calc(100dvh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
       }
     >
-      <header className="flex items-start justify-between border-b border-slate-200 px-6 py-5">
+      <header className="flex shrink-0 items-start justify-between border-b border-slate-200 px-6 py-4">
         <div>
           <h2 id="formulario-logro-titulo" className="text-xl font-black text-slate-950">
             {titulo}
           </h2>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-0.5 text-sm text-slate-500">
             Configura cómo y cuándo se desbloquea este reconocimiento.
           </p>
         </div>
@@ -122,22 +169,22 @@ export function FormularioLogro({
         </button>
       </header>
 
-      <div className="grid gap-5 px-6 py-5">
+      <div className="grid gap-4 overflow-y-auto px-6 py-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="grid gap-1.5 text-sm font-bold text-slate-700">
             Código
             {modo === "editar" ? (
               <input
                 value={valores.codigo}
-                disabled
-                className="rounded-xl border border-slate-200 bg-slate-100 px-3.5 py-2.5 font-mono text-sm font-normal text-slate-500"
+                readOnly
+                className="rounded-xl border border-slate-200 bg-slate-100 px-3.5 py-2 font-mono text-sm font-normal text-slate-600 outline-none"
               />
             ) : (
               <input
                 value={valores.codigo}
                 onChange={(e) => actualizar("codigo", e.target.value)}
                 placeholder="primer-tema"
-                className="rounded-xl border border-slate-300 px-3.5 py-2.5 font-mono text-sm font-normal outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
+                className="rounded-xl border border-slate-300 px-3.5 py-2 font-mono text-sm font-normal outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
                 aria-invalid={errorCodigo ? true : undefined}
               />
             )}
@@ -157,8 +204,8 @@ export function FormularioLogro({
               min={0}
               max={10000}
               value={valores.bono_xp}
-              onChange={(e) => actualizar("bono_xp", Number(e.target.value))}
-              className="rounded-xl border border-slate-300 px-3.5 py-2.5 font-normal outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
+              onChange={(e) => actualizar("bono_xp", Math.max(0, Number(e.target.value) || 0))}
+              className="rounded-xl border border-slate-300 px-3.5 py-2 font-normal outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
             />
           </label>
         </div>
@@ -169,7 +216,7 @@ export function FormularioLogro({
             value={valores.nombre}
             onChange={(e) => actualizar("nombre", e.target.value)}
             placeholder="El Amor de Dios"
-            className="rounded-xl border border-slate-300 px-3.5 py-2.5 font-normal outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
+            className="rounded-xl border border-slate-300 px-3.5 py-2 font-normal outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
             aria-invalid={errorNombre ? true : undefined}
           />
           {errorNombre ? (
@@ -182,32 +229,47 @@ export function FormularioLogro({
           <textarea
             value={valores.descripcion}
             onChange={(e) => actualizar("descripcion", e.target.value)}
-            rows={3}
+            rows={2}
             placeholder="Completaste tu primer tema sobre el amor de Dios."
-            className="rounded-xl border border-slate-300 px-3.5 py-2.5 font-normal outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
+            className="rounded-xl border border-slate-300 px-3.5 py-2 font-normal outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
           />
         </label>
 
-        <label className="grid gap-1.5 text-sm font-bold text-slate-700">
-          URL del ícono
-          <input
-            value={valores.url_icono}
-            onChange={(e) => actualizar("url_icono", e.target.value)}
-            placeholder="https://cdn.semillas.org/medios/logros/amor.png"
-            className="rounded-xl border border-slate-300 px-3.5 py-2.5 font-normal outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
-          />
+        <div className="grid gap-1.5 text-sm font-bold text-slate-700">
+          <label htmlFor="formulario-logro-icono">URL del ícono</label>
+          <div className="flex items-center gap-3">
+            <div className="grid size-11 shrink-0 place-items-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+              {previewSrc ? (
+                <img
+                  src={previewSrc}
+                  alt="Vista previa de insignia"
+                  className="size-full object-cover"
+                  onError={() => setErrorImagen(true)}
+                />
+              ) : (
+                <Medal className="size-5 text-emerald-600" aria-hidden="true" />
+              )}
+            </div>
+            <input
+              id="formulario-logro-icono"
+              value={valores.url_icono}
+              onChange={(e) => actualizar("url_icono", e.target.value)}
+              placeholder="https://cdn.semillas.org/medios/logros/amor.png"
+              className="min-w-0 flex-1 rounded-xl border border-slate-300 px-3.5 py-2 font-normal outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
+            />
+          </div>
           <span className="text-xs font-normal text-slate-500">
-            Opcional. URL absoluta a una imagen PNG o SVG.
+            Opcional. URL absoluta a una imagen PNG, WebP o SVG (si se deja vacío o falla, se usa la insignia predeterminada).
           </span>
-        </label>
+        </div>
 
-        <div className="grid gap-4 rounded-xl bg-slate-50 p-4 sm:grid-cols-[1fr_8rem]">
+        <div className="grid gap-4 rounded-xl border border-slate-200/80 bg-slate-50 p-4 sm:grid-cols-[1fr_9rem]">
           <label className="grid gap-1.5 text-sm font-bold text-slate-700">
             Criterio de desbloqueo
             <select
               value={valores.codigo_criterio}
               onChange={(e) => actualizar("codigo_criterio", e.target.value as CodigoCriterioLogro)}
-              className="rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 font-normal outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
+              className="rounded-xl border border-slate-300 bg-white px-3.5 py-2 font-normal outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
             >
               {CRITERIOS_LOGRO.map((c) => (
                 <option key={c.codigo} value={c.codigo}>
@@ -227,8 +289,8 @@ export function FormularioLogro({
               min={1}
               max={10000}
               value={valores.valor_criterio}
-              onChange={(e) => actualizar("valor_criterio", Number(e.target.value))}
-              className="rounded-xl border border-slate-300 px-3.5 py-2.5 font-normal outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
+              onChange={(e) => actualizar("valor_criterio", Math.max(1, Number(e.target.value) || 1))}
+              className="rounded-xl border border-slate-300 bg-white px-3.5 py-2 font-normal outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
               aria-invalid={errorValor ? true : undefined}
             />
             <span className="text-xs font-normal text-slate-500">
@@ -238,7 +300,7 @@ export function FormularioLogro({
         </div>
       </div>
 
-      <footer className="flex justify-end gap-3 border-t border-slate-200 px-6 py-4">
+      <footer className="flex shrink-0 justify-end gap-3 border-t border-slate-200 bg-white px-6 py-4">
         <button
           type="button"
           onClick={onCerrar}
@@ -267,11 +329,11 @@ export function FormularioLogro({
       role="dialog"
       aria-modal="true"
       aria-labelledby="formulario-logro-titulo"
-      className="fixed inset-0 z-50 grid place-items-center p-6"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4 sm:p-6"
     >
       <button
         type="button"
-        className="absolute inset-0 bg-slate-950/45"
+        className="fixed inset-0 bg-slate-950/45"
         aria-label="Cerrar formulario"
         onClick={onCerrar}
       />

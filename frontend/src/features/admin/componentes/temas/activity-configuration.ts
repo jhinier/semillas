@@ -51,8 +51,13 @@ export function sincronizarOpcionesCuestionario(
     .map((item, indice) => ({
       id: typeof item.id === "string" && item.id.trim() ? item.id.trim() : `opcion-${indice + 1}`,
       etiqueta: String.fromCharCode(65 + indice),
-      texto: typeof item.texto === "string" ? item.texto : "",
-      correcta: item.correcta === true || item.esCorrecta === true,
+      texto:
+        typeof item.texto === "string"
+          ? item.texto
+          : typeof item.texto_opcion === "string"
+            ? item.texto_opcion
+            : "",
+      correcta: item.correcta === true || item.esCorrecta === true || item.es_correcta === true,
       orden: indice + 1,
     }));
 

@@ -47,10 +47,10 @@ export function AgregarMiembroDialog({ abierto, excluidos, guardando, onCerrar, 
   };
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="agregar-miembro-title" className="fixed inset-0 z-50 grid place-items-center p-6">
-      <button type="button" className="absolute inset-0 bg-slate-950/45" aria-label="Cerrar selector de miembros" onClick={onCerrar} />
-      <div className="relative w-full max-w-xl rounded-2xl border border-slate-200 bg-white shadow-2xl">
-        <header className="flex items-start justify-between border-b border-slate-200 px-6 py-5">
+    <div role="dialog" aria-modal="true" aria-labelledby="agregar-miembro-title" className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4 sm:p-6">
+      <button type="button" className="fixed inset-0 bg-slate-950/45" aria-label="Cerrar selector de miembros" onClick={onCerrar} />
+      <div className="relative z-10 flex max-h-[calc(100dvh-2rem)] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+        <header className="flex shrink-0 items-start justify-between border-b border-slate-200 px-6 py-4">
           <div>
             <h2 id="agregar-miembro-title" className="text-xl font-black text-slate-950">Agregar miembro</h2>
             <p className="mt-1 text-sm text-slate-500">Busca una cuenta activa que todavía no pertenezca al club.</p>
@@ -60,7 +60,7 @@ export function AgregarMiembroDialog({ abierto, excluidos, guardando, onCerrar, 
           </button>
         </header>
 
-        <div className="grid gap-4 px-6 py-5">
+        <div className="grid gap-4 overflow-y-auto px-6 py-4">
           <label className="relative">
             <span className="sr-only">Buscar usuarios</span>
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
@@ -75,7 +75,7 @@ export function AgregarMiembroDialog({ abierto, excluidos, guardando, onCerrar, 
             />
           </label>
 
-          <div className="max-h-72 overflow-y-auto rounded-xl border border-slate-200">
+          <div className="max-h-64 overflow-y-auto rounded-xl border border-slate-200">
             {usuariosQuery.isLoading ? (
               <p className="p-8 text-center text-sm text-slate-500">Buscando usuarios…</p>
             ) : usuariosQuery.isError ? (
@@ -109,7 +109,7 @@ export function AgregarMiembroDialog({ abierto, excluidos, guardando, onCerrar, 
           {error ? <p role="alert" className="text-sm font-semibold text-red-700">{error}</p> : null}
         </div>
 
-        <footer className="flex justify-end gap-3 border-t border-slate-200 px-6 py-4">
+        <footer className="flex shrink-0 justify-end gap-3 border-t border-slate-200 bg-white px-6 py-4">
           <button type="button" onClick={onCerrar} disabled={guardando} className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50">Cancelar</button>
           <button type="button" onClick={() => void confirmar()} disabled={guardando || !seleccionado} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-50">
             {guardando ? "Agregando…" : "Agregar miembro"}
