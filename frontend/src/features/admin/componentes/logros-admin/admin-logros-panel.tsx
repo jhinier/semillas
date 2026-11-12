@@ -8,7 +8,7 @@ import type {
   LogroAdminResumen,
 } from "../../admin-logros.api";
 import { useAdminLogros } from "../../hooks/use-admin-logros";
-import { CRITERIOS_LOGRO, formatearFechaCorta, obtenerCriterio } from "./logros-admin-utils";
+import { CRITERIOS_LOGRO, formatearFechaCorta } from "./logros-admin-utils";
 import { DialogoConfirmacionLogro, type ConfirmacionLogroAccion } from "./DialogoConfirmacionLogro";
 import { FormularioLogro } from "./FormularioLogro";
 
@@ -337,14 +337,17 @@ function FilaLogro({
   onConfirmarAccion: (tipo: "archivar" | "reactivar") => void;
   deshabilitado: boolean;
 }) {
-  const criterio = obtenerCriterio(logro.codigo_criterio);
+  const criterio = CRITERIOS_LOGRO.find((item) => item.codigo === logro.codigo_criterio) ?? CRITERIOS_LOGRO[0]!;
+  const nombreVisible = logro.nombre || (logro as { titulo?: string }).titulo || logro.codigo;
+  const bonoXp = logro.bono_xp ?? (logro as { xp_recompensa?: number }).xp_recompensa ?? 0;
+  const otorgados = logro.otorgados ?? (logro as { otorgados_count?: number }).otorgados_count ?? 0;
   return (
     <tr className="group hover:bg-slate-50/80">
       <td className="px-4 py-3.5">
         <div className="flex items-center gap-3">
-          <IconoLogroAdmin url={logro.url_icono} codigo={logro.codigo} />
+          <IconoLogroAdmin url={logro.url_icono ?? (logro as { icono_url?: string }).icono_url ?? null} codigo={logro.codigo} />
           <div className="min-w-0">
-            <span className="block truncate font-bold text-slate-900">{logro.nombre}</span>
+            <span className="block truncate font-bold text-slate-900">{nombreVisible}</span>
             <span className="mt-0.5 block truncate text-xs text-slate-500">
               <code className="rounded bg-slate-100 px-1 py-0.5 text-[10px]">{logro.codigo}</code>
               {logro.descripcion ? <span className="ml-2">{logro.descripcion}</span> : null}
@@ -355,12 +358,12 @@ function FilaLogro({
       <td className="px-4 py-3.5 text-slate-700">
         <span className="font-semibold">{criterio.etiqueta}</span>
         <span className="ml-2 text-xs text-slate-500">
-          {logro.valor_criterio} {criterio.unidad}
+          {logro.valor_criterio ?? 1} {criterio.unidad}
         </span>
       </td>
-      <td className="px-4 py-3.5 text-center font-bold text-violet-700">+{logro.bono_xp}</td>
+      <td className="px-4 py-3.5 text-center font-bold text-violet-700">+{bonoXp}</td>
       <td className="px-4 py-3.5 text-center font-semibold text-slate-700">
-        {logro.otorgados.toLocaleString("es-EC")}
+        {otorgados.toLocaleString("es-EC")}
       </td>
       <td className="px-4 py-3.5">
         <span

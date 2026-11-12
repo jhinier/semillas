@@ -64,7 +64,7 @@ export function AdminUsersFilters({
         <span className="sr-only">Franja</span>
         <select value={selectedFranja} onChange={(event) => onFranjaChange(event.target.value)}>
           <option value="">Todas las franjas</option>
-          {catalogos.grupos_edad.map((grupo) => (
+          {(catalogos?.grupos_edad ?? []).map((grupo) => (
             <option key={grupo.id} value={grupo.id}>
               {grupo.nombre} ({grupo.edad_minima}–{grupo.edad_maxima})
             </option>
@@ -86,7 +86,7 @@ export function AdminUsersFilters({
         <span className="sr-only">Club</span>
         <select value={selectedClub} onChange={(event) => onClubChange(event.target.value)}>
           <option value="">Todos los clubes</option>
-          {catalogos.clubes.map((club) => (
+          {(catalogos?.clubes ?? []).map((club) => (
             <option key={club.id} value={club.id}>
               {club.nombre}
             </option>

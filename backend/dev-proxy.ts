@@ -264,27 +264,39 @@ const SNAPSHOT_LOGROS = {
       {
         id: "l1000000-0000-0000-0000-000000000001",
         codigo: "primer_paso",
+        nombre: "Primer paso",
         titulo: "Primer paso",
         descripcion: "Completa tu primer tema bíblico completo.",
         criterio: "Requisito: Completa tu primer tema bíblico",
+        codigo_criterio: "temas_completados",
+        valor_criterio: 1,
+        bono_xp: 20,
         xp_recompensa: 20,
+        url_icono: "/src/assets/images/Ilustraciones/Versiculo del dia.webp",
         icono_url: "/src/assets/images/Ilustraciones/Versiculo del dia.webp",
         activo: true,
         creado_en: "2026-08-01T10:00:00Z",
         actualizado_en: "2026-08-01T10:00:00Z",
+        otorgados: 14,
         otorgados_count: 14,
       },
       {
         id: "l1000000-0000-0000-0000-000000000002",
         codigo: "amor_de_dios",
+        nombre: "El Amor de Dios",
         titulo: "El Amor de Dios",
         descripcion: "Completa el tema El Amor de Dios.",
         criterio: "Requisito: Completa el tema «El Amor de Dios»",
+        codigo_criterio: "actividades_completadas",
+        valor_criterio: 3,
+        bono_xp: 25,
         xp_recompensa: 25,
+        url_icono: "/src/assets/images/Ilustraciones/Versiculo del dia.webp",
         icono_url: "/src/assets/images/Ilustraciones/Versiculo del dia.webp",
         activo: true,
         creado_en: "2026-08-02T10:00:00Z",
         actualizado_en: "2026-08-02T10:00:00Z",
+        otorgados: 9,
         otorgados_count: 9,
       },
     ],
@@ -305,18 +317,115 @@ const SNAPSHOT_USUARIOS = {
     usuarios: [
       {
         id: "aff4c70c-086c-43f3-8501-b55bb13807b2",
+        nombre_visible: "Administrador",
         correo: "admin@correo.com",
         rol: "administrador",
         apodo: "Administrador",
         proveedor: "correo",
         activo: true,
+        estado: "activo",
         creado_en: "2026-07-01T00:00:00Z",
+        actualizado_en: "2026-10-30T17:00:00Z",
         ultimo_acceso: "2026-10-30T17:00:00Z",
+        ultimo_login_en: "2026-10-30T17:00:00Z",
+        perfil: {
+          id: "perfil-admin-1",
+          apodo: "Administrador",
+          avatar_url: null,
+          clave_avatar: null,
+          grupo_edad_id: "e1000000-0000-0000-0000-000000000001",
+          prefiere_audio: true,
+          tamano_texto_preferido: "mediano",
+        },
+        grupo_edad: {
+          id: "e1000000-0000-0000-0000-000000000001",
+          codigo: "semillas",
+          nombre: "Semillas",
+          edad_minima: 6,
+          edad_maxima: 8,
+        },
+        clubes: [
+          {
+            id: "c1000000-0000-0000-0000-000000000001",
+            nombre: "Semillas Quito Norte",
+            rol_miembro: "lider",
+            unido_en: "2026-09-01T10:00:00Z",
+          },
+        ],
+        vinculos_familiares: 1,
+        progreso: {
+          xp_total: 420,
+          eventos: 18,
+        },
+      },
+      {
+        id: "u1000000-0000-0000-0000-000000000002",
+        nombre_visible: "Mateo Estudiante",
+        correo: "mateo@semillas.ec",
+        rol: "usuario",
+        apodo: "Mateo",
+        proveedor: "correo",
+        activo: true,
+        estado: "activo",
+        creado_en: "2026-08-15T10:00:00Z",
+        actualizado_en: "2026-10-29T15:00:00Z",
+        ultimo_acceso: "2026-10-29T15:00:00Z",
+        ultimo_login_en: "2026-10-29T15:00:00Z",
+        perfil: {
+          id: "perfil-user-2",
+          apodo: "Mateo",
+          avatar_url: null,
+          clave_avatar: null,
+          grupo_edad_id: "e1000000-0000-0000-0000-000000000002",
+          prefiere_audio: false,
+          tamano_texto_preferido: "mediano",
+        },
+        grupo_edad: {
+          id: "e1000000-0000-0000-0000-000000000002",
+          codigo: "brotes",
+          nombre: "Brotes",
+          edad_minima: 9,
+          edad_maxima: 11,
+        },
+        clubes: [
+          {
+            id: "c1000000-0000-0000-0000-000000000001",
+            nombre: "Semillas Quito Norte",
+            rol_miembro: "miembro",
+            unido_en: "2026-09-05T10:00:00Z",
+          },
+        ],
+        vinculos_familiares: 1,
+        progreso: {
+          xp_total: 280,
+          eventos: 12,
+        },
       },
     ],
-    total: 34,
+    total: 2,
     limit: 20,
     offset: 0,
+    resumen: {
+      total: 2,
+      activos: 2,
+      pendientes: 0,
+      bloqueados: 0,
+      administradores: 1,
+      padres: 0,
+    },
+    catalogos: {
+      grupos_edad: [
+        { id: "e1000000-0000-0000-0000-000000000001", codigo: "semillas", nombre: "Semillas", edad_minima: 6, edad_maxima: 8 },
+        { id: "e1000000-0000-0000-0000-000000000002", codigo: "brotes", nombre: "Brotes", edad_minima: 9, edad_maxima: 11 },
+        { id: "e1000000-0000-0000-0000-000000000003", codigo: "raices", nombre: "Raíces", edad_minima: 12, edad_maxima: 14 },
+      ],
+      clubes: [
+        { id: "c1000000-0000-0000-0000-000000000001", nombre: "Semillas Quito Norte", activo: true },
+      ],
+      tutores: [
+        { id: "aff4c70c-086c-43f3-8501-b55bb13807b2", nombre_visible: "Administrador", correo: "admin@correo.com" },
+      ],
+    },
   },
 };
 
@@ -470,6 +579,14 @@ const SNAPSHOT_REPORTES = {
 const SNAPSHOT_AJUSTES = {
   exito: true,
   datos: {
+    id: "ajustes-1",
+    nombre_plataforma: "Semillas",
+    correo_soporte: "admin@correo.com",
+    zona_horaria: "America/Guayaquil",
+    notas_obligatorias_cambios: false,
+    notas_obligatorias_rechazo: true,
+    creado_en: "2026-07-01T00:00:00Z",
+    actualizado_en: "2026-10-30T17:00:00Z",
     ajustes: {
       nombre_plataforma: "Semillas",
       correo_soporte: "admin@correo.com",
@@ -1630,6 +1747,49 @@ const server = Bun.serve({
             cached = new TextEncoder().encode(JSON.stringify(SNAPSHOT_CLUB_DETALLE));
           } else if (url.pathname.startsWith("/administracion/logros/")) {
             cached = new TextEncoder().encode(JSON.stringify({ exito: true, datos: SNAPSHOT_LOGROS.datos.logros[0] }));
+          } else if (url.pathname.startsWith("/administracion/usuarios/")) {
+            const userId = url.pathname.split("/")[3] || SNAPSHOT_USUARIOS.datos.usuarios[0].id;
+            const baseUser = SNAPSHOT_USUARIOS.datos.usuarios.find((u) => u.id === userId) ?? SNAPSHOT_USUARIOS.datos.usuarios[0];
+            cached = new TextEncoder().encode(
+              JSON.stringify({
+                exito: true,
+                datos: {
+                  ...baseUser,
+                  id: userId,
+                  vinculos: [],
+                  estadisticas: {
+                    temas_total: 4,
+                    temas_completados: 2,
+                    actividades_total: 12,
+                    actividades_completadas: 8,
+                    intentos: 10,
+                    xp_total: baseUser.progreso?.xp_total ?? 420,
+                  },
+                  actividad_reciente: [
+                    {
+                      id: "ev-1",
+                      tipo: "actividad_completada",
+                      tema_id: "47a2e22f-86da-466f-92ff-1847d85de609",
+                      actividad_id: "act-1",
+                      puntaje: 100,
+                      correcta: true,
+                      xp_otorgada: 20,
+                      ocurrido_en: "2026-10-30T16:30:00Z",
+                    },
+                  ],
+                  auditoria: [
+                    {
+                      id: "aud-1",
+                      accion: "login",
+                      datos_antes: null,
+                      datos_despues: null,
+                      actor_usuario_id: userId,
+                      creado_en: "2026-10-30T17:00:00Z",
+                    },
+                  ],
+                },
+              })
+            );
           }
         }
         if (cached) {

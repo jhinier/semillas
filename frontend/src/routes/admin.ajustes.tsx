@@ -26,13 +26,17 @@ const defaults: Ajustes = {
   notasObligatoriasRechazo: true,
 };
 
-function normalizarAjustes(ajustes: AjustesAdmin): Ajustes {
+function normalizarAjustes(ajustes: AjustesAdmin | { ajustes?: Partial<AjustesAdmin> }): Ajustes {
+  const fuente =
+    ajustes && typeof ajustes === "object" && "ajustes" in ajustes && ajustes.ajustes
+      ? ajustes.ajustes
+      : (ajustes as Partial<AjustesAdmin>);
   return {
-    nombrePlataforma: ajustes.nombre_plataforma,
-    correoSoporte: ajustes.correo_soporte ?? "",
-    zonaHoraria: ajustes.zona_horaria,
-    notasObligatoriasCambios: ajustes.notas_obligatorias_cambios,
-    notasObligatoriasRechazo: ajustes.notas_obligatorias_rechazo,
+    nombrePlataforma: fuente?.nombre_plataforma || defaults.nombrePlataforma,
+    correoSoporte: fuente?.correo_soporte ?? defaults.correoSoporte,
+    zonaHoraria: fuente?.zona_horaria || defaults.zonaHoraria,
+    notasObligatoriasCambios: fuente?.notas_obligatorias_cambios ?? defaults.notasObligatoriasCambios,
+    notasObligatoriasRechazo: fuente?.notas_obligatorias_rechazo ?? defaults.notasObligatoriasRechazo,
   };
 }
 

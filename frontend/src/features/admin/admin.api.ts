@@ -73,11 +73,14 @@ export type CrearActividadSolicitud = {
   }>;
 };
 
-export function obtenerTemasAdmin(params?: { status?: string }) {
+export async function obtenerTemasAdmin(params?: { status?: string }): Promise<Tema[]> {
   const busqueda = new URLSearchParams();
   if (params?.status) busqueda.set("status", params.status);
   const query = busqueda.toString();
-  return peticion<Tema[]>(`/administracion/temas${query ? `?${query}` : ""}`);
+  const res = await peticion<Tema[] | { temas?: Tema[] }>(`/administracion/temas${query ? `?${query}` : ""}`);
+  if (Array.isArray(res)) return res;
+  if (res && typeof res === "object" && Array.isArray(res.temas)) return res.temas;
+  return [];
 }
 
 export async function obtenerTemaAdmin(idTema: string): Promise<Tema> {
@@ -298,7 +301,33 @@ export type ObtenerUsuariosAdminParams = {
   offset?: number;
 };
 
-export function obtenerUsuariosAdmin(params: ObtenerUsuariosAdminParams = {}) {
+function normalizarUsuarioAdmin(
+  u: Partial<UsuarioAdmin> & { apodo?: string; ultimo_acceso?: string }
+): UsuarioAdmin {
+  const activo = u.activo ?? true;
+  return {
+    id: u.id ?? "",
+    nombre_visible: u.nombre_visible || u.apodo || u.correo || "Usuario",
+    correo: u.correo ?? null,
+    activo,
+    estado: u.estado ?? (activo ? "activo" : "bloqueado"),
+    rol: u.rol ?? "usuario",
+    proveedor: u.proveedor ?? "correo",
+    creado_en: u.creado_en ?? new Date().toISOString(),
+    actualizado_en: u.actualizado_en ?? u.creado_en ?? new Date().toISOString(),
+    ultimo_login_en: u.ultimo_login_en ?? u.ultimo_acceso ?? null,
+    perfil: u.perfil ?? null,
+    grupo_edad: u.grupo_edad ?? null,
+    clubes: Array.isArray(u.clubes) ? u.clubes : [],
+    vinculos_familiares: typeof u.vinculos_familiares === "number" ? u.vinculos_familiares : 0,
+    progreso: {
+      xp_total: typeof u.progreso?.xp_total === "number" ? u.progreso.xp_total : 0,
+      eventos: typeof u.progreso?.eventos === "number" ? u.progreso.eventos : 0,
+    },
+  };
+}
+
+export async function obtenerUsuariosAdmin(params: ObtenerUsuariosAdminParams = {}): Promise<ListadoUsuariosAdmin> {
   const busqueda = new URLSearchParams();
   if (params.q) busqueda.set("q", params.q);
   if (params.rol) busqueda.set("rol", params.rol);
@@ -307,11 +336,52 @@ export function obtenerUsuariosAdmin(params: ObtenerUsuariosAdminParams = {}) {
   if (params.club_id) busqueda.set("club_id", params.club_id);
   busqueda.set("limit", String(params.limit ?? 20));
   busqueda.set("offset", String(params.offset ?? 0));
-  return peticion<ListadoUsuariosAdmin>(`/administracion/usuarios?${busqueda.toString()}`);
+  const res = await peticion<Partial<ListadoUsuariosAdmin>>(`/administracion/usuarios?${busqueda.toString()}`);
+  const rawUsers = Array.isArray(res?.usuarios) ? res.usuarios : [];
+  const usuarios = rawUsers.map((u) => normalizarUsuarioAdmin(u));
+  const total = typeof res?.total === "number" ? res.total : usuarios.length;
+  return {
+    usuarios,
+    total,
+    resumen: {
+      total: res?.resumen?.total ?? total,
+      activos: res?.resumen?.activos ?? usuarios.filter((u) => u.estado === "activo").length,
+      pendientes: res?.resumen?.pendientes ?? usuarios.filter((u) => u.estado === "pendiente").length,
+      bloqueados: res?.resumen?.bloqueados ?? usuarios.filter((u) => u.estado === "bloqueado").length,
+      administradores: res?.resumen?.administradores ?? usuarios.filter((u) => u.rol === "administrador").length,
+      padres: res?.resumen?.padres ?? usuarios.filter((u) => u.rol === "padre").length,
+    },
+    catalogos: {
+      grupos_edad: Array.isArray(res?.catalogos?.grupos_edad) ? res.catalogos.grupos_edad : [],
+      clubes: Array.isArray(res?.catalogos?.clubes) ? res.catalogos.clubes : [],
+      tutores: Array.isArray(res?.catalogos?.tutores) ? res.catalogos.tutores : [],
+    },
+  };
 }
 
-export function obtenerUsuarioAdmin(usuarioId: string) {
-  return peticion<UsuarioAdminDetalle>(`/administracion/usuarios/${usuarioId}`);
+export async function obtenerUsuarioAdmin(usuarioId: string): Promise<UsuarioAdminDetalle> {
+  const res = await peticion<Partial<UsuarioAdminDetalle> | { usuario?: Partial<UsuarioAdminDetalle> }>(
+    `/administracion/usuarios/${usuarioId}`
+  );
+  const raw =
+    res && typeof res === "object" && "usuario" in res && res.usuario
+      ? res.usuario
+      : (res as Partial<UsuarioAdminDetalle>);
+  const base = normalizarUsuarioAdmin(raw ?? { id: usuarioId });
+  return {
+    ...base,
+    vinculos: Array.isArray(raw?.vinculos) ? raw.vinculos : [],
+    estadisticas: {
+      temas_total: raw?.estadisticas?.temas_total ?? 0,
+      temas_completados: raw?.estadisticas?.temas_completados ?? 0,
+      actividades_total: raw?.estadisticas?.actividades_total ?? 0,
+      actividades_completadas: raw?.estadisticas?.actividades_completadas ?? 0,
+      intentos: raw?.estadisticas?.intentos ?? 0,
+      xp_total: raw?.estadisticas?.xp_total ?? base.progreso.xp_total,
+    },
+    actividad_reciente: Array.isArray(raw?.actividad_reciente) ? raw.actividad_reciente : [],
+    auditoria: Array.isArray(raw?.auditoria) ? raw.auditoria : [],
+  };
 }
 
 export type ActualizarUsuarioAdminSolicitud = {
@@ -400,15 +470,34 @@ export type AjustesAdmin = {
 
 export type ActualizarAjustesAdminSolicitud = Partial<Pick<AjustesAdmin, "nombre_plataforma" | "correo_soporte" | "zona_horaria" | "notas_obligatorias_cambios" | "notas_obligatorias_rechazo">>;
 
-export function obtenerAjustesAdmin() {
-  return peticion<AjustesAdmin>("/administracion/ajustes");
+function normalizarRespuestaAjustes(res: Partial<AjustesAdmin> | { ajustes?: Partial<AjustesAdmin> }): AjustesAdmin {
+  const raw =
+    res && typeof res === "object" && "ajustes" in res && res.ajustes
+      ? res.ajustes
+      : (res as Partial<AjustesAdmin>);
+  return {
+    id: raw?.id ?? "ajustes-1",
+    nombre_plataforma: raw?.nombre_plataforma || "Semillas",
+    correo_soporte: raw?.correo_soporte ?? null,
+    zona_horaria: raw?.zona_horaria || "America/Guayaquil",
+    notas_obligatorias_cambios: Boolean(raw?.notas_obligatorias_cambios ?? false),
+    notas_obligatorias_rechazo: Boolean(raw?.notas_obligatorias_rechazo ?? true),
+    creado_en: raw?.creado_en ?? new Date().toISOString(),
+    actualizado_en: raw?.actualizado_en ?? new Date().toISOString(),
+  };
 }
 
-export function guardarAjustesAdmin(datos: ActualizarAjustesAdminSolicitud) {
-  return peticion<AjustesAdmin>("/administracion/ajustes-plataforma", {
+export async function obtenerAjustesAdmin(): Promise<AjustesAdmin> {
+  const res = await peticion<Partial<AjustesAdmin> | { ajustes?: Partial<AjustesAdmin> }>("/administracion/ajustes");
+  return normalizarRespuestaAjustes(res);
+}
+
+export async function guardarAjustesAdmin(datos: ActualizarAjustesAdminSolicitud): Promise<AjustesAdmin> {
+  const res = await peticion<Partial<AjustesAdmin> | { ajustes?: Partial<AjustesAdmin> }>("/administracion/ajustes-plataforma", {
     metodo: "PATCH",
     cuerpo: datos,
   });
+  return normalizarRespuestaAjustes({ ...datos, ...(res as object) });
 }
 
 export type ActividadAdmin = {

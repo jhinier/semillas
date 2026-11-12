@@ -22,10 +22,13 @@ function estadoLabel(estado: UsuarioAdmin["estado"]) {
 export type UserTableRow = UsuarioAdmin;
 
 export function FilaUsuario({ usuario, selected, onToggle, onView, onEdit }: Props) {
-  const clubes = usuario.clubes.map((club) => club.nombre).join(", ");
+  const clubes = (usuario.clubes ?? []).map((club) => club.nombre).join(", ");
   const franja = usuario.grupo_edad
     ? `${usuario.grupo_edad.nombre} · ${usuario.grupo_edad.edad_minima}–${usuario.grupo_edad.edad_maxima}`
     : "Sin franja";
+  const xpTotal = usuario.progreso?.xp_total ?? 0;
+  const eventos = usuario.progreso?.eventos ?? 0;
+  const estadoActual = usuario.estado ?? (usuario.activo ? "activo" : "bloqueado");
 
   return (
     <tr className={selected ? "is-selected" : undefined}>
@@ -65,20 +68,20 @@ export function FilaUsuario({ usuario, selected, onToggle, onView, onEdit }: Pro
       </td>
       <td>
         <span className="admin-users-cell-main">{clubes || "Sin club"}</span>
-        {usuario.vinculos_familiares > 0 ? (
+        {(usuario.vinculos_familiares ?? 0) > 0 ? (
           <small className="admin-users-cell-helper">
             {usuario.vinculos_familiares} vínculo{usuario.vinculos_familiares === 1 ? "" : "s"}
           </small>
         ) : null}
       </td>
       <td>
-        <span className="admin-users-xp">{usuario.progreso.xp_total.toLocaleString("es-EC")} XP</span>
-        <small className="admin-users-cell-helper">{usuario.progreso.eventos} eventos</small>
+        <span className="admin-users-xp">{xpTotal.toLocaleString("es-EC")} XP</span>
+        <small className="admin-users-cell-helper">{eventos} eventos</small>
       </td>
       <td>
-        <span className={`admin-users-status admin-users-status--${usuario.estado}`}>
+        <span className={`admin-users-status admin-users-status--${estadoActual}`}>
           <i aria-hidden="true" />
-          {estadoLabel(usuario.estado)}
+          {estadoLabel(estadoActual)}
         </span>
       </td>
       <td>
