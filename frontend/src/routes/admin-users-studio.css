@@ -183,9 +183,9 @@
 
 .admin-users-search input,
 .admin-users-filters select,
-.admin-users-dialog input,
+.admin-users-dialog input:not([type="checkbox"]):not([type="radio"]),
 .admin-users-dialog select,
-.admin-user-form-panel input,
+.admin-user-form-panel input:not([type="checkbox"]):not([type="radio"]),
 .admin-user-form-panel select {
   width: 100%;
   min-height: 2.65rem;
@@ -361,6 +361,13 @@
 .admin-user-check-list input,
 .admin-user-switch input {
   accent-color: #6c37f5;
+  width: 1.1rem;
+  height: 1.1rem;
+  min-height: 1.1rem;
+  flex: 0 0 1.1rem;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
 }
 
 .admin-users-person {
@@ -984,14 +991,14 @@
 }
 
 .dark .admin-users-filters select,
-.dark .admin-users-dialog input,
+.dark .admin-users-dialog input:not([type="checkbox"]):not([type="radio"]),
 .dark .admin-users-dialog select,
-.dark .admin-user-form-panel input,
+.dark .admin-user-form-panel input:not([type="checkbox"]):not([type="radio"]),
 .dark .admin-user-form-panel select,
 [data-theme="admin-dark"] .admin-users-filters select,
-[data-theme="admin-dark"] .admin-users-dialog input,
+[data-theme="admin-dark"] .admin-users-dialog input:not([type="checkbox"]):not([type="radio"]),
 [data-theme="admin-dark"] .admin-users-dialog select,
-[data-theme="admin-dark"] .admin-user-form-panel input,
+[data-theme="admin-dark"] .admin-user-form-panel input:not([type="checkbox"]):not([type="radio"]),
 [data-theme="admin-dark"] .admin-user-form-panel select {
   border-color: #1e293b !important;
   background-color: #172033 !important;

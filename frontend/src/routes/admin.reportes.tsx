@@ -253,7 +253,7 @@ function AdminReportesPage() {
             </div>
 
             <aside className="admin-dashboard__side-column">
-              <section className="admin-panel-card admin-panel-card--sticky">
+              <section className="admin-panel-card">
                 <PanelHeader title="Editorial" description="Resumen del flujo de revisión." />
 
                 <div className="grid grid-cols-2 gap-2.5 mb-4">

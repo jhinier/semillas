@@ -152,7 +152,7 @@ export function PanelAdministracion() {
         </div>
 
         <aside className="admin-dashboard__side-column">
-          <section className="admin-panel-card admin-panel-card--sticky">
+          <section className="admin-panel-card">
             <PanelHeader title="Cola de revisión" description="Contenido que necesita una decisión editorial." action={<Link to="/admin/revision">Ver todo</Link>} />
             <div className="admin-review-list">
               {data.revisiones.length === 0 ? <EmptyInline text="No hay revisiones pendientes." /> : data.revisiones.slice(0, 5).map((revision) => (
