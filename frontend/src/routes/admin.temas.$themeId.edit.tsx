@@ -109,7 +109,7 @@ function ThemeMetadataEditorPage() {
       version_biblica_id: tema.version_biblica_id ?? "",
       minutos_estimados: tema.minutos_estimados,
       xp_recompensa: tema.xp_recompensa,
-      grupo_edad_ids: tema.grupos_edad?.map((grupo) => grupo.id) ?? [],
+      grupo_edad_ids: tema.grupos_edad?.map((grupo) => typeof grupo === "string" ? grupo : grupo.id) ?? [],
       portada_recurso_id: tema.portada_recurso_id,
       libro_id: versiculoActual?.libro_id ?? referenciaActual?.libro_id ?? 43,
       capitulo: versiculoActual?.capitulo ?? referenciaActual?.capitulo ?? 3,
@@ -722,7 +722,7 @@ function ThemeMetadataEditorPage() {
                 </div>
               </div>
               <div className="admin-completeness-list mt-5">
-                {completitud?.criterios.map((item) => (
+                {(completitud?.criterios ?? []).map((item) => (
                   <div
                     key={item.codigo}
                     className={`admin-completeness-item ${item.completo ? "admin-completeness-item--complete" : ""}`}

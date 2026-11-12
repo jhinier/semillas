@@ -135,7 +135,7 @@ function AdminThemeLibrary() {
         <div className="admin-library-empty"><Loader2 className="mx-auto animate-spin text-violet-600" /><h3>Cargando temas</h3><p>Consultando la biblioteca editorial.</p></div>
       ) : temasQuery.isError ? (
         <div className="admin-library-empty"><BookOpenCheck className="mx-auto text-slate-300" /><h3>No se pudo cargar la biblioteca</h3><p>{temasQuery.error instanceof Error ? temasQuery.error.message : "Vuelve a intentarlo."}</p><button type="button" className="admin-primary-button mt-4" onClick={() => temasQuery.refetch()}>Reintentar</button></div>
-      ) : !data?.temas.length ? (
+      ) : !data?.temas?.length ? (
         <div className="admin-library-empty"><BookOpenCheck className="mx-auto text-slate-300" size={34} /><h3>No hay temas con estos filtros</h3><p>Cambia los filtros o crea una nueva lección.</p></div>
       ) : (
         <section className="admin-theme-results" aria-label="Resultados de temas">
@@ -166,7 +166,7 @@ function AdminThemeLibrary() {
       )}
 
       <footer className="admin-theme-pagination">
-        <span>Mostrando {data?.temas.length ?? 0} de {data?.total ?? 0} temas</span>
+        <span>Mostrando {data?.temas?.length ?? 0} de {data?.total ?? 0} temas</span>
         <div className="admin-theme-pagination__buttons">
           <button type="button" aria-label="Página anterior" disabled={page <= 1 || temasQuery.isFetching} onClick={() => setPage((value) => Math.max(1, value - 1))}><ArrowLeft size={16} /></button>
           <span>Página {page} de {totalPages}</span>
@@ -288,5 +288,5 @@ function ThemeLibraryRow({ tema, portadaFirmada, menuOpen, onToggleMenu, onClose
 
 function formatDate(value?: string | null) {
   if (!value) return "Sin fecha";
-  return new Intl.DateTimeFormat("es-EC", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+  const parsed = new Date(value); return Number.isNaN(parsed.getTime()) ? "Sin fecha" : new Intl.DateTimeFormat("es-EC", { dateStyle: "medium", timeStyle: "short" }).format(parsed);
 }

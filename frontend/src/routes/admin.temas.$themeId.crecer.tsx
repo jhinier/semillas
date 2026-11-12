@@ -53,7 +53,7 @@ function AdminThemeCrecerPage() {
       editor.stepsQuery.data?.some(
         (record) =>
           record.tipo_paso?.codigo === stepCode &&
-          record.contenidos.some(
+          (record.contenidos ?? []).some(
             (content) =>
               content.grupo_edad_id === editor.selectedAgeGroupId &&
               content.titulo?.trim() &&

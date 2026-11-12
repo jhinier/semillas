@@ -143,21 +143,34 @@ const SNAPSHOT_TEMAS_LISTADO = {
       ...t,
       slug: t.titulo.toLowerCase().replace(/[^a-z0-9]/g, "-"),
       resumen: "Contenido temático de " + t.titulo,
+      objetivo: "Comprender y vivir la enseñanza bíblica de " + t.titulo,
+      version_contenido: 1,
       minutos_estimados: 15,
       xp_recompensa: 50,
       publicado_en: t.actualizado_en,
       es_destacado: false,
-      senda: { id: "senda-padre", nombre: t.senda },
+      senda_id: "senda-padre",
+      senda: { id: "senda-padre", codigo: "padre", nombre: t.senda, color_hex: "#3b82f6" },
       grupos_edad: [
         { id: "e1000000-0000-0000-0000-000000000001", codigo: "semillas", nombre: "Semillas" },
         { id: "e1000000-0000-0000-0000-000000000002", codigo: "exploradores", nombre: "Exploradores" },
         { id: "e1000000-0000-0000-0000-000000000003", codigo: "embajadores", nombre: "Embajadores" },
       ],
       completitud: {
-        porcentaje: t.estado === "publicado" ? 100 : 70,
+        porcentaje: 100,
         listo_para_revision: true,
         bloqueos: [],
+        criterios: [
+          { codigo: "ficha_base", etiqueta: "Ficha editorial base", completo: true, detalle: "" },
+          { codigo: "portada", etiqueta: "Portada asignada", completo: true, detalle: "" },
+          { codigo: "grupos_edad", etiqueta: "Franjas de edad", completo: true, detalle: "" },
+          { codigo: "pasos_crecer", etiqueta: "6 momentos CRECER", completo: true, detalle: "" },
+          { codigo: "contenido_crecer", etiqueta: "Contenido por franja", completo: true, detalle: "" },
+          { codigo: "actividades", etiqueta: "Actividades configuradas", completo: true, detalle: "" },
+          { codigo: "publicacion", etiqueta: "Listo para publicar", completo: true, detalle: "" },
+        ],
         estadisticas: {
+          grupos_edad: 3,
           pasos_totales: 6,
           pasos_creados: 6,
           contenidos_creados: 18,
@@ -314,13 +327,68 @@ const SNAPSHOT_ACTIVIDADES = {
       {
         id: "act-1",
         tema_id: "47a2e22f-86da-466f-92ff-1847d85de609",
-        tipo_actividad_id: "quiz",
+        paso_id: "paso-47a2e22f-comprobar",
+        grupo_edad_id: "e1000000-0000-0000-0000-000000000001",
+        tipo_actividad_id: "tipo-cuestionario",
         titulo: "Quiz Bíblico",
-        consigna: "Responde las preguntas",
+        consigna: "Responde la pregunta sobre la enseñanza bíblica.",
+        retroalimentacion: "¡Muy bien! Recordaste la enseñanza.",
         dificultad: "normal",
         xp_recompensa: 20,
+        limite_tiempo_seg: null,
         orden: 1,
         obligatorio: true,
+        estado: "activo",
+        creado_en: "2026-10-14T05:09:38.663+00:00",
+        actualizado_en: "2026-10-14T05:09:38.663+00:00",
+        configuracion: {
+          opciones: [
+            { id: "opt-1", texto: "Dios nos ama siempre con amor eterno", correcta: true },
+            { id: "opt-2", texto: "Solo cuando no cometemos errores", correcta: false },
+          ],
+        },
+        opciones: [
+          {
+            id: "opt-1",
+            actividad_id: "act-1",
+            etiqueta: "A",
+            texto: "Dios nos ama siempre con amor eterno",
+            correcta: true,
+            orden: 1,
+            retroalimentacion: null,
+          },
+          {
+            id: "opt-2",
+            actividad_id: "act-1",
+            etiqueta: "B",
+            texto: "Solo cuando no cometemos errores",
+            correcta: false,
+            orden: 2,
+            retroalimentacion: null,
+          },
+        ],
+        tipo_actividad: {
+          id: "tipo-cuestionario",
+          codigo: "cuestionario",
+          nombre: "Cuestionario (Quiz)",
+        },
+        tema: {
+          id: "47a2e22f-86da-466f-92ff-1847d85de609",
+          titulo: "El Amor de Dios",
+          slug: "el-amor-de-dios",
+          estado: "publicado",
+          senda: {
+            id: "senda-padre",
+            codigo: "padre",
+            nombre: "Senda del Padre",
+            color_hex: "#3b82f6",
+          },
+        },
+        grupo_edad: {
+          id: "e1000000-0000-0000-0000-000000000001",
+          codigo: "semillas",
+          nombre: "Semillas",
+        },
       },
     ],
     total: 22,
@@ -1000,11 +1068,177 @@ function registrarSnapshot(ruta: string, obj: unknown) {
   cacheGet.set(ruta, new TextEncoder().encode(JSON.stringify(obj)));
 }
 
+for (const t of SNAPSHOT_TEMAS_LISTADO.datos.temas) {
+  enriquecerTemaConVersiculoYCompletitud(t, t.completitud);
+}
+
+const FASES_CRECER_PROXY = [
+  { id: "paso-tipo-conectar", codigo: "conectar", nombre: "Conectar", orden: 1, color_hex: "#43a047" },
+  { id: "paso-tipo-relatar", codigo: "relatar", nombre: "Relatar", orden: 2, color_hex: "#2563eb" },
+  { id: "paso-tipo-ensenar", codigo: "ensenar", nombre: "Enseñar", orden: 3, color_hex: "#eab308" },
+  { id: "paso-tipo-comprobar", codigo: "comprobar", nombre: "Comprobar", orden: 4, color_hex: "#7c3aed" },
+  { id: "paso-tipo-experimentar", codigo: "experimentar", nombre: "Experimentar", orden: 5, color_hex: "#ef4444" },
+  { id: "paso-tipo-recompensar", codigo: "recompensar", nombre: "Recompensar", orden: 6, color_hex: "#f59e0b" },
+];
+
+function buscarTemaEnCacheOSnapshot(temaId: string): Record<string, any> {
+  const cachedListado = cacheGet.get("/administracion/temas-listado");
+  if (cachedListado) {
+    try {
+      const parsed = JSON.parse(new TextDecoder().decode(cachedListado));
+      const lista = Array.isArray(parsed?.datos?.temas) ? parsed.datos.temas : [];
+      const found = lista.find((item: any) => item?.id === temaId);
+      if (found) return JSON.parse(JSON.stringify(found));
+    } catch {
+      // continuar
+    }
+  }
+  const foundSnapshot = SNAPSHOT_TEMAS_LISTADO.datos.temas.find((item) => item.id === temaId);
+  const base = JSON.parse(JSON.stringify(foundSnapshot ?? SNAPSHOT_TEMAS_LISTADO.datos.temas[0]));
+  base.id = temaId;
+  return base;
+}
+
+function construirPasosProxyParaTema(tema: Record<string, any>): any[] {
+  const cachedPasos = cacheGet.get(`/administracion/temas/${tema.id}/pasos`);
+  if (cachedPasos) {
+    try {
+      const parsed = JSON.parse(new TextDecoder().decode(cachedPasos));
+      if (Array.isArray(parsed?.datos) && parsed.datos.length > 0) {
+        return parsed.datos;
+      }
+    } catch {
+      // continuar
+    }
+  }
+  const grupos = Array.isArray(tema.grupos_edad) && tema.grupos_edad.length > 0
+    ? tema.grupos_edad
+    : SNAPSHOT_TEMAS_LISTADO.datos.temas[0].grupos_edad;
+
+  return FASES_CRECER_PROXY.map((fase) => ({
+    id: `paso-${tema.id}-${fase.codigo}`,
+    tema_id: tema.id,
+    tipo_paso_id: fase.id,
+    orden: fase.orden,
+    tipo_paso: {
+      id: fase.id,
+      codigo: fase.codigo,
+      nombre: fase.nombre,
+      color_hex: fase.color_hex,
+    },
+    contenidos: grupos.map((g: any) => {
+      const gId = typeof g === "string" ? g : g.id;
+      const gNombre = typeof g === "string" ? g : g.nombre || "Franja";
+      return {
+        id: `contenido-${tema.id}-${fase.codigo}-${gId}`,
+        grupo_edad_id: gId,
+        titulo: `${fase.nombre}: ${tema.titulo || "Lección"}`,
+        cuerpo: `Contenido pedagógico del momento ${fase.nombre} adaptado para la franja ${gNombre} sobre «${tema.titulo || "el amor de Dios"}».`,
+        instruccion_corta: `Participa en el momento ${fase.nombre}.`,
+        recurso_id: null,
+        recurso_audio_id: null,
+      };
+    }),
+    preguntas: grupos.map((g: any) => {
+      const gId = typeof g === "string" ? g : g.id;
+      return {
+        id: `pregunta-${tema.id}-${fase.codigo}-${gId}-1`,
+        grupo_edad_id: gId,
+        pregunta: `¿Qué aprendimos en el momento ${fase.nombre} sobre ${tema.titulo || "esta enseñanza"}?`,
+        orden: 1,
+      };
+    }),
+  }));
+}
+
+function construirActividadesProxyParaTema(tema: Record<string, any>, pasos: any[]): any[] {
+  const cachedActs = cacheGet.get("/administracion/actividades");
+  if (cachedActs) {
+    try {
+      const parsed = JSON.parse(new TextDecoder().decode(cachedActs));
+      const lista = Array.isArray(parsed?.datos?.actividades) ? parsed.datos.actividades : [];
+      const delTema = lista.filter((a: any) => a?.tema_id === tema.id);
+      if (delTema.length > 0) {
+        enriquecerActividadesOpciones(delTema);
+        return delTema;
+      }
+    } catch {
+      // continuar
+    }
+  }
+  const pasoComprobar = pasos.find((p) => p.tipo_paso?.codigo === "comprobar") ?? pasos[0];
+  const primerGrupo = Array.isArray(tema.grupos_edad) && tema.grupos_edad[0]
+    ? (typeof tema.grupos_edad[0] === "string" ? { id: tema.grupos_edad[0], codigo: "semillas", nombre: "Semillas" } : tema.grupos_edad[0])
+    : { id: "e1000000-0000-0000-0000-000000000001", codigo: "semillas", nombre: "Semillas" };
+
+  const baseAct = JSON.parse(JSON.stringify(SNAPSHOT_ACTIVIDADES.datos.actividades[0]));
+  baseAct.id = `act-${tema.id}-1`;
+  baseAct.tema_id = tema.id;
+  baseAct.paso_id = pasoComprobar?.id ?? null;
+  baseAct.grupo_edad_id = primerGrupo.id;
+  baseAct.grupo_edad = primerGrupo;
+  baseAct.tema = {
+    id: tema.id,
+    titulo: tema.titulo || "Tema",
+    slug: tema.slug || "tema",
+    estado: tema.estado || "borrador",
+  };
+  return [baseAct];
+}
+
+function construirPayloadRutaTemaAdmin(pathname: string): Record<string, any> {
+  const parts = pathname.split("/").filter(Boolean);
+  // parts: ["administracion", "temas", ":id", ("pasos" | "estudio")?]
+  const temaId = parts[2] || SNAPSHOT_TEMAS_LISTADO.datos.temas[0].id;
+  const subruta = parts[3] || "";
+
+  const tema = buscarTemaEnCacheOSnapshot(temaId);
+  if (!Array.isArray(tema.grupos_edad) || tema.grupos_edad.length === 0) {
+    tema.grupos_edad = SNAPSHOT_TEMAS_LISTADO.datos.temas[0].grupos_edad;
+  } else {
+    tema.grupos_edad = tema.grupos_edad.map((g: any, idx: number) =>
+      typeof g === "string"
+        ? { id: g, codigo: g, nombre: `Franja ${idx + 1}` }
+        : { id: g.id || `franja-${idx + 1}`, codigo: g.codigo || "semillas", nombre: g.nombre || "Semillas" }
+    );
+  }
+  if (!tema.completitud || typeof tema.completitud !== "object") {
+    tema.completitud = JSON.parse(JSON.stringify(SNAPSHOT_TEMAS_LISTADO.datos.temas[0].completitud));
+  }
+  if (!Array.isArray(tema.completitud.criterios) || tema.completitud.criterios.length === 0) {
+    tema.completitud.criterios = JSON.parse(JSON.stringify(SNAPSHOT_TEMAS_LISTADO.datos.temas[0].completitud.criterios));
+  }
+  if (!tema.completitud.estadisticas || typeof tema.completitud.estadisticas !== "object") {
+    tema.completitud.estadisticas = JSON.parse(JSON.stringify(SNAPSHOT_TEMAS_LISTADO.datos.temas[0].completitud.estadisticas));
+  }
+  enriquecerTemaConVersiculoYCompletitud(tema, tema.completitud);
+
+  const pasos = construirPasosProxyParaTema(tema);
+  const actividades = construirActividadesProxyParaTema(tema, pasos);
+
+  if (subruta === "pasos") {
+    return { exito: true, datos: pasos };
+  }
+  if (subruta === "estudio") {
+    return {
+      exito: true,
+      datos: {
+        tema,
+        pasos,
+        actividades,
+        completitud: tema.completitud,
+        revisiones: [],
+      },
+    };
+  }
+  return { exito: true, datos: tema };
+}
+
 // Pre-cargar snapshots para resiliencia en desarrollo
 registrarSnapshot("/administracion/resumen/detallado", SNAPSHOT_RESUMEN_DETALLADO);
 registrarSnapshot("/perfil", SNAPSHOT_PERFIL_ADMIN);
 registrarSnapshot("/administracion/temas-listado", SNAPSHOT_TEMAS_LISTADO);
-registrarSnapshot("/administracion/temas", SNAPSHOT_TEMAS_LISTADO.datos.temas);
+registrarSnapshot("/administracion/temas", { exito: true, datos: SNAPSHOT_TEMAS_LISTADO.datos.temas });
 registrarSnapshot("/administracion/usuarios", SNAPSHOT_USUARIOS);
 registrarSnapshot("/administracion/actividades", SNAPSHOT_ACTIVIDADES);
 registrarSnapshot("/administracion/revisiones", SNAPSHOT_REVISIONES);
@@ -1015,7 +1249,7 @@ registrarSnapshot("/media", SNAPSHOT_MEDIA);
 registrarSnapshot("/administracion/clubes", SNAPSHOT_CLUBES);
 registrarSnapshot("/administracion/reportes-clubes", SNAPSHOT_REPORTES_CLUBES);
 registrarSnapshot("/administracion/logros", SNAPSHOT_LOGROS);
-registrarSnapshot("/administracion/logros/catalogo", SNAPSHOT_LOGROS.datos.logros);
+registrarSnapshot("/administracion/logros/catalogo", { exito: true, datos: SNAPSHOT_LOGROS.datos.logros });
 
 const server = Bun.serve({
   port: PORT,
@@ -1325,6 +1559,37 @@ const server = Bun.serve({
         }
       }
 
+      // Resiliencia para desarrollo: /sync/pull cuando el token expira o no hay sesión remota
+      if (
+        (res.status === 401 || res.status === 403 || res.status >= 500) &&
+        req.method === "GET" &&
+        url.pathname === "/sync/pull"
+      ) {
+        return new Response(
+          JSON.stringify({
+            exito: true,
+            datos: {
+              timestamp_servidor: new Date().toISOString(),
+              progreso: {
+                temas: [],
+                actividades: [],
+              },
+            },
+          }),
+          {
+            status: 200,
+            statusText: "OK",
+            headers: {
+              "Content-Type": "application/json; charset=utf-8",
+              "Access-Control-Allow-Origin": origin,
+              "Access-Control-Allow-Credentials": "true",
+              "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+              "Access-Control-Allow-Headers": "*",
+            },
+          },
+        );
+      }
+
       // Resiliencia para desarrollo: Si el worker remoto responde 401/403 en endpoints de administración o perfil,
       // o si es una petición con token admin a /perfil, servir snapshot de admin
       if (
@@ -1333,28 +1598,38 @@ const server = Bun.serve({
           (url.pathname.startsWith("/administracion") || url.pathname === "/perfil")) ||
         (url.pathname === "/perfil" && authHeader && authHeader.startsWith("Bearer ") && res.status !== 200)
       ) {
-        let cached =
-          url.pathname === "/perfil"
-            ? new TextEncoder().encode(JSON.stringify(SNAPSHOT_PERFIL_ADMIN))
-            : cacheGet.get(url.pathname);
+        let cached: Uint8Array | undefined;
+
+        if (url.pathname === "/perfil") {
+          cached = new TextEncoder().encode(JSON.stringify(SNAPSHOT_PERFIL_ADMIN));
+        } else if (url.pathname.startsWith("/administracion/temas/")) {
+          cached = new TextEncoder().encode(JSON.stringify(construirPayloadRutaTemaAdmin(url.pathname)));
+        } else if (url.pathname.startsWith("/administracion/actividades/")) {
+          const actId = url.pathname.split("/")[3] || "act-1";
+          let foundAct: any = null;
+          const cachedActs = cacheGet.get("/administracion/actividades");
+          if (cachedActs) {
+            try {
+              const parsed = JSON.parse(new TextDecoder().decode(cachedActs));
+              const lista = Array.isArray(parsed?.datos?.actividades) ? parsed.datos.actividades : [];
+              foundAct = lista.find((a: any) => a?.id === actId) ?? lista[0] ?? null;
+            } catch {
+              // continuar
+            }
+          }
+          const act = JSON.parse(JSON.stringify(foundAct ?? SNAPSHOT_ACTIVIDADES.datos.actividades[0]));
+          act.id = actId;
+          enriquecerActividadesOpciones([act]);
+          cached = new TextEncoder().encode(JSON.stringify({ exito: true, datos: act }));
+        } else {
+          cached = cacheGet.get(url.pathname);
+        }
 
         if (!cached) {
           if (url.pathname.startsWith("/administracion/clubes/")) {
             cached = new TextEncoder().encode(JSON.stringify(SNAPSHOT_CLUB_DETALLE));
           } else if (url.pathname.startsWith("/administracion/logros/")) {
             cached = new TextEncoder().encode(JSON.stringify({ exito: true, datos: SNAPSHOT_LOGROS.datos.logros[0] }));
-          } else if (url.pathname.startsWith("/administracion/temas/")) {
-            const tema = SNAPSHOT_TEMAS_LISTADO.datos.temas[0];
-            cached = new TextEncoder().encode(JSON.stringify({
-              exito: true,
-              datos: {
-                tema,
-                pasos: [],
-                actividades: [],
-                completitud: tema.completitud,
-                revisiones: [],
-              },
-            }));
           }
         }
         if (cached) {
@@ -1377,10 +1652,27 @@ const server = Bun.serve({
       if (
         (res.status === 401 || res.status === 403 || res.status >= 500) &&
         req.method !== "GET" &&
-        (url.pathname.startsWith("/administracion/clubes") || url.pathname.startsWith("/administracion/reportes-clubes") || url.pathname.startsWith("/administracion/logros") || url.pathname.startsWith("/administracion/temas"))
+        url.pathname.startsWith("/administracion")
       ) {
         console.log(`[PROXY DEV RESILIENCE] Emulando éxito para ${req.method} ${url.pathname}`);
-        return new Response(JSON.stringify({ exito: true, datos: { success: true } }), {
+        if (url.pathname.startsWith("/administracion/temas/")) {
+          const payloadTema = construirPayloadRutaTemaAdmin(url.pathname);
+          if (parsedRequestJson && payloadTema.datos && typeof payloadTema.datos === "object") {
+            Object.assign(payloadTema.datos, parsedRequestJson);
+            enriquecerTemaConVersiculoYCompletitud(payloadTema.datos, payloadTema.datos.completitud);
+          }
+          return new Response(JSON.stringify(payloadTema), {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json; charset=utf-8",
+              "Access-Control-Allow-Origin": origin,
+              "Access-Control-Allow-Credentials": "true",
+              "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+              "Access-Control-Allow-Headers": "*",
+            },
+          });
+        }
+        return new Response(JSON.stringify({ exito: true, datos: { id: crypto.randomUUID(), ...(parsedRequestJson ?? {}), success: true } }), {
           status: 200,
           headers: {
             "Content-Type": "application/json; charset=utf-8",

@@ -71,13 +71,13 @@ function AdminThemeStudioPage() {
   if (estudioQuery.isLoading) return <StudioState icon={<Loader2 className="animate-spin" />} title="Preparando el estudio" description="Cargando tema, CRECER, actividades y revisión." />;
   if (estudioQuery.isError || !estudioQuery.data) return <StudioState icon={<BookOpenCheck />} title="No se pudo abrir el tema" description={estudioQuery.error instanceof Error ? estudioQuery.error.message : "Vuelve a intentarlo."} />;
 
-  const { tema, pasos, actividades, completitud, revisiones } = estudioQuery.data;
+  const { tema, pasos = [], actividades = [], completitud, revisiones = [] } = estudioQuery.data;
   const portada = resolverPortadaTemaAdmin({
     titulo: tema.titulo,
     urlFirmada: portadasFirmadas.get(tema.id) ?? tema.portada_recurso?.url_publica ?? null,
   });
   const grupos = tema.grupos_edad ?? [];
-  const ultimaRevision = revisiones[0];
+  const ultimaRevision = revisiones?.[0];
   const versiculo = tema.versiculo_clave;
   const referencia = tema.referencia_biblica;
   const libroNombre = obtenerNombreLibroBiblico(versiculo?.libro_id ?? referencia?.libro_id ?? 43);
@@ -158,7 +158,7 @@ function AdminThemeStudioPage() {
             <div className="admin-age-matrix">
               <table>
                 <thead><tr><th>Franja</th>{stepsOrder.map((code) => <th key={code}>{stepLabels[code]}</th>)}</tr></thead>
-                <tbody>{grupos.map((grupo) => <tr key={grupo.id}><td>{grupo.nombre}</td>{stepsOrder.map((code) => { const ready = pasos.some((paso) => paso.tipo_paso?.codigo === code && paso.contenidos.some((contenido) => contenido.grupo_edad_id === grupo.id && contenido.titulo.trim() && contenido.cuerpo.trim())); return <td key={code}><span title={ready ? "Contenido listo" : "Contenido pendiente"} className={`admin-matrix-dot ${ready ? "admin-matrix-dot--ready" : ""}`}>{ready ? <Check size={13} /> : <Circle size={10} />}</span></td>; })}</tr>)}</tbody>
+                <tbody>{grupos.map((grupo, idx) => { const gId = typeof grupo === "string" ? grupo : grupo.id; const gNombre = typeof grupo === "string" ? grupo : grupo.nombre; return <tr key={gId || idx}><td>{gNombre}</td>{stepsOrder.map((code) => { const ready = (pasos ?? []).some((paso) => paso.tipo_paso?.codigo === code && (paso.contenidos ?? []).some((contenido) => contenido.grupo_edad_id === gId && Boolean(contenido.titulo?.trim()) && Boolean(contenido.cuerpo?.trim()))); return <td key={code}><span title={ready ? "Contenido listo" : "Contenido pendiente"} className={`admin-matrix-dot ${ready ? "admin-matrix-dot--ready" : ""}`}>{ready ? <Check size={13} /> : <Circle size={10} />}</span></td>; })}</tr>; })}</tbody>
               </table>
             </div>
           </section>
@@ -215,8 +215,8 @@ function AdminThemeStudioPage() {
 
         <aside className="admin-studio-aside">
           <section className="admin-studio-card">
-            <h3>Completitud editorial</h3><div className="admin-completeness-ring" style={{ "--progress": completitud.porcentaje } as React.CSSProperties}><strong>{completitud.porcentaje}%</strong></div>
-            <div className="admin-completeness-list">{completitud.criterios.map((criterio) => <div key={criterio.codigo} className={`admin-completeness-item ${criterio.completo ? "admin-completeness-item--complete" : ""}`}><span>{criterio.etiqueta}{criterio.detalle ? <small className="ml-1 opacity-70">· {criterio.detalle}</small> : null}</span>{criterio.completo ? <CheckCircle2 size={16} /> : <Circle size={15} />}</div>)}</div>
+            <h3>Completitud editorial</h3><div className="admin-completeness-ring" style={{ "--progress": completitud?.porcentaje ?? 0 } as React.CSSProperties}><strong>{completitud?.porcentaje ?? 0}%</strong></div>
+            <div className="admin-completeness-list">{(completitud?.criterios ?? []).map((criterio) => <div key={criterio.codigo} className={`admin-completeness-item ${criterio.completo ? "admin-completeness-item--complete" : ""}`}><span>{criterio.etiqueta}{criterio.detalle ? <small className="ml-1 opacity-70">· {criterio.detalle}</small> : null}</span>{criterio.completo ? <CheckCircle2 size={16} /> : <Circle size={15} />}</div>)}</div>
           </section>
 
           <section className="admin-studio-card">
@@ -224,7 +224,7 @@ function AdminThemeStudioPage() {
             <div className="mt-4 grid gap-3 text-sm">
               <SummaryLine icon={<Clock3 size={16} />} label="Duración" value={`${tema.minutos_estimados} min`} />
               <SummaryLine icon={<Sparkles size={16} />} label="Recompensa" value={`${tema.xp_recompensa} XP`} />
-              <SummaryLine icon={<Layers3 size={16} />} label="Contenidos" value={`${completitud.estadisticas.contenidos_creados}/${completitud.estadisticas.contenidos_esperados}`} />
+              <SummaryLine icon={<Layers3 size={16} />} label="Contenidos" value={`${completitud?.estadisticas?.contenidos_creados ?? 0}/${completitud?.estadisticas?.contenidos_esperados ?? 0}`} />
               <SummaryLine icon={<Activity size={16} />} label="Actividades" value={String(actividades.length)} />
             </div>
           </section>

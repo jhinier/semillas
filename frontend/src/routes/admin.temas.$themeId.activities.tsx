@@ -148,8 +148,8 @@ function AdminThemeActivitiesPage() {
     if (!activity) return;
     if (editFormInitializedId.current === activity.id) return;
 
-    const opcionesRaw = activity.opciones.length
-      ? activity.opciones.map((option, index) => ({
+    const opcionesRaw = (activity.opciones ?? []).length
+      ? (activity.opciones ?? []).map((option, index) => ({
           etiqueta: option.etiqueta ?? String.fromCharCode(65 + index),
           texto: option.texto,
           correcta: option.correcta,

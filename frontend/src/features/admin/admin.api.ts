@@ -80,12 +80,28 @@ export function obtenerTemasAdmin(params?: { status?: string }) {
   return peticion<Tema[]>(`/administracion/temas${query ? `?${query}` : ""}`);
 }
 
-export function obtenerTemaAdmin(idTema: string) {
-  return peticion<Tema>(`/administracion/temas/${idTema}`);
+export async function obtenerTemaAdmin(idTema: string): Promise<Tema> {
+  const res = await peticion<Tema | { tema?: Tema }>(`/administracion/temas/${idTema}`);
+  const raw = res && typeof res === "object" && "tema" in res && res.tema ? res.tema : (res as Tema);
+  if (!raw || typeof raw !== "object") return raw;
+  return {
+    ...raw,
+    grupos_edad: Array.isArray(raw.grupos_edad) ? raw.grupos_edad : [],
+  };
 }
 
-export function obtenerPasosAdmin(idTema: string) {
-  return peticion<Paso[]>(`/administracion/temas/${idTema}/pasos`);
+export async function obtenerPasosAdmin(idTema: string): Promise<Paso[]> {
+  const res = await peticion<Paso[] | { pasos?: Paso[] }>(`/administracion/temas/${idTema}/pasos`);
+  const lista = Array.isArray(res)
+    ? res
+    : Array.isArray((res as { pasos?: Paso[] } | null)?.pasos)
+      ? (res as { pasos: Paso[] }).pasos
+      : [];
+  return lista.map((paso) => ({
+    ...paso,
+    contenidos: Array.isArray(paso?.contenidos) ? paso.contenidos : [],
+    preguntas: Array.isArray(paso?.preguntas) ? paso.preguntas : [],
+  }));
 }
 
 export function crearTema(datos: CrearTemaSolicitud) {
@@ -455,11 +471,18 @@ export type ObtenerActividadesAdminParams = {
   offset?: number;
 };
 
-export function obtenerActividadAdmin(idActividad: string) {
-  return peticion<ActividadAdmin>(`/administracion/actividades/${idActividad}`);
+export async function obtenerActividadAdmin(idActividad: string): Promise<ActividadAdmin> {
+  const res = await peticion<ActividadAdmin | { actividad?: ActividadAdmin }>(`/administracion/actividades/${idActividad}`);
+  const raw = res && typeof res === "object" && "actividad" in res && res.actividad ? res.actividad : (res as ActividadAdmin);
+  if (!raw || typeof raw !== "object") return raw;
+  return {
+    ...raw,
+    opciones: Array.isArray(raw.opciones) ? raw.opciones : [],
+    configuracion: raw.configuracion && typeof raw.configuracion === "object" ? raw.configuracion : {},
+  };
 }
 
-export function obtenerActividadesAdmin(params?: ObtenerActividadesAdminParams) {
+export async function obtenerActividadesAdmin(params?: ObtenerActividadesAdminParams): Promise<{ actividades: ActividadAdmin[]; total: number }> {
   const busqueda = new URLSearchParams();
   if (params?.tema_id) busqueda.set("tema_id", params.tema_id);
   if (params?.tipo_actividad_id) busqueda.set("tipo_actividad_id", params.tipo_actividad_id);
@@ -468,7 +491,19 @@ export function obtenerActividadesAdmin(params?: ObtenerActividadesAdminParams) 
   if (params?.limit) busqueda.set("limit", String(params.limit));
   if (params?.offset) busqueda.set("offset", String(params.offset));
   const query = busqueda.toString();
-  return peticion<{ actividades: ActividadAdmin[]; total: number }>(`/administracion/actividades${query ? `?${query}` : ""}`);
+  const res = await peticion<{ actividades?: ActividadAdmin[]; total?: number } | ActividadAdmin[]>(`/administracion/actividades${query ? `?${query}` : ""}`);
+  const rawList = Array.isArray(res)
+    ? res
+    : Array.isArray(res?.actividades)
+      ? res.actividades
+      : [];
+  const actividades = rawList.map((act) => ({
+    ...act,
+    opciones: Array.isArray(act?.opciones) ? act.opciones : [],
+    configuracion: act?.configuracion && typeof act.configuracion === "object" ? act.configuracion : {},
+  }));
+  const total = !Array.isArray(res) && typeof res?.total === "number" ? res.total : actividades.length;
+  return { actividades, total };
 }
 
 
@@ -522,14 +557,14 @@ export function obtenerResumenAdminDetallado() {
   return peticion<ResumenAdminDetallado>("/administracion/resumen/detallado");
 }
 
-export function obtenerTemasAdminPaginados(params: {
+export async function obtenerTemasAdminPaginados(params: {
   q?: string;
   estado?: string;
   senda_id?: string;
   grupo_edad_id?: string;
   limit?: number;
   offset?: number;
-}) {
+}): Promise<ListadoTemasAdmin> {
   const busqueda = new URLSearchParams();
   if (params.q) busqueda.set("q", params.q);
   if (params.estado && params.estado !== "todos") busqueda.set("estado", params.estado);
@@ -537,11 +572,53 @@ export function obtenerTemasAdminPaginados(params: {
   if (params.grupo_edad_id) busqueda.set("grupo_edad_id", params.grupo_edad_id);
   busqueda.set("limit", String(params.limit ?? 20));
   busqueda.set("offset", String(params.offset ?? 0));
-  return peticion<ListadoTemasAdmin>(`/administracion/temas-listado?${busqueda.toString()}`);
+  const res = await peticion<Partial<ListadoTemasAdmin> | TemaListadoAdmin[]>(`/administracion/temas-listado?${busqueda.toString()}`);
+  const temas = Array.isArray(res)
+    ? res
+    : Array.isArray(res?.temas)
+      ? res.temas
+      : [];
+  return {
+    temas,
+    total: !Array.isArray(res) && typeof res?.total === "number" ? res.total : temas.length,
+    limit: !Array.isArray(res) && typeof res?.limit === "number" ? res.limit : (params.limit ?? 20),
+    offset: !Array.isArray(res) && typeof res?.offset === "number" ? res.offset : (params.offset ?? 0),
+  };
 }
 
-export function obtenerEstudioTemaAdmin(idTema: string) {
-  return peticion<EstudioTemaAdmin>(`/administracion/temas/${idTema}/estudio`);
+export async function obtenerEstudioTemaAdmin(idTema: string): Promise<EstudioTemaAdmin> {
+  const res = await peticion<Partial<EstudioTemaAdmin>>(`/administracion/temas/${idTema}/estudio`);
+  const rawTema = (res?.tema ?? (res as unknown as Tema)) || ({} as Tema);
+  const tema: Tema = {
+    ...rawTema,
+    grupos_edad: Array.isArray(rawTema.grupos_edad) ? rawTema.grupos_edad : [],
+  };
+  const pasos: Paso[] = (Array.isArray(res?.pasos) ? res.pasos : []).map((paso) => ({
+    ...paso,
+    contenidos: Array.isArray(paso?.contenidos) ? paso.contenidos : [],
+    preguntas: Array.isArray(paso?.preguntas) ? paso.preguntas : [],
+  }));
+  const actividades: ActividadAdmin[] = (Array.isArray(res?.actividades) ? res.actividades : []).map((act) => ({
+    ...act,
+    opciones: Array.isArray(act?.opciones) ? act.opciones : [],
+    configuracion: act?.configuracion && typeof act.configuracion === "object" ? act.configuracion : {},
+  }));
+  const rawComp = res?.completitud ?? (rawTema as TemaListadoAdmin)?.completitud;
+  const gruposCount = tema.grupos_edad?.length ?? 0;
+  const completitud: CompletitudTema = {
+    porcentaje: typeof rawComp?.porcentaje === "number" ? rawComp.porcentaje : 0,
+    listo_para_revision: Boolean(rawComp?.listo_para_revision),
+    criterios: Array.isArray(rawComp?.criterios) ? rawComp.criterios : [],
+    estadisticas: {
+      grupos_edad: rawComp?.estadisticas?.grupos_edad ?? gruposCount,
+      pasos_creados: rawComp?.estadisticas?.pasos_creados ?? pasos.length,
+      contenidos_creados: rawComp?.estadisticas?.contenidos_creados ?? 0,
+      contenidos_esperados: rawComp?.estadisticas?.contenidos_esperados ?? (gruposCount * 6),
+      actividades: rawComp?.estadisticas?.actividades ?? actividades.length,
+    },
+  };
+  const revisiones = Array.isArray(res?.revisiones) ? res.revisiones : [];
+  return { tema, pasos, actividades, completitud, revisiones };
 }
 
 export function enviarTemaRevision(idTema: string, notas?: string) {
