@@ -239,18 +239,20 @@ function NewThemePage() {
                           )
                         }
                         className={`rounded-2xl border p-4 text-left transition ${
-                          selected ? "border-violet-400 bg-violet-50" : "border-slate-200 bg-white"
+                          selected
+                            ? "border-violet-500 bg-violet-50 dark:border-violet-400 dark:bg-violet-950/60"
+                            : "border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900"
                         }`}
                       >
-                        <span className="flex items-center justify-between font-bold text-slate-800">
+                        <span className="flex items-center justify-between font-bold text-slate-800 dark:text-slate-100">
                           {group.nombre}
                           {selected ? (
-                            <CheckCircle2 size={18} className="text-violet-600" />
+                            <CheckCircle2 size={18} className="text-violet-600 dark:text-violet-300" />
                           ) : (
-                            <span className="h-4 w-4 rounded-full border-2 border-slate-300" />
+                            <span className="h-4 w-4 rounded-full border-2 border-slate-300 dark:border-slate-600" />
                           )}
                         </span>
-                        <small className="mt-1 block text-slate-500">
+                        <small className="mt-1 block text-slate-500 dark:text-slate-300">
                           {group.edad_minima}–{group.edad_maxima} años
                         </small>
                       </button>

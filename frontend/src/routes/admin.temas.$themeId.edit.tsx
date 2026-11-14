@@ -573,20 +573,20 @@ function ThemeMetadataEditorPage() {
                                   : [...form.grupo_edad_ids, grupo.id],
                               )
                             }
-                            className={`rounded-2xl border p-4 text-left ${selected ? "border-violet-400 bg-violet-50" : "border-slate-200 bg-white"}`}
+                            className={`rounded-2xl border p-4 text-left transition ${selected ? "border-violet-500 bg-violet-50 dark:border-violet-400 dark:bg-violet-950/60" : "border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900"}`}
                           >
-                            <span className="flex items-center justify-between font-bold text-slate-800">
+                            <span className="flex items-center justify-between font-bold text-slate-800 dark:text-slate-100">
                               {grupo.nombre}
                               {selected ? (
                                 <CheckCircle2
                                   size={18}
-                                  className="text-violet-600"
+                                  className="text-violet-600 dark:text-violet-300"
                                 />
                               ) : (
                                 <CircleIcon />
                               )}
                             </span>
-                            <small className="mt-1 block text-slate-500">
+                            <small className="mt-1 block text-slate-500 dark:text-slate-300">
                               {grupo.edad_minima}–{grupo.edad_maxima} años
                             </small>
                           </button>

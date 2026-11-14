@@ -19,11 +19,11 @@ type StepConfig = {
 };
 
 const STEPS: StepConfig[] = [
-  { step: 1, title: "Datos y versículo", subtitle: "Información base" },
+  { step: 1, title: "Datos base", subtitle: "Información y versículo" },
   { step: 2, title: "Portada", subtitle: "Imagen del tema" },
-  { step: 3, title: "Enseñanza CRECER", subtitle: "6 momentos" },
+  { step: 3, title: "CRECER", subtitle: "6 momentos" },
   { step: 4, title: "Actividades", subtitle: "Juegos y retos" },
-  { step: 5, title: "Revisar y publicar", subtitle: "Vista previa y estado" },
+  { step: 5, title: "Publicar", subtitle: "Revisar y publicar" },
 ];
 
 function criterioCompleto(completitud: CompletitudTema | null | undefined, codigo: string): boolean {
@@ -95,7 +95,7 @@ export function ThemeWorkflowStepper({
             </span>
             <span className="admin-theme-flow-stepper__copy">
               <strong>
-                Paso {item.step}. {item.title}
+                {item.step}. {item.title}
               </strong>
               <small>{lockedReason ? "Pendiente de paso previo" : item.subtitle}</small>
             </span>
