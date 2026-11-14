@@ -1,7 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { AlertCircle, Layers3, Loader2 } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { AlertCircle, ArrowLeft, ArrowRight, Layers3, Loader2 } from "lucide-react";
 
 import { AdminStudentPreviewWorkspace } from "@/features/admin/componentes/temas/admin-student-preview-workspace";
+import { ThemeWorkflowStepper } from "@/features/admin/componentes/temas/theme-workflow-stepper";
+import { obtenerEstudioTemaAdmin } from "@/features/admin/admin.api";
 import { useThemePreviewPage } from "@/features/admin/hooks/use-theme-preview-page";
 import "./theme-detail.css";
 
@@ -11,7 +14,12 @@ export const Route = createFileRoute("/admin/temas/$themeId/preview")({
 
 function AdminThemePreviewPage() {
   const { themeId } = Route.useParams();
+  const navigate = useNavigate();
   const preview = useThemePreviewPage({ themeId });
+  const estudioQuery = useQuery({
+    queryKey: ["admin", "theme", themeId, "studio"],
+    queryFn: () => obtenerEstudioTemaAdmin(themeId),
+  });
 
   const isLoading =
     preview.themeQuery.isLoading
@@ -53,29 +61,61 @@ function AdminThemePreviewPage() {
   }
 
   return (
-    <AdminStudentPreviewWorkspace
-      theme={preview.theme}
-      portadaUrl={preview.portadaUrl}
-      estado={preview.estado}
-      previewMode={preview.previewMode}
-      onPreviewModeChange={preview.setPreviewMode}
-      ageGroups={preview.ageGroups}
-      selectedAgeGroup={preview.selectedAgeGroup}
-      selectedAgeGroupId={preview.selectedAgeGroupId}
-      onAgeGroupChange={preview.setSelectedAgeGroupId}
-      steps={preview.steps}
-      activeStepCode={preview.activeStepCode}
-      onStepChange={preview.setActiveStepCode}
-      selectedStep={preview.selectedStep}
-      selectedContent={preview.selectedContent}
-      selectedQuestions={preview.selectedQuestions}
-      ageActivities={preview.ageActivities}
-      selectedStepActivities={preview.selectedStepActivities}
-      completedStepCodes={preview.completedStepCodes}
-      onBack={preview.navigateBack}
-      onEditTheme={preview.navigateToEdit}
-      onEditCrecer={preview.navigateToCrecer}
-      onEditActivities={preview.navigateToActivities}
-    />
+    <div className="admin-theme-studio">
+      <ThemeWorkflowStepper
+        currentStep={5}
+        themeId={themeId}
+        themeEstado={preview.theme.estado}
+        completitud={estudioQuery.data?.completitud}
+      />
+
+      <AdminStudentPreviewWorkspace
+        theme={preview.theme}
+        portadaUrl={preview.portadaUrl}
+        estado={preview.estado}
+        previewMode={preview.previewMode}
+        onPreviewModeChange={preview.setPreviewMode}
+        ageGroups={preview.ageGroups}
+        selectedAgeGroup={preview.selectedAgeGroup}
+        selectedAgeGroupId={preview.selectedAgeGroupId}
+        onAgeGroupChange={preview.setSelectedAgeGroupId}
+        steps={preview.steps}
+        activeStepCode={preview.activeStepCode}
+        onStepChange={preview.setActiveStepCode}
+        selectedStep={preview.selectedStep}
+        selectedContent={preview.selectedContent}
+        selectedQuestions={preview.selectedQuestions}
+        ageActivities={preview.ageActivities}
+        selectedStepActivities={preview.selectedStepActivities}
+        completedStepCodes={preview.completedStepCodes}
+        onBack={preview.navigateBack}
+        onEditTheme={preview.navigateToEdit}
+        onEditCrecer={preview.navigateToCrecer}
+        onEditActivities={preview.navigateToActivities}
+      />
+
+      <div className="admin-step-footer-bar">
+        <button
+          type="button"
+          className="admin-secondary-button"
+          onClick={() => navigate({ to: "/admin/temas/$themeId/activities", params: { themeId } })}
+        >
+          <ArrowLeft size={16} /> Paso anterior: Actividades
+        </button>
+        <button
+          type="button"
+          className="admin-primary-button"
+          onClick={() =>
+            navigate({
+              to: "/admin/temas/$themeId/edit",
+              params: { themeId },
+              search: { tab: "publicacion" },
+            })
+          }
+        >
+          Ir a publicar o enviar a revisión <ArrowRight size={17} />
+        </button>
+      </div>
+    </div>
   );
 }

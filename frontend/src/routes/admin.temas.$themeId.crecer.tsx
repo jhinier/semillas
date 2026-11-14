@@ -1,17 +1,19 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
-  Check,
-  Circle,
+  ArrowRight,
   Eye,
   Image as ImageIcon,
   Layers3,
   Loader2,
-  PencilLine,
   Volume2,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { AgeGroupSelector, CrecerContentEditor, CrecerMatrixStatus, CrecerStepSelector } from "@/features/admin/componentes/temas";
+import { obtenerEstudioTemaAdmin } from "../features/admin/admin.api";
+import { ThemeWorkflowStepper } from "../features/admin/componentes/temas/theme-workflow-stepper";
 import { useThemeCrecerPage } from "../features/admin/hooks/use-theme-crecer-page";
 
 export const Route = createFileRoute("/admin/temas/$themeId/crecer")({
@@ -20,14 +22,19 @@ export const Route = createFileRoute("/admin/temas/$themeId/crecer")({
 
 function AdminThemeCrecerPage() {
   const { themeId } = Route.useParams();
+  const navigate = useNavigate();
   const editor = useThemeCrecerPage({ themeId });
+  const estudioQuery = useQuery({
+    queryKey: ["admin", "theme", themeId, "studio"],
+    queryFn: () => obtenerEstudioTemaAdmin(themeId),
+  });
 
   if (editor.themeQuery.isLoading) {
     return (
       <div className="admin-dashboard-state">
         <span><Loader2 className="animate-spin" /></span>
-        <h2>Cargando Editor CRECER</h2>
-        <p>Preparando franjas, pasos y recursos multimedia.</p>
+        <h2>Cargando Enseñanza CRECER</h2>
+        <p>Preparando momentos, edades y recursos.</p>
       </div>
     );
   }
@@ -37,7 +44,7 @@ function AdminThemeCrecerPage() {
       <div className="admin-dashboard-state">
         <span><Layers3 /></span>
         <h2>Tema no encontrado</h2>
-        <p>No fue posible abrir el editor.</p>
+        <p>No fue posible abrir este paso.</p>
       </div>
     );
   }
@@ -47,20 +54,6 @@ function AdminThemeCrecerPage() {
       !editor.theme?.grupos_edad?.length ||
       editor.theme.grupos_edad.some((available) => available.id === group.id),
   );
-
-  const isStepReady = (stepCode: string) =>
-    Boolean(
-      editor.stepsQuery.data?.some(
-        (record) =>
-          record.tipo_paso?.codigo === stepCode &&
-          (record.contenidos ?? []).some(
-            (content) =>
-              content.grupo_edad_id === editor.selectedAgeGroupId &&
-              content.titulo?.trim() &&
-              content.cuerpo?.trim(),
-          ),
-      ),
-    );
 
   const getMatrixCell = (ageGroupId: string, stepCode: string) => {
     if (editor.hasDraftForCell(ageGroupId, stepCode)) return "draft" as const;
@@ -72,6 +65,57 @@ function AdminThemeCrecerPage() {
     return "missing" as const;
   };
 
+  const currentStepIndex = editor.pasos.findIndex((p) => p.codigo === editor.activeStepCode);
+  const nextMoment =
+    currentStepIndex >= 0 && currentStepIndex < editor.pasos.length - 1
+      ? editor.pasos[currentStepIndex + 1]
+      : null;
+
+  const totalContenidosGuardados =
+    estudioQuery.data?.completitud?.estadisticas?.contenidos_creados ??
+    (editor.stepsQuery.data?.reduce((acc, s) => acc + (s.contenidos?.length ?? 0), 0) ?? 0);
+
+  const handleSaveAndNextMoment = async () => {
+    try {
+      if (editor.isCurrentDirty) {
+        await editor.saveCurrentDraftAsync();
+      }
+      if (nextMoment) {
+        editor.setActiveStepCode(nextMoment.codigo);
+      } else {
+        navigate({
+          to: "/admin/temas/$themeId/activities",
+          params: { themeId },
+        });
+      }
+    } catch {
+      // El hook saveMutation ya muestra toast.error con la validación exacta
+    }
+  };
+
+  const handleContinueToActivities = async () => {
+    try {
+      if (editor.isCurrentDirty) {
+        await editor.saveCurrentDraftAsync();
+      }
+      const updatedCount =
+        editor.isCurrentDirty || totalContenidosGuardados === 0
+          ? (editor.stepsQuery.data?.reduce((acc, s) => acc + (s.contenidos?.length ?? 0), 0) ?? 0) +
+            (editor.isCurrentDirty ? 1 : 0)
+          : totalContenidosGuardados;
+      if (updatedCount === 0) {
+        toast.error("Guarda al menos un momento de enseñanza CRECER antes de pasar a Actividades.");
+        return;
+      }
+      navigate({
+        to: "/admin/temas/$themeId/activities",
+        params: { themeId },
+      });
+    } catch {
+      // toast mostrado por la mutación
+    }
+  };
+
   return (
     <div className="admin-theme-studio admin-crecer-page">
       <header className="admin-crecer-hero">
@@ -80,29 +124,29 @@ function AdminThemeCrecerPage() {
             type="button"
             className="admin-icon-button admin-crecer-hero__back"
             onClick={editor.handleBack}
-            aria-label="Volver al detalle del tema"
+            aria-label="Volver al resumen del tema"
           >
             <ArrowLeft size={19} />
           </button>
 
           <div className="admin-crecer-hero__copy">
-            <span className="admin-eyebrow">Editor pedagógico</span>
-            <h2>Recorrido CRECER</h2>
+            <span className="admin-eyebrow">Paso 3 de 5 · Enseñanza CRECER</span>
+            <h2>Momentos de enseñanza CRECER</h2>
             <p>
               <strong>{editor.theme.titulo}</strong>
               <span aria-hidden="true"> · </span>
-              contenido específico para cada franja etaria.
+              completa cada momento en orden para tus grupos de edad.
             </p>
           </div>
         </div>
 
         <div
           className="admin-crecer-progress"
-          aria-label={`Progreso de la franja: ${editor.pasosCompletos} de ${editor.totalPasos} pasos, ${editor.progreso}%`}
+          aria-label={`Progreso de esta edad: ${editor.pasosCompletos} de ${editor.totalPasos} momentos, ${editor.progreso}%`}
         >
           <div className="admin-crecer-progress__copy">
-            <span>Progreso de la franja</span>
-            <strong>{editor.pasosCompletos}/{editor.totalPasos} pasos</strong>
+            <span>Progreso en {editor.selectedAgeGroup?.nombre ?? "edad actual"}</span>
+            <strong>{editor.pasosCompletos}/{editor.totalPasos} momentos</strong>
           </div>
           <strong className="admin-crecer-progress__value">{editor.progreso}%</strong>
           <div className="admin-crecer-progress__track" aria-hidden="true">
@@ -110,6 +154,13 @@ function AdminThemeCrecerPage() {
           </div>
         </div>
       </header>
+
+      <ThemeWorkflowStepper
+        currentStep={3}
+        themeId={themeId}
+        themeEstado={editor.theme.estado}
+        completitud={estudioQuery.data?.completitud}
+      />
 
       <CrecerMatrixStatus
         ageGroups={availableAgeGroups ?? []}
@@ -121,10 +172,10 @@ function AdminThemeCrecerPage() {
         }}
       />
 
-      <section className="admin-crecer-workflow" aria-label="Preparación del contenido CRECER">
+      <section className="admin-crecer-workflow" aria-label="Selección de edad y momento">
         <div className="admin-crecer-workflow__intro">
-          <span>Preparación</span>
-          <p>Selecciona la audiencia y el momento que vas a editar.</p>
+          <span>Momento actual</span>
+          <p>Elige la edad y avanza uno a uno por los 6 momentos.</p>
         </div>
 
         <div className="admin-crecer-workflow__controls">
@@ -176,14 +227,53 @@ function AdminThemeCrecerPage() {
             isDirty={editor.isCurrentDirty}
             unsavedDraftCount={editor.unsavedDraftCount}
           />
+
+          <div className="admin-step-footer-bar">
+            <button
+              type="button"
+              className="admin-secondary-button"
+              onClick={() =>
+                navigate({
+                  to: "/admin/temas/$themeId/edit",
+                  params: { themeId },
+                  search: { tab: "portada" },
+                })
+              }
+            >
+              <ArrowLeft size={16} /> Paso anterior: Portada
+            </button>
+
+            <div className="flex flex-wrap gap-2">
+              {nextMoment ? (
+                <button
+                  type="button"
+                  className="admin-secondary-button"
+                  disabled={editor.saveMutation.isPending}
+                  onClick={() => void handleSaveAndNextMoment()}
+                >
+                  {editor.isCurrentDirty ? `Guardar e ir a ${nextMoment.nombre}` : `Siguiente momento: ${nextMoment.nombre}`}{" "}
+                  <ArrowRight size={16} />
+                </button>
+              ) : null}
+
+              <button
+                type="button"
+                className="admin-primary-button"
+                disabled={editor.saveMutation.isPending}
+                onClick={() => void handleContinueToActivities()}
+              >
+                Continuar al Paso 4: Actividades <ArrowRight size={17} />
+              </button>
+            </div>
+          </div>
         </main>
 
-        <aside className="admin-editor-aside" aria-label="Resumen y cobertura del contenido">
+        <aside className="admin-editor-aside" aria-label="Vista previa del momento actual">
           <section className="admin-editor-section admin-crecer-preview">
             <div className="admin-editor-section__header">
               <div>
-                <h2>Vista rápida</h2>
-                <p>Resumen de lo que verá el estudiante.</p>
+                <h2>Vista previa rápida</h2>
+                <p>Así lo verá el estudiante en pantalla.</p>
               </div>
               <span className="admin-crecer-preview__icon" aria-hidden="true">
                 <Eye size={18} />
@@ -203,7 +293,7 @@ function AdminThemeCrecerPage() {
                 </div>
               )}
 
-              <span className="admin-eyebrow">{editor.activeStep?.nombre ?? "Paso"}</span>
+              <span className="admin-eyebrow">{editor.activeStep?.nombre ?? "Momento"}</span>
               <h3>{editor.title || "Título pendiente"}</h3>
               <p>{editor.body || "Escribe el contenido para ver una previsualización."}</p>
 
@@ -213,48 +303,6 @@ function AdminThemeCrecerPage() {
                   Incluye narración de audio
                 </div>
               ) : null}
-            </div>
-          </section>
-
-          <section className="admin-editor-section admin-crecer-coverage">
-            <div className="admin-crecer-coverage__header">
-              <div>
-                <h2>Cobertura de la franja</h2>
-                <p>{editor.selectedAgeGroup?.nombre ?? "Franja seleccionada"}</p>
-              </div>
-              <strong>{editor.pasosCompletos}/{editor.totalPasos}</strong>
-            </div>
-
-            <div className="admin-completeness-list">
-              {editor.pasos.map((step) => {
-                const ready = isStepReady(step.codigo);
-                const active = editor.activeStepCode === step.codigo;
-                const hasLocalDraft = editor.hasDraftForStep(step.codigo);
-
-                return (
-                  <button
-                    key={step.codigo}
-                    type="button"
-                    onClick={() => editor.setActiveStepCode(step.codigo)}
-                    className={`admin-completeness-item ${ready ? "admin-completeness-item--complete" : ""} ${active ? "admin-completeness-item--active" : ""}`}
-                    aria-current={active ? "step" : undefined}
-                  >
-                    <span className="admin-completeness-item__status" aria-hidden="true">
-                      {hasLocalDraft ? (
-                        <PencilLine size={14} className="text-amber-600" />
-                      ) : ready ? (
-                        <Check size={14} />
-                      ) : (
-                        <Circle size={13} />
-                      )}
-                    </span>
-                    <span className="admin-completeness-item__label">{step.nombre}</span>
-                    <small className={hasLocalDraft ? "!text-amber-700" : undefined}>
-                      {hasLocalDraft ? "Borrador" : ready ? "Completo" : active ? "Editando" : "Pendiente"}
-                    </small>
-                  </button>
-                );
-              })}
             </div>
           </section>
         </aside>

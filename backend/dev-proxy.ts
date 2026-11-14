@@ -1,5 +1,10 @@
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
 const TARGET = "https://api-semillas.andresalexander14.workers.dev";
 const PORT = 8787;
+const DEV_STATE_FILE = join(tmpdir(), "semillas-dev-proxy-state-v2.json");
 
 const SNAPSHOT_RESUMEN_DETALLADO = {
   exito: true,
@@ -108,6 +113,55 @@ const SNAPSHOT_RESUMEN_DETALLADO = {
   },
 };
 
+const CATALOGO_SENDAS_PROXY = [
+  {
+    id: "e7fd69e0-c8a4-4dba-b5d0-cc85bb03bc22",
+    codigo: "padre",
+    nombre: "Senda del Padre",
+    color_hex: "#3D8BD4",
+    color: "#3D8BD4",
+    descripcion: "Conociendo el amor y la fidelidad del Padre",
+  },
+  {
+    id: "aafc97f6-b702-43f6-9231-1044b51ed88a",
+    codigo: "hijo",
+    nombre: "Senda del Hijo",
+    color_hex: "#6D35E8",
+    color: "#6D35E8",
+    descripcion: "Siguiendo los pasos y enseñanzas de Jesús",
+  },
+  {
+    id: "43155250-0380-41cc-9a6b-6cb4325638af",
+    codigo: "espiritu",
+    nombre: "Senda del Espíritu Santo",
+    color_hex: "#F97316",
+    color: "#F97316",
+    descripcion: "Viviendo en el fruto y poder del Espíritu Santo",
+  },
+];
+
+const CATALOGO_GRUPOS_EDAD_PROXY = [
+  { id: "b7bb9917-0a56-4adf-8b7d-bd8ad1a3a6a2", codigo: "semillas", nombre: "Semillas", edad_min: 5, edad_max: 8, edad_minima: 5, edad_maxima: 8 },
+  { id: "4afa01e2-96c1-4055-b88a-adc4f0303165", codigo: "exploradores", nombre: "Exploradores", edad_min: 9, edad_max: 12, edad_minima: 9, edad_maxima: 12 },
+  { id: "4a69e67c-4fd3-4263-8f30-58416f323870", codigo: "embajadores", nombre: "Embajadores", edad_min: 13, edad_max: 17, edad_minima: 13, edad_maxima: 17 },
+];
+
+const CATALOGO_TIPOS_ACTIVIDAD_PROXY = [
+  { id: "6952ae4b-1a03-48d4-8ed2-f3bd1669e9f8", codigo: "actividad_audio", nombre: "Actividad de Audio" },
+  { id: "3f241547-ec26-42bf-b8da-95b79f5e599e", codigo: "actividad_video", nombre: "Actividad de Video" },
+  { id: "14f3e7b4-53e9-4f10-aea1-368fe0eab7dc", codigo: "arrastrar_soltar", nombre: "Arrastrar y Soltar" },
+  { id: "c43aa274-b388-4f8a-9a6b-72f03fa1197b", codigo: "aventura_decisiones", nombre: "Aventura de Decisiones" },
+  { id: "a5a68697-20a9-4e3b-a137-564876b47566", codigo: "cancion", nombre: "Canción y Alabanza" },
+  { id: "da8ef3b5-97db-4da4-aa36-3055c56f36c9", codigo: "completar_versiculo", nombre: "Completar Versículo" },
+  { id: "a26528fd-620e-40b2-9f66-c6b87d4f1034", codigo: "tarjetas_memoria", nombre: "Tarjetas de Memoria" },
+  { id: "fa752291-09f8-46bd-acc7-e85117a5861b", codigo: "manualidad", nombre: "Manualidad" },
+  { id: "dc3c502a-ed2a-4a4c-ba57-53bc2b5258a4", codigo: "cuestionario", nombre: "Cuestionario (Quiz)" },
+  { id: "4d9fb7d5-0e10-4dd0-8e0b-a1d7b5b1040a", codigo: "relacionar_pares", nombre: "Relacionar Pares" },
+  { id: "70cc06c0-1c89-48f7-943e-375498ebc1b0", codigo: "rompecabezas", nombre: "Rompecabezas" },
+  { id: "a54115f5-e829-44d4-9cab-8f4d00434f6c", nombre: "sopa_letras", nombre: "Sopa de Letras" },
+  { id: "e9aceb4c-da06-49fa-9b18-d530218d266a", codigo: "verdadero_falso", nombre: "Verdadero o Falso" },
+];
+
 const SNAPSHOT_PERFIL_ADMIN = {
   exito: true,
   datos: {
@@ -128,58 +182,71 @@ const SNAPSHOT_PERFIL_ADMIN = {
       prefiere_audio: true,
       tamano_texto_preferido: "mediano",
     },
-    grupos_edad: [
-      { id: "e1000000-0000-0000-0000-000000000001", codigo: "semillas", nombre: "Semillas", edad_min: 5, edad_max: 8, edad_minima: 5, edad_maxima: 8 },
-      { id: "e1000000-0000-0000-0000-000000000002", codigo: "exploradores", nombre: "Exploradores", edad_min: 9, edad_max: 12, edad_minima: 9, edad_maxima: 12 },
-      { id: "e1000000-0000-0000-0000-000000000003", codigo: "embajadores", nombre: "Embajadores", edad_min: 13, edad_max: 17, edad_minima: 13, edad_maxima: 17 },
-    ],
+    grupos_edad: CATALOGO_GRUPOS_EDAD_PROXY.map((g) => ({ ...g })),
   },
 };
+
+function buscarSendaProxy(sendaNombreOId?: string | null) {
+  const valor = String(sendaNombreOId || "").toLowerCase();
+  const encontrada =
+    CATALOGO_SENDAS_PROXY.find((s) => s.id === sendaNombreOId || s.codigo === valor || s.nombre.toLowerCase() === valor) ??
+    CATALOGO_SENDAS_PROXY.find((s) => valor.includes(s.codigo)) ??
+    CATALOGO_SENDAS_PROXY[0];
+  return { id: encontrada.id, codigo: encontrada.codigo, nombre: encontrada.nombre, color_hex: encontrada.color_hex };
+}
 
 const SNAPSHOT_TEMAS_LISTADO = {
   exito: true,
   datos: {
-    temas: SNAPSHOT_RESUMEN_DETALLADO.datos.temas_recientes.map((t) => ({
-      ...t,
-      slug: t.titulo.toLowerCase().replace(/[^a-z0-9]/g, "-"),
-      resumen: "Contenido temático de " + t.titulo,
-      objetivo: "Comprender y vivir la enseñanza bíblica de " + t.titulo,
-      version_contenido: 1,
-      minutos_estimados: 15,
-      xp_recompensa: 50,
-      publicado_en: t.actualizado_en,
-      es_destacado: false,
-      senda_id: "senda-padre",
-      senda: { id: "senda-padre", codigo: "padre", nombre: t.senda, color_hex: "#3b82f6" },
-      grupos_edad: [
-        { id: "e1000000-0000-0000-0000-000000000001", codigo: "semillas", nombre: "Semillas" },
-        { id: "e1000000-0000-0000-0000-000000000002", codigo: "exploradores", nombre: "Exploradores" },
-        { id: "e1000000-0000-0000-0000-000000000003", codigo: "embajadores", nombre: "Embajadores" },
-      ],
-      completitud: {
-        porcentaje: 100,
-        listo_para_revision: true,
-        bloqueos: [],
-        criterios: [
-          { codigo: "ficha_base", etiqueta: "Ficha editorial base", completo: true, detalle: "" },
-          { codigo: "portada", etiqueta: "Portada asignada", completo: true, detalle: "" },
-          { codigo: "grupos_edad", etiqueta: "Franjas de edad", completo: true, detalle: "" },
-          { codigo: "pasos_crecer", etiqueta: "6 momentos CRECER", completo: true, detalle: "" },
-          { codigo: "contenido_crecer", etiqueta: "Contenido por franja", completo: true, detalle: "" },
-          { codigo: "actividades", etiqueta: "Actividades configuradas", completo: true, detalle: "" },
-          { codigo: "publicacion", etiqueta: "Listo para publicar", completo: true, detalle: "" },
-        ],
-        estadisticas: {
-          grupos_edad: 3,
-          pasos_totales: 6,
-          pasos_creados: 6,
-          contenidos_creados: 18,
-          contenidos_esperados: 18,
-          actividades: 6,
+    temas: SNAPSHOT_RESUMEN_DETALLADO.datos.temas_recientes.map((t) => {
+      const sendaObj = buscarSendaProxy(t.senda);
+      return {
+        ...t,
+        slug: t.titulo.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, ""),
+        resumen: "Contenido temático de " + t.titulo,
+        objetivo: "Comprender y vivir la enseñanza bíblica de " + t.titulo,
+        version_contenido: 1,
+        version_biblica_id: "rvr60",
+        minutos_estimados: 15,
+        xp_recompensa: 50,
+        publicado_en: t.estado === "publicado" ? t.actualizado_en : null,
+        es_destacado: false,
+        senda_id: sendaObj.id,
+        senda: sendaObj,
+        portada_recurso_id: "00000000-0000-0000-0000-000000000001",
+        portada_id: "00000000-0000-0000-0000-000000000001",
+        portada: {
+          id: "00000000-0000-0000-0000-000000000001",
+          url: "/src/assets/images/Ilustraciones/Semilla.webp",
+          url_publica: "/src/assets/images/Ilustraciones/Semilla.webp",
+          titulo: "Semilla y brote inicial",
         },
-      },
-    })),
-    total: 14,
+        grupos_edad: CATALOGO_GRUPOS_EDAD_PROXY.map((g) => ({ id: g.id, codigo: g.codigo, nombre: g.nombre })),
+        completitud: {
+          porcentaje: t.estado === "publicado" ? 100 : 71,
+          listo_para_revision: t.estado === "publicado",
+          bloqueos: t.estado === "publicado" ? [] : ["Completa los momentos CRECER o actividades pendientes antes de publicar"],
+          criterios: [
+            { codigo: "ficha_base", etiqueta: "Datos básicos y versículo", completo: true, detalle: "" },
+            { codigo: "portada", etiqueta: "Portada asignada", completo: true, detalle: "" },
+            { codigo: "grupos_edad", etiqueta: "Franjas de edad", completo: true, detalle: "" },
+            { codigo: "pasos_crecer", etiqueta: "6 momentos CRECER", completo: true, detalle: "" },
+            { codigo: "contenido_crecer", etiqueta: "Contenido por franja", completo: t.estado === "publicado", detalle: t.estado === "publicado" ? "" : "Falta revisar el contenido por franja" },
+            { codigo: "actividades", etiqueta: "Actividades configuradas", completo: t.estado === "publicado", detalle: t.estado === "publicado" ? "" : "Agrega al menos 1 actividad" },
+            { codigo: "publicacion", etiqueta: "Listo para publicar", completo: t.estado === "publicado", detalle: t.estado === "publicado" ? "" : "Completa los pasos anteriores" },
+          ],
+          estadisticas: {
+            grupos_edad: 3,
+            pasos_totales: 6,
+            pasos_creados: 6,
+            contenidos_creados: t.estado === "publicado" ? 18 : 6,
+            contenidos_esperados: 18,
+            actividades: t.estado === "publicado" ? 1 : 0,
+          },
+        },
+      };
+    }),
+    total: 6,
     limit: 20,
     offset: 0,
   },
@@ -436,9 +503,9 @@ const SNAPSHOT_ACTIVIDADES = {
       {
         id: "act-1",
         tema_id: "47a2e22f-86da-466f-92ff-1847d85de609",
-        paso_id: "paso-47a2e22f-comprobar",
-        grupo_edad_id: "e1000000-0000-0000-0000-000000000001",
-        tipo_actividad_id: "tipo-cuestionario",
+        paso_id: "paso-47a2e22f-86da-466f-92ff-1847d85de609-comprobar",
+        grupo_edad_id: "b7bb9917-0a56-4adf-8b7d-bd8ad1a3a6a2",
+        tipo_actividad_id: "dc3c502a-ed2a-4a4c-ba57-53bc2b5258a4",
         titulo: "Quiz Bíblico",
         consigna: "Responde la pregunta sobre la enseñanza bíblica.",
         retroalimentacion: "¡Muy bien! Recordaste la enseñanza.",
@@ -477,7 +544,7 @@ const SNAPSHOT_ACTIVIDADES = {
           },
         ],
         tipo_actividad: {
-          id: "tipo-cuestionario",
+          id: "dc3c502a-ed2a-4a4c-ba57-53bc2b5258a4",
           codigo: "cuestionario",
           nombre: "Cuestionario (Quiz)",
         },
@@ -487,20 +554,20 @@ const SNAPSHOT_ACTIVIDADES = {
           slug: "el-amor-de-dios",
           estado: "publicado",
           senda: {
-            id: "senda-padre",
+            id: "e7fd69e0-c8a4-4dba-b5d0-cc85bb03bc22",
             codigo: "padre",
             nombre: "Senda del Padre",
-            color_hex: "#3b82f6",
+            color_hex: "#3D8BD4",
           },
         },
         grupo_edad: {
-          id: "e1000000-0000-0000-0000-000000000001",
+          id: "b7bb9917-0a56-4adf-8b7d-bd8ad1a3a6a2",
           codigo: "semillas",
           nombre: "Semillas",
         },
       },
     ],
-    total: 22,
+    total: 1,
   },
 };
 
@@ -599,11 +666,7 @@ const SNAPSHOT_AJUSTES = {
 
 const SNAPSHOT_SENDAS = {
   exito: true,
-  datos: [
-    { id: "senda-padre", nombre: "Senda del Padre", color: "#3b82f6", descripcion: "Conociendo el amor del Padre" },
-    { id: "senda-hijo", nombre: "Senda del Hijo", color: "#10b981", descripcion: "Siguiendo los pasos de Jesús" },
-    { id: "senda-espiritu", nombre: "Senda del Espíritu", color: "#f59e0b", descripcion: "Viviendo en el poder del Espíritu Santo" },
-  ],
+  datos: CATALOGO_SENDAS_PROXY.map((s) => ({ ...s })),
 };
 
 const SNAPSHOT_MEDIA = {
@@ -1190,47 +1253,35 @@ for (const t of SNAPSHOT_TEMAS_LISTADO.datos.temas) {
 }
 
 const FASES_CRECER_PROXY = [
-  { id: "paso-tipo-conectar", codigo: "conectar", nombre: "Conectar", orden: 1, color_hex: "#43a047" },
-  { id: "paso-tipo-relatar", codigo: "relatar", nombre: "Relatar", orden: 2, color_hex: "#2563eb" },
-  { id: "paso-tipo-ensenar", codigo: "ensenar", nombre: "Enseñar", orden: 3, color_hex: "#eab308" },
-  { id: "paso-tipo-comprobar", codigo: "comprobar", nombre: "Comprobar", orden: 4, color_hex: "#7c3aed" },
-  { id: "paso-tipo-experimentar", codigo: "experimentar", nombre: "Experimentar", orden: 5, color_hex: "#ef4444" },
-  { id: "paso-tipo-recompensar", codigo: "recompensar", nombre: "Recompensar", orden: 6, color_hex: "#f59e0b" },
+  { id: "e88e4080-9c00-407c-9866-2cc744fbba0b", codigo: "conectar", nombre: "Conectar", orden: 1, color_hex: "#22A447" },
+  { id: "16bbc3aa-ca56-493e-a986-62e79d1963c6", codigo: "relatar", nombre: "Relatar", orden: 2, color_hex: "#2F80ED" },
+  { id: "94130d23-0e39-4345-97fc-8ac21a1bdc62", codigo: "ensenar", nombre: "Enseñar", orden: 3, color_hex: "#6D35E8" },
+  { id: "c2b51e33-b8f2-4154-bac2-c2dd5b62f4c6", codigo: "comprobar", nombre: "Comprobar", orden: 4, color_hex: "#F97316" },
+  { id: "35afdbd1-d0f0-4c51-aa88-ea624b070c91", codigo: "experimentar", nombre: "Experimentar", orden: 5, color_hex: "#06B6D4" },
+  { id: "236f9dde-65c3-4007-8aa4-20bf22f9cc38", codigo: "recompensar", nombre: "Recompensar", orden: 6, color_hex: "#FFC83D" },
 ];
 
-function buscarTemaEnCacheOSnapshot(temaId: string): Record<string, any> {
-  const cachedListado = cacheGet.get("/administracion/temas-listado");
-  if (cachedListado) {
-    try {
-      const parsed = JSON.parse(new TextDecoder().decode(cachedListado));
-      const lista = Array.isArray(parsed?.datos?.temas) ? parsed.datos.temas : [];
-      const found = lista.find((item: any) => item?.id === temaId);
-      if (found) return JSON.parse(JSON.stringify(found));
-    } catch {
-      // continuar
-    }
-  }
-  const foundSnapshot = SNAPSHOT_TEMAS_LISTADO.datos.temas.find((item) => item.id === temaId);
-  const base = JSON.parse(JSON.stringify(foundSnapshot ?? SNAPSHOT_TEMAS_LISTADO.datos.temas[0]));
-  base.id = temaId;
-  return base;
+type DevProxyStore = {
+  temas: Record<string, any>[];
+  pasosPorTema: Record<string, any[]>;
+  actividades: Record<string, any>[];
+  revisiones: Record<string, any>[];
+};
+
+function normalizarSlugProxy(texto: string): string {
+  const clean = String(texto || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+  return clean || `tema-${Date.now()}`;
 }
 
-function construirPasosProxyParaTema(tema: Record<string, any>): any[] {
-  const cachedPasos = cacheGet.get(`/administracion/temas/${tema.id}/pasos`);
-  if (cachedPasos) {
-    try {
-      const parsed = JSON.parse(new TextDecoder().decode(cachedPasos));
-      if (Array.isArray(parsed?.datos) && parsed.datos.length > 0) {
-        return parsed.datos;
-      }
-    } catch {
-      // continuar
-    }
-  }
+function crearPasosBaseParaTema(tema: Record<string, any>, prefillsCompletos: boolean): any[] {
   const grupos = Array.isArray(tema.grupos_edad) && tema.grupos_edad.length > 0
     ? tema.grupos_edad
-    : SNAPSHOT_TEMAS_LISTADO.datos.temas[0].grupos_edad;
+    : CATALOGO_GRUPOS_EDAD_PROXY.slice(0, 1);
 
   return FASES_CRECER_PROXY.map((fase) => ({
     id: `paso-${tema.id}-${fase.codigo}`,
@@ -1243,95 +1294,266 @@ function construirPasosProxyParaTema(tema: Record<string, any>): any[] {
       nombre: fase.nombre,
       color_hex: fase.color_hex,
     },
-    contenidos: grupos.map((g: any) => {
-      const gId = typeof g === "string" ? g : g.id;
-      const gNombre = typeof g === "string" ? g : g.nombre || "Franja";
-      return {
-        id: `contenido-${tema.id}-${fase.codigo}-${gId}`,
-        grupo_edad_id: gId,
-        titulo: `${fase.nombre}: ${tema.titulo || "Lección"}`,
-        cuerpo: `Contenido pedagógico del momento ${fase.nombre} adaptado para la franja ${gNombre} sobre «${tema.titulo || "el amor de Dios"}».`,
-        instruccion_corta: `Participa en el momento ${fase.nombre}.`,
-        recurso_id: null,
-        recurso_audio_id: null,
-      };
-    }),
-    preguntas: grupos.map((g: any) => {
-      const gId = typeof g === "string" ? g : g.id;
-      return {
-        id: `pregunta-${tema.id}-${fase.codigo}-${gId}-1`,
-        grupo_edad_id: gId,
-        pregunta: `¿Qué aprendimos en el momento ${fase.nombre} sobre ${tema.titulo || "esta enseñanza"}?`,
-        orden: 1,
-      };
-    }),
+    contenidos: prefillsCompletos
+      ? grupos.map((g: any) => {
+          const gId = typeof g === "string" ? g : g.id;
+          const gNombre = typeof g === "string" ? g : g.nombre || "Franja";
+          return {
+            id: `contenido-${tema.id}-${fase.codigo}-${gId}`,
+            grupo_edad_id: gId,
+            titulo: `${fase.nombre}: ${tema.titulo || "Lección"}`,
+            cuerpo: `Contenido pedagógico del momento ${fase.nombre} adaptado para la franja ${gNombre} sobre «${tema.titulo || "el amor de Dios"}».`,
+            instruccion_corta: `Participa en el momento ${fase.nombre}.`,
+            recurso_id: null,
+            recurso_audio_id: null,
+          };
+        })
+      : [],
+    preguntas: prefillsCompletos
+      ? grupos.map((g: any) => {
+          const gId = typeof g === "string" ? g : g.id;
+          return {
+            id: `pregunta-${tema.id}-${fase.codigo}-${gId}-1`,
+            grupo_edad_id: gId,
+            pregunta: `¿Qué aprendimos en el momento ${fase.nombre} sobre ${tema.titulo || "esta enseñanza"}?`,
+            orden: 1,
+          };
+        })
+      : [],
   }));
 }
 
-function construirActividadesProxyParaTema(tema: Record<string, any>, pasos: any[]): any[] {
-  const cachedActs = cacheGet.get("/administracion/actividades");
-  if (cachedActs) {
-    try {
-      const parsed = JSON.parse(new TextDecoder().decode(cachedActs));
-      const lista = Array.isArray(parsed?.datos?.actividades) ? parsed.datos.actividades : [];
-      const delTema = lista.filter((a: any) => a?.tema_id === tema.id);
-      if (delTema.length > 0) {
-        enriquecerActividadesOpciones(delTema);
-        return delTema;
-      }
-    } catch {
-      // continuar
-    }
+function inicializarDevStoreDesdeSnapshots(): DevProxyStore {
+  const temas = JSON.parse(JSON.stringify(SNAPSHOT_TEMAS_LISTADO.datos.temas)) as Record<string, any>[];
+  const pasosPorTema: Record<string, any[]> = {};
+  for (const t of temas) {
+    pasosPorTema[t.id] = crearPasosBaseParaTema(t, t.estado === "publicado");
   }
-  const pasoComprobar = pasos.find((p) => p.tipo_paso?.codigo === "comprobar") ?? pasos[0];
-  const primerGrupo = Array.isArray(tema.grupos_edad) && tema.grupos_edad[0]
-    ? (typeof tema.grupos_edad[0] === "string" ? { id: tema.grupos_edad[0], codigo: "semillas", nombre: "Semillas" } : tema.grupos_edad[0])
-    : { id: "e1000000-0000-0000-0000-000000000001", codigo: "semillas", nombre: "Semillas" };
-
-  const baseAct = JSON.parse(JSON.stringify(SNAPSHOT_ACTIVIDADES.datos.actividades[0]));
-  baseAct.id = `act-${tema.id}-1`;
-  baseAct.tema_id = tema.id;
-  baseAct.paso_id = pasoComprobar?.id ?? null;
-  baseAct.grupo_edad_id = primerGrupo.id;
-  baseAct.grupo_edad = primerGrupo;
-  baseAct.tema = {
-    id: tema.id,
-    titulo: tema.titulo || "Tema",
-    slug: tema.slug || "tema",
-    estado: tema.estado || "borrador",
-  };
-  return [baseAct];
+  const actividades = JSON.parse(JSON.stringify(SNAPSHOT_ACTIVIDADES.datos.actividades)) as Record<string, any>[];
+  const revisiones = JSON.parse(JSON.stringify(SNAPSHOT_REVISIONES.datos.revisiones || [])) as Record<string, any>[];
+  const initial: DevProxyStore = { temas, pasosPorTema, actividades, revisiones };
+  return initial;
 }
 
-function construirPayloadRutaTemaAdmin(pathname: string): Record<string, any> {
+function cargarDevStore(): DevProxyStore {
+  try {
+    if (existsSync(DEV_STATE_FILE)) {
+      const raw = JSON.parse(readFileSync(DEV_STATE_FILE, "utf8"));
+      if (raw && Array.isArray(raw.temas) && raw.pasosPorTema && Array.isArray(raw.actividades)) {
+        return {
+          temas: raw.temas,
+          pasosPorTema: raw.pasosPorTema,
+          actividades: raw.actividades,
+          revisiones: Array.isArray(raw.revisiones) ? raw.revisiones : [],
+        };
+      }
+    }
+  } catch {
+    // Usar snapshots si el archivo temporal estuviera corrupto
+  }
+  return inicializarDevStoreDesdeSnapshots();
+}
+
+const devStore: DevProxyStore = cargarDevStore();
+
+function guardarDevStoreEnDisco() {
+  try {
+    writeFileSync(DEV_STATE_FILE, JSON.stringify(devStore, null, 2), "utf8");
+  } catch {
+    // No bloquear ejecución si el disco temporal no permite escritura
+  }
+}
+
+function resolverGruposEdadProxy(ids?: unknown[]): any[] {
+  if (!Array.isArray(ids) || ids.length === 0) return [];
+  const resueltos = ids
+    .map((id) => {
+      const idStr = typeof id === "string" ? id : String((id as any)?.id || "");
+      return (
+        CATALOGO_GRUPOS_EDAD_PROXY.find((g) => g.id === idStr || g.codigo === idStr) ??
+        (typeof id === "object" && id !== null ? id : null)
+      );
+    })
+    .filter(Boolean);
+  return resueltos.map((g: any) => ({ id: g.id, codigo: g.codigo, nombre: g.nombre }));
+}
+
+function resolverPortadaProxy(portadaRecursoId?: string | null, existingPortada?: any) {
+  if (portadaRecursoId) {
+    const recurso = SNAPSHOT_MEDIA.datos.find((m) => m.id === portadaRecursoId);
+    if (recurso) {
+      return {
+        id: recurso.id,
+        url: recurso.url_publica,
+        url_publica: recurso.url_publica,
+        titulo: recurso.titulo,
+      };
+    }
+    return {
+      id: portadaRecursoId,
+      url: "/src/assets/images/Ilustraciones/Semilla.webp",
+      url_publica: "/src/assets/images/Ilustraciones/Semilla.webp",
+      titulo: "Portada seleccionada",
+    };
+  }
+  return existingPortada ?? null;
+}
+
+function recalcularCompletitudTemaDev(tema: Record<string, any>) {
+  const grupos = Array.isArray(tema.grupos_edad) ? tema.grupos_edad : [];
+  const pasos = devStore.pasosPorTema[tema.id] ?? [];
+  const actividades = devStore.actividades.filter((a) => a.tema_id === tema.id && a.estado !== "archivado");
+
+  if (!Array.isArray(tema.pasos_crecer)) {
+    tema.pasos_crecer = pasos;
+  }
+
+  enriquecerTemaConVersiculoYCompletitud(tema, null);
+
+  const tieneTitulo = typeof tema.titulo === "string" && tema.titulo.trim().length >= 3;
+  const tieneResumenUObjetivo =
+    (typeof tema.resumen === "string" && tema.resumen.trim().length >= 3) ||
+    (typeof tema.objetivo === "string" && tema.objetivo.trim().length >= 3);
+  const tieneVersiculo = Boolean(
+    (tema.versiculo_clave?.texto && String(tema.versiculo_clave.texto).trim().length > 0) ||
+    (tema.referencia_biblica?.texto && String(tema.referencia_biblica.texto).trim().length > 0),
+  );
+  const fichaBaseCompleta = Boolean(tieneTitulo && tieneResumenUObjetivo && tieneVersiculo);
+  const portadaCompleta = Boolean(tema.portada_id || tema.portada_recurso_id || tema.portada?.id || tema.portada?.url);
+  const gruposCompletos = grupos.length > 0;
+  const pasosCreados = pasos.length;
+  const pasosCompletos = pasosCreados >= 6;
+
+  let contenidosCreados = 0;
+  const grupoIds = new Set(grupos.map((g: any) => g.id));
+  for (const paso of pasos) {
+    const contenidos = Array.isArray(paso.contenidos) ? paso.contenidos : [];
+    for (const c of contenidos) {
+      if (
+        (grupoIds.size === 0 || grupoIds.has(c.grupo_edad_id)) &&
+        ((typeof c.titulo === "string" && c.titulo.trim().length > 0) ||
+          (typeof c.cuerpo === "string" && c.cuerpo.trim().length > 0))
+      ) {
+        contenidosCreados += 1;
+      }
+    }
+  }
+  const contenidosEsperados = Math.max(1, grupos.length) * 6;
+  const contenidoCrecerCompleto = contenidosCreados > 0 && contenidosCreados >= contenidosEsperados;
+  const actividadesCompletas = actividades.length > 0;
+  const previosListos =
+    fichaBaseCompleta &&
+    portadaCompleta &&
+    gruposCompletos &&
+    pasosCompletos &&
+    contenidoCrecerCompleto &&
+    actividadesCompletas;
+
+  const criterios = [
+    {
+      codigo: "ficha_base",
+      etiqueta: "Datos generales y versículo",
+      completo: fichaBaseCompleta,
+      detalle: fichaBaseCompleta ? "" : "Completa el título, resumen y versículo clave.",
+    },
+    {
+      codigo: "portada",
+      etiqueta: "Imagen de portada",
+      completo: portadaCompleta,
+      detalle: portadaCompleta ? "" : "Elige una imagen de portada en el Paso 2.",
+    },
+    {
+      codigo: "grupos_edad",
+      etiqueta: "Edades destinatarias",
+      completo: gruposCompletos,
+      detalle: gruposCompletos ? "" : "Selecciona al menos una franja de edad.",
+    },
+    {
+      codigo: "pasos_crecer",
+      etiqueta: "Estructura de 6 momentos CRECER",
+      completo: pasosCompletos,
+      detalle: pasosCompletos ? "" : "Inicializa los 6 momentos CRECER.",
+    },
+    {
+      codigo: "contenido_crecer",
+      etiqueta: "Contenido CRECER por franja",
+      completo: contenidoCrecerCompleto,
+      detalle: contenidoCrecerCompleto
+        ? ""
+        : `Faltan momentos CRECER por completar (${contenidosCreados}/${contenidosEsperados}).`,
+    },
+    {
+      codigo: "actividades",
+      etiqueta: "Actividades interactivas",
+      completo: actividadesCompletas,
+      detalle: actividadesCompletas ? "" : "Agrega al menos 1 actividad en el Paso 4.",
+    },
+    {
+      codigo: "publicacion",
+      etiqueta: "Listo para publicar",
+      completo: previosListos,
+      detalle: previosListos ? "" : "Completa todos los pasos anteriores antes de publicar.",
+    },
+  ];
+
+  const bloqueos = criterios.filter((c) => !c.completo).map((c) => c.detalle || c.etiqueta);
+  const porcentaje = Math.round((criterios.filter((c) => c.completo).length / criterios.length) * 100);
+
+  tema.completitud = {
+    porcentaje,
+    listo_para_revision: previosListos,
+    bloqueos,
+    criterios,
+    estadisticas: {
+      grupos_edad: grupos.length,
+      pasos_totales: 6,
+      pasos_creados: pasosCreados,
+      contenidos_creados: contenidosCreados,
+      contenidos_esperados: contenidosEsperados,
+      actividades: actividades.length,
+    },
+  };
+  return tema.completitud;
+}
+
+for (const t of devStore.temas) {
+  if (!devStore.pasosPorTema[t.id]) {
+    devStore.pasosPorTema[t.id] = crearPasosBaseParaTema(t, t.estado === "publicado");
+  }
+  recalcularCompletitudTemaDev(t);
+}
+guardarDevStoreEnDisco();
+
+function buscarTemaDev(temaId: string): Record<string, any> | undefined {
+  return devStore.temas.find((item) => item?.id === temaId);
+}
+
+function construirPasosProxyParaTema(tema: Record<string, any>): any[] {
+  if (!devStore.pasosPorTema[tema.id]) {
+    devStore.pasosPorTema[tema.id] = crearPasosBaseParaTema(tema, false);
+  }
+  return devStore.pasosPorTema[tema.id];
+}
+
+function construirActividadesProxyParaTema(tema: Record<string, any>): any[] {
+  const lista = devStore.actividades.filter((a) => a.tema_id === tema.id);
+  enriquecerActividadesOpciones(lista);
+  return lista.sort((a, b) => (a.orden ?? 1) - (b.orden ?? 1));
+}
+
+function construirPayloadRutaTemaAdmin(pathname: string): Record<string, any> | null {
   const parts = pathname.split("/").filter(Boolean);
-  // parts: ["administracion", "temas", ":id", ("pasos" | "estudio")?]
-  const temaId = parts[2] || SNAPSHOT_TEMAS_LISTADO.datos.temas[0].id;
+  const temaId = parts[2];
   const subruta = parts[3] || "";
+  if (!temaId) return null;
 
-  const tema = buscarTemaEnCacheOSnapshot(temaId);
-  if (!Array.isArray(tema.grupos_edad) || tema.grupos_edad.length === 0) {
-    tema.grupos_edad = SNAPSHOT_TEMAS_LISTADO.datos.temas[0].grupos_edad;
-  } else {
-    tema.grupos_edad = tema.grupos_edad.map((g: any, idx: number) =>
-      typeof g === "string"
-        ? { id: g, codigo: g, nombre: `Franja ${idx + 1}` }
-        : { id: g.id || `franja-${idx + 1}`, codigo: g.codigo || "semillas", nombre: g.nombre || "Semillas" }
-    );
-  }
-  if (!tema.completitud || typeof tema.completitud !== "object") {
-    tema.completitud = JSON.parse(JSON.stringify(SNAPSHOT_TEMAS_LISTADO.datos.temas[0].completitud));
-  }
-  if (!Array.isArray(tema.completitud.criterios) || tema.completitud.criterios.length === 0) {
-    tema.completitud.criterios = JSON.parse(JSON.stringify(SNAPSHOT_TEMAS_LISTADO.datos.temas[0].completitud.criterios));
-  }
-  if (!tema.completitud.estadisticas || typeof tema.completitud.estadisticas !== "object") {
-    tema.completitud.estadisticas = JSON.parse(JSON.stringify(SNAPSHOT_TEMAS_LISTADO.datos.temas[0].completitud.estadisticas));
-  }
-  enriquecerTemaConVersiculoYCompletitud(tema, tema.completitud);
+  const tema = buscarTemaDev(temaId);
+  if (!tema) return null;
 
+  recalcularCompletitudTemaDev(tema);
   const pasos = construirPasosProxyParaTema(tema);
-  const actividades = construirActividadesProxyParaTema(tema, pasos);
+  const actividades = construirActividadesProxyParaTema(tema);
+  const revisiones = devStore.revisiones.filter((r) => r.tema_id === tema.id);
 
   if (subruta === "pasos") {
     return { exito: true, datos: pasos };
@@ -1344,20 +1566,654 @@ function construirPayloadRutaTemaAdmin(pathname: string): Record<string, any> {
         pasos,
         actividades,
         completitud: tema.completitud,
-        revisiones: [],
+        revisiones,
       },
     };
   }
   return { exito: true, datos: tema };
 }
 
+function construirResumenDetalladoDev() {
+  const estados = {
+    borrador: 0,
+    revision: 0,
+    aprobado: 0,
+    publicado: 0,
+    archivado: 0,
+  };
+  for (const t of devStore.temas) {
+    const e = String(t.estado || "borrador");
+    if (e in estados) {
+      estados[e as keyof typeof estados] += 1;
+    }
+  }
+  const temasRecientes = [...devStore.temas]
+    .sort((a, b) => String(b.actualizado_en || "").localeCompare(String(a.actualizado_en || "")))
+    .slice(0, 6)
+    .map((t) => ({
+      id: t.id,
+      titulo: t.titulo,
+      estado: t.estado,
+      actualizado_en: t.actualizado_en,
+      senda: t.senda?.nombre || "Senda",
+      autor: t.autor || "Administrador",
+    }));
+
+  const revisionesPendientes = devStore.revisiones.filter((r) => r.estado === "pendiente" || r.estado === "revision");
+  return {
+    exito: true,
+    datos: {
+      metricas: {
+        ...SNAPSHOT_RESUMEN_DETALLADO.datos.metricas,
+        temas: devStore.temas.length,
+        publicados: estados.publicado,
+        actividades: devStore.actividades.length,
+        pendientes_revision: revisionesPendientes.length,
+      },
+      estados,
+      temas_recientes: temasRecientes,
+      revisiones: revisionesPendientes,
+      actividad_reciente: SNAPSHOT_RESUMEN_DETALLADO.datos.actividad_reciente,
+      publicaciones_semana: SNAPSHOT_RESUMEN_DETALLADO.datos.publicaciones_semana,
+    },
+  };
+}
+
+function filtrarYResponderGetDev(url: URL): Record<string, any> | null {
+  const path = url.pathname;
+  const params = url.searchParams;
+
+  if (path === "/perfil") return SNAPSHOT_PERFIL_ADMIN;
+  if (path === "/administracion/resumen/detallado") return construirResumenDetalladoDev();
+  if (path === "/administracion/sendas") return { exito: true, datos: CATALOGO_SENDAS_PROXY };
+
+  if (path === "/administracion/temas-listado" || path === "/administracion/temas") {
+    const q = (params.get("q") || "").trim().toLowerCase();
+    const estado = (params.get("estado") || params.get("status") || "").trim().toLowerCase();
+    const sendaId = (params.get("senda_id") || "").trim();
+    const grupoEdadId = (params.get("grupo_edad_id") || "").trim();
+    const limit = Math.max(1, Number(params.get("limit")) || 50);
+    const offset = Math.max(0, Number(params.get("offset")) || 0);
+
+    for (const t of devStore.temas) {
+      recalcularCompletitudTemaDev(t);
+    }
+
+    const filtered = devStore.temas
+      .filter((t) => {
+        if (estado && estado !== "todos" && String(t.estado || "").toLowerCase() !== estado) {
+          return false;
+        }
+        if (sendaId && t.senda_id !== sendaId && t.senda?.id !== sendaId) {
+          return false;
+        }
+        if (
+          grupoEdadId &&
+          !(Array.isArray(t.grupos_edad) && t.grupos_edad.some((g: any) => g.id === grupoEdadId || g === grupoEdadId))
+        ) {
+          return false;
+        }
+        if (q) {
+          const texto = [
+            t.titulo,
+            t.resumen,
+            t.objetivo,
+            t.slug,
+            t.senda?.nombre,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+          if (!texto.includes(q)) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => String(b.actualizado_en || "").localeCompare(String(a.actualizado_en || "")));
+
+    if (path === "/administracion/temas") {
+      return { exito: true, datos: filtered };
+    }
+    const paged = filtered.slice(offset, offset + limit);
+    return {
+      exito: true,
+      datos: {
+        temas: paged,
+        total: filtered.length,
+        limit,
+        offset,
+      },
+    };
+  }
+
+  if (path.startsWith("/administracion/temas/")) {
+    return construirPayloadRutaTemaAdmin(path);
+  }
+
+  if (path === "/administracion/actividades") {
+    const temaId = (params.get("tema_id") || "").trim();
+    const grupoEdadId = (params.get("grupo_edad_id") || "").trim();
+    const tipoId = (params.get("tipo_actividad_id") || "").trim();
+    const estado = (params.get("estado") || "").trim().toLowerCase();
+    const q = (params.get("q") || "").trim().toLowerCase();
+    const limit = Math.max(1, Number(params.get("limit")) || 50);
+    const offset = Math.max(0, Number(params.get("offset")) || 0);
+
+    const filtered = devStore.actividades.filter((a) => {
+      if (temaId && a.tema_id !== temaId) return false;
+      if (grupoEdadId && a.grupo_edad_id !== grupoEdadId && a.grupo_edad?.id !== grupoEdadId) return false;
+      if (tipoId && a.tipo_actividad_id !== tipoId && a.tipo_actividad?.id !== tipoId) return false;
+      if (estado && estado !== "todos" && String(a.estado || "").toLowerCase() !== estado) return false;
+      if (q) {
+        const hay = [a.titulo, a.consigna, a.tema?.titulo, a.tipo_actividad?.nombre].filter(Boolean).join(" ").toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+    enriquecerActividadesOpciones(filtered);
+    return {
+      exito: true,
+      datos: {
+        actividades: filtered.slice(offset, offset + limit),
+        total: filtered.length,
+      },
+    };
+  }
+
+  if (path.startsWith("/administracion/actividades/")) {
+    const actId = path.split("/")[3];
+    const foundAct = devStore.actividades.find((a) => a.id === actId) ?? devStore.actividades[0] ?? null;
+    if (!foundAct) return null;
+    const act = JSON.parse(JSON.stringify(foundAct));
+    enriquecerActividadesOpciones([act]);
+    return { exito: true, datos: act };
+  }
+
+  if (path === "/administracion/revisiones") {
+    const estado = (params.get("estado") || "").trim().toLowerCase();
+    const q = (params.get("q") || "").trim().toLowerCase();
+    const filtered = devStore.revisiones.filter((r) => {
+      if (estado && estado !== "todos" && String(r.estado || "").toLowerCase() !== estado) return false;
+      if (q) {
+        const hay = [r.tema?.titulo, r.notas, r.solicitante?.nombre_visible].filter(Boolean).join(" ").toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+    return {
+      exito: true,
+      datos: {
+        revisiones: filtered,
+        total: filtered.length,
+        limit: 50,
+        offset: 0,
+      },
+    };
+  }
+
+  if (path.startsWith("/administracion/revisiones/")) {
+    const revId = path.split("/")[3];
+    const rev = devStore.revisiones.find((r) => r.id === revId);
+    return rev ? { exito: true, datos: rev } : null;
+  }
+
+  if (path === "/administracion/usuarios") {
+    const q = (params.get("q") || "").trim().toLowerCase();
+    const rol = (params.get("rol") || "").trim().toLowerCase();
+    const grupoEdadId = (params.get("grupo_edad_id") || "").trim();
+    const list = SNAPSHOT_USUARIOS.datos.usuarios.filter((u: any) => {
+      if (rol && rol !== "todos" && String(u.rol || "").toLowerCase() !== rol) return false;
+      if (grupoEdadId && u.grupo_edad_id !== grupoEdadId) return false;
+      if (q) {
+        const hay = [u.nombre_visible, u.correo, u.apodo].filter(Boolean).join(" ").toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+    return { exito: true, datos: { usuarios: list, total: list.length } };
+  }
+
+  if (path === "/administracion/clubes") {
+    const q = (params.get("q") || "").trim().toLowerCase();
+    const activo = params.get("activo");
+    const list = SNAPSHOT_CLUBES.datos.clubes.filter((c: any) => {
+      if (activo === "true" && !c.activo) return false;
+      if (activo === "false" && c.activo) return false;
+      if (q && !`${c.nombre} ${c.descripcion}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+    return { exito: true, datos: { clubes: list, total: list.length } };
+  }
+
+  if (path === "/administracion/logros" || path === "/administracion/logros/catalogo") {
+    const q = (params.get("q") || "").trim().toLowerCase();
+    const list = SNAPSHOT_LOGROS.datos.logros.filter((l: any) =>
+      !q || `${l.nombre} ${l.descripcion} ${l.codigo}`.toLowerCase().includes(q),
+    );
+    return path.endsWith("/catalogo")
+      ? { exito: true, datos: list }
+      : { exito: true, datos: { logros: list, total: list.length } };
+  }
+
+  return null;
+}
+
+function aplicarMutacionDev(method: string, pathname: string, body: Record<string, any> | null): { status: number; payload: Record<string, any> } | null {
+  const ahora = new Date().toISOString();
+  const payload = body ?? {};
+
+  // 1. POST /administracion/temas (Crear tema borrador)
+  if (method === "POST" && pathname === "/administracion/temas") {
+    const id = crypto.randomUUID();
+    const titulo = String(payload.titulo || "Tema sin título").trim();
+    const slugBase = normalizarSlugProxy(String(payload.slug || titulo));
+    const slugUnico = devStore.temas.some((t) => t.slug === slugBase)
+      ? `${slugBase}-${id.slice(0, 4)}`
+      : slugBase;
+    const sendaObj = buscarSendaProxy(payload.senda_id);
+    const gruposEdad = resolverGruposEdadProxy(payload.grupo_edad_ids);
+    const portadaId = typeof payload.portada_recurso_id === "string" && payload.portada_recurso_id ? payload.portada_recurso_id : null;
+    const portada = resolverPortadaProxy(portadaId, null);
+
+    if (payload.versiculo_clave && typeof payload.versiculo_clave.texto === "string" && payload.versiculo_clave.texto.trim()) {
+      versiculosPorTema.set(id, {
+        libro_id: Number(payload.versiculo_clave.libro_id) || 43,
+        capitulo: Number(payload.versiculo_clave.capitulo) || 1,
+        versiculo_inicio: Number(payload.versiculo_clave.versiculo_inicio ?? payload.versiculo_clave.versiculo) || 1,
+        versiculo_fin: payload.versiculo_clave.versiculo_fin ? Number(payload.versiculo_clave.versiculo_fin) : null,
+        texto: payload.versiculo_clave.texto.trim(),
+        parte_historia:
+          typeof payload.versiculo_clave.parte_historia === "string" && payload.versiculo_clave.parte_historia.trim()
+            ? payload.versiculo_clave.parte_historia.trim()
+            : null,
+      });
+    }
+
+    const nuevoTema: Record<string, any> = {
+      id,
+      titulo,
+      slug: slugUnico,
+      resumen: String(payload.resumen || "").trim(),
+      objetivo: String(payload.objetivo || "").trim(),
+      estado: "borrador",
+      version_contenido: Number(payload.version_contenido) || 1,
+      version_biblica_id: payload.version_biblica_id ?? null,
+      minutos_estimados: Number(payload.minutos_estimados) || 15,
+      xp_recompensa: Number(payload.xp_recompensa) || 50,
+      es_destacado: Boolean(payload.es_destacado),
+      publicado_en: null,
+      actualizado_en: ahora,
+      creado_en: ahora,
+      autor: "Administrador",
+      senda_id: sendaObj.id,
+      senda: sendaObj,
+      portada_recurso_id: portadaId,
+      portada_id: portadaId,
+      portada,
+      grupos_edad: gruposEdad,
+    };
+
+    devStore.pasosPorTema[id] = crearPasosBaseParaTema(nuevoTema, false);
+    devStore.temas.unshift(nuevoTema);
+    recalcularCompletitudTemaDev(nuevoTema);
+    guardarDevStoreEnDisco();
+    return { status: 201, payload: { exito: true, datos: nuevoTema } };
+  }
+
+  // 2. PATCH /administracion/temas/:id
+  if (method === "PATCH" && pathname.startsWith("/administracion/temas/")) {
+    const parts = pathname.split("/").filter(Boolean);
+    const temaId = parts[2];
+    const tema = buscarTemaDev(temaId);
+    if (!tema) {
+      return { status: 404, payload: { exito: false, error: "Tema no encontrado" } };
+    }
+
+    if (typeof payload.titulo === "string") tema.titulo = payload.titulo.trim();
+    if (typeof payload.slug === "string" && payload.slug.trim()) tema.slug = normalizarSlugProxy(payload.slug);
+    if (typeof payload.resumen === "string") tema.resumen = payload.resumen;
+    if (typeof payload.objetivo === "string") tema.objetivo = payload.objetivo;
+    if (payload.version_contenido !== undefined) tema.version_contenido = Number(payload.version_contenido) || 1;
+    if (payload.version_biblica_id !== undefined) tema.version_biblica_id = payload.version_biblica_id;
+    if (payload.minutos_estimados !== undefined) tema.minutos_estimados = Number(payload.minutos_estimados) || 15;
+    if (payload.xp_recompensa !== undefined) tema.xp_recompensa = Number(payload.xp_recompensa) || 50;
+    if (payload.es_destacado !== undefined) tema.es_destacado = Boolean(payload.es_destacado);
+
+    if (typeof payload.senda_id === "string" && payload.senda_id) {
+      const sendaObj = buscarSendaProxy(payload.senda_id);
+      tema.senda_id = sendaObj.id;
+      tema.senda = sendaObj;
+    }
+    if (Array.isArray(payload.grupo_edad_ids)) {
+      tema.grupos_edad = resolverGruposEdadProxy(payload.grupo_edad_ids);
+    }
+    if (payload.portada_recurso_id !== undefined) {
+      tema.portada_recurso_id = payload.portada_recurso_id;
+      tema.portada_id = payload.portada_recurso_id;
+      tema.portada = payload.portada_recurso_id ? resolverPortadaProxy(payload.portada_recurso_id, tema.portada) : null;
+    }
+    if (payload.versiculo_clave && typeof payload.versiculo_clave === "object") {
+      const vc = payload.versiculo_clave;
+      if (typeof vc.texto === "string" && vc.texto.trim()) {
+        versiculosPorTema.set(temaId, {
+          libro_id: Number(vc.libro_id) || 43,
+          capitulo: Number(vc.capitulo) || 1,
+          versiculo_inicio: Number(vc.versiculo_inicio ?? vc.versiculo) || 1,
+          versiculo_fin: vc.versiculo_fin ? Number(vc.versiculo_fin) : null,
+          texto: vc.texto.trim(),
+          parte_historia: typeof vc.parte_historia === "string" && vc.parte_historia.trim() ? vc.parte_historia.trim() : null,
+        });
+      }
+    }
+    tema.actualizado_en = ahora;
+    recalcularCompletitudTemaDev(tema);
+    guardarDevStoreEnDisco();
+    return { status: 200, payload: { exito: true, datos: tema } };
+  }
+
+  // 3. POST /administracion/temas/:id/pasos (Guardar contenido CRECER)
+  if (method === "POST" && pathname.startsWith("/administracion/temas/") && pathname.endsWith("/pasos")) {
+    const parts = pathname.split("/").filter(Boolean);
+    const temaId = parts[2];
+    const tema = buscarTemaDev(temaId);
+    if (!tema) {
+      return { status: 404, payload: { exito: false, error: "Tema no encontrado" } };
+    }
+    const pasos = construirPasosProxyParaTema(tema);
+    const tipoPasoId = String(payload.tipo_paso_id || "");
+    const grupoEdadId = String(payload.grupo_edad_id || "");
+    const cInput = payload.contenido && typeof payload.contenido === "object" ? payload.contenido : payload;
+
+    let paso = pasos.find((p) => p.tipo_paso_id === tipoPasoId || p.id === tipoPasoId);
+    if (!paso) {
+      const fase = FASES_CRECER_PROXY.find((f) => f.id === tipoPasoId) ?? FASES_CRECER_PROXY[0];
+      paso = {
+        id: `paso-${tema.id}-${fase.codigo}`,
+        tema_id: tema.id,
+        tipo_paso_id: fase.id,
+        orden: Number(payload.orden) || fase.orden,
+        tipo_paso: { id: fase.id, codigo: fase.codigo, nombre: fase.nombre, color_hex: fase.color_hex },
+        contenidos: [],
+        preguntas: [],
+      };
+      pasos.push(paso);
+    }
+
+    if (grupoEdadId) {
+      const idx = paso.contenidos.findIndex((c: any) => c.grupo_edad_id === grupoEdadId);
+      const registroContenido = {
+        id: idx >= 0 ? paso.contenidos[idx].id : `contenido-${temaId}-${paso.tipo_paso.codigo}-${grupoEdadId}`,
+        grupo_edad_id: grupoEdadId,
+        titulo: String(cInput.titulo ?? payload.titulo ?? "").trim(),
+        cuerpo: String(cInput.cuerpo ?? payload.cuerpo ?? ""),
+        instruccion_corta: cInput.instruccion_corta ?? payload.instruccion_corta ?? null,
+        recurso_id: cInput.recurso_id ?? payload.recurso_id ?? null,
+        recurso_audio_id: cInput.recurso_audio_id ?? payload.recurso_audio_id ?? null,
+      };
+      if (idx >= 0) {
+        paso.contenidos[idx] = registroContenido;
+      } else {
+        paso.contenidos.push(registroContenido);
+      }
+
+      if (Array.isArray(payload.preguntas)) {
+        paso.preguntas = [
+          ...(paso.preguntas || []).filter((q: any) => q.grupo_edad_id !== grupoEdadId),
+          ...payload.preguntas
+            .map((q: any, qIdx: number) => ({
+              id: q.id || `preg-${temaId}-${grupoEdadId}-${Date.now()}-${qIdx}`,
+              grupo_edad_id: grupoEdadId,
+              pregunta: String(q.pregunta || "").trim(),
+              orden: q.orden ?? qIdx + 1,
+            }))
+            .filter((q: any) => q.pregunta.length > 0),
+        ];
+      }
+    }
+
+    tema.actualizado_en = ahora;
+    recalcularCompletitudTemaDev(tema);
+    guardarDevStoreEnDisco();
+    return { status: 200, payload: { exito: true, datos: paso } };
+  }
+
+  // 4. POST /administracion/temas/:id/{publicar,borrador,archivar,enviar-revision,resolver-revision,duplicar}
+  if (method === "POST" && pathname.startsWith("/administracion/temas/")) {
+    const parts = pathname.split("/").filter(Boolean);
+    const temaId = parts[2];
+    const accion = parts[3];
+    const tema = buscarTemaDev(temaId);
+    if (!tema) {
+      return { status: 404, payload: { exito: false, error: "Tema no encontrado" } };
+    }
+
+    if (accion === "publicar") {
+      estadosPorTema.set(temaId, { estado: "publicado", publicado_en: ahora });
+      tema.estado = "publicado";
+      tema.publicado_en = ahora;
+      tema.actualizado_en = ahora;
+      recalcularCompletitudTemaDev(tema);
+      guardarDevStoreEnDisco();
+      return { status: 200, payload: { exito: true, datos: tema } };
+    }
+    if (accion === "borrador") {
+      estadosPorTema.set(temaId, { estado: "borrador", publicado_en: null });
+      tema.estado = "borrador";
+      tema.publicado_en = null;
+      tema.actualizado_en = ahora;
+      recalcularCompletitudTemaDev(tema);
+      guardarDevStoreEnDisco();
+      return { status: 200, payload: { exito: true, datos: tema } };
+    }
+    if (accion === "archivar") {
+      estadosPorTema.set(temaId, { estado: "archivado", publicado_en: tema.publicado_en ?? null });
+      tema.estado = "archivado";
+      tema.actualizado_en = ahora;
+      guardarDevStoreEnDisco();
+      return { status: 200, payload: { exito: true, datos: tema } };
+    }
+    if (accion === "enviar-revision") {
+      estadosPorTema.set(temaId, { estado: "revision", publicado_en: null });
+      tema.estado = "revision";
+      tema.actualizado_en = ahora;
+      const revId = crypto.randomUUID();
+      devStore.revisiones.unshift({
+        id: revId,
+        tema_id: tema.id,
+        estado: "pendiente",
+        notas: String(payload.notas || "Enviado para revisión editorial."),
+        creado_en: ahora,
+        actualizado_en: ahora,
+        tema: { id: tema.id, titulo: tema.titulo, slug: tema.slug, estado: tema.estado },
+        solicitante: { id: "aff4c70c-086c-43f3-8501-b55bb13807b2", nombre_visible: "Administrador" },
+      });
+      guardarDevStoreEnDisco();
+      return { status: 200, payload: { exito: true, datos: { ...tema, revision_id: revId } } };
+    }
+    if (accion === "resolver-revision") {
+      const nuevoEstado = String(payload.estado || (payload.decision === "aprobar" ? "aprobado" : "borrador"));
+      estadosPorTema.set(temaId, { estado: nuevoEstado, publicado_en: nuevoEstado === "publicado" ? ahora : null });
+      tema.estado = nuevoEstado;
+      tema.actualizado_en = ahora;
+      for (const r of devStore.revisiones) {
+        if (r.tema_id === tema.id && r.estado === "pendiente") {
+          r.estado = nuevoEstado === "aprobado" || nuevoEstado === "publicado" ? "aprobado" : "rechazado";
+          r.notas = String(payload.notas || r.notas);
+          r.actualizado_en = ahora;
+        }
+      }
+      guardarDevStoreEnDisco();
+      return { status: 200, payload: { exito: true, datos: tema } };
+    }
+    if (accion === "duplicar") {
+      const copyId = crypto.randomUUID();
+      const copia = JSON.parse(JSON.stringify(tema));
+      copia.id = copyId;
+      copia.titulo = `${tema.titulo} (copia)`;
+      copia.slug = `${normalizarSlugProxy(tema.slug || tema.titulo)}-copia-${copyId.slice(0, 4)}`;
+      copia.estado = "borrador";
+      copia.publicado_en = null;
+      copia.creado_en = ahora;
+      copia.actualizado_en = ahora;
+      const vc = versiculosPorTema.get(tema.id);
+      if (vc) versiculosPorTema.set(copyId, { ...vc });
+      devStore.pasosPorTema[copyId] = JSON.parse(JSON.stringify(construirPasosProxyParaTema(tema))).map((p: any) => ({
+        ...p,
+        id: `paso-${copyId}-${p.tipo_paso?.codigo || "paso"}`,
+        tema_id: copyId,
+      }));
+      const actsOrig = devStore.actividades.filter((a) => a.tema_id === tema.id);
+      for (const a of actsOrig) {
+        const aCopy = JSON.parse(JSON.stringify(a));
+        aCopy.id = crypto.randomUUID();
+        aCopy.tema_id = copyId;
+        aCopy.tema = { id: copyId, titulo: copia.titulo, slug: copia.slug, estado: copia.estado, senda: copia.senda };
+        devStore.actividades.push(aCopy);
+      }
+      devStore.temas.unshift(copia);
+      recalcularCompletitudTemaDev(copia);
+      guardarDevStoreEnDisco();
+      return { status: 201, payload: { exito: true, datos: copia } };
+    }
+    if (accion === "actividades" && parts[4] === "reordenar") {
+      const ordenIds = Array.isArray(payload.actividades) ? payload.actividades : Array.isArray(payload.orden) ? payload.orden : [];
+      ordenIds.forEach((item: any, idx: number) => {
+        const idAct = typeof item === "string" ? item : item?.id;
+        const found = devStore.actividades.find((a) => a.id === idAct && a.tema_id === temaId);
+        if (found) found.orden = Number(item?.orden ?? idx + 1);
+      });
+      guardarDevStoreEnDisco();
+      return { status: 200, payload: { exito: true, datos: { ok: true } } };
+    }
+  }
+
+  // 5. Actividades CRUD (/administracion/actividades*)
+  if (method === "POST" && pathname === "/administracion/actividades") {
+    const actId = crypto.randomUUID();
+    const tema = buscarTemaDev(String(payload.tema_id || ""));
+    const tipo =
+      CATALOGO_TIPOS_ACTIVIDAD_PROXY.find((t) => t.id === payload.tipo_actividad_id || t.codigo === payload.tipo_actividad_id) ??
+      CATALOGO_TIPOS_ACTIVIDAD_PROXY[8];
+    const grupo =
+      CATALOGO_GRUPOS_EDAD_PROXY.find((g) => g.id === payload.grupo_edad_id || g.codigo === payload.grupo_edad_id) ??
+      CATALOGO_GRUPOS_EDAD_PROXY[0];
+    const ordenExistente = devStore.actividades.filter((a) => a.tema_id === payload.tema_id).length;
+
+    const nuevaAct: Record<string, any> = {
+      id: actId,
+      tema_id: payload.tema_id,
+      paso_id: payload.paso_id ?? null,
+      grupo_edad_id: grupo.id,
+      tipo_actividad_id: tipo.id,
+      titulo: String(payload.titulo || "Nueva actividad").trim(),
+      consigna: String(payload.consigna || "").trim(),
+      retroalimentacion: payload.retroalimentacion ?? "¡Excelente trabajo!",
+      dificultad: payload.dificultad || "normal",
+      xp_recompensa: Number(payload.xp_recompensa) || 20,
+      limite_tiempo_seg: payload.limite_tiempo_seg ?? null,
+      orden: Number(payload.orden) || ordenExistente + 1,
+      obligatorio: payload.obligatorio ?? true,
+      estado: payload.estado || "activo",
+      creado_en: ahora,
+      actualizado_en: ahora,
+      configuracion: payload.configuracion ?? {},
+      opciones: Array.isArray(payload.opciones) ? payload.opciones : [],
+      tipo_actividad: { id: tipo.id, codigo: tipo.codigo, nombre: tipo.nombre },
+      grupo_edad: { id: grupo.id, codigo: grupo.codigo, nombre: grupo.nombre },
+      tema: tema
+        ? { id: tema.id, titulo: tema.titulo, slug: tema.slug, estado: tema.estado, senda: tema.senda }
+        : undefined,
+    };
+    enriquecerActividadesOpciones([nuevaAct]);
+    devStore.actividades.push(nuevaAct);
+    if (tema) {
+      tema.actualizado_en = ahora;
+      recalcularCompletitudTemaDev(tema);
+    }
+    guardarDevStoreEnDisco();
+    return { status: 201, payload: { exito: true, datos: nuevaAct } };
+  }
+
+  if (pathname.startsWith("/administracion/actividades/")) {
+    const parts = pathname.split("/").filter(Boolean);
+    const actId = parts[2];
+    const sub = parts[3];
+    const idx = devStore.actividades.findIndex((a) => a.id === actId);
+    if (idx < 0) {
+      return { status: 404, payload: { exito: false, error: "Actividad no encontrada" } };
+    }
+    const actual = devStore.actividades[idx];
+    if (method === "PATCH") {
+      Object.assign(actual, {
+        ...payload,
+        id: actual.id,
+        actualizado_en: ahora,
+      });
+      if (payload.tipo_actividad_id) {
+        const tipo = CATALOGO_TIPOS_ACTIVIDAD_PROXY.find((t) => t.id === payload.tipo_actividad_id);
+        if (tipo) actual.tipo_actividad = { id: tipo.id, codigo: tipo.codigo, nombre: tipo.nombre };
+      }
+      if (payload.grupo_edad_id) {
+        const grupo = CATALOGO_GRUPOS_EDAD_PROXY.find((g) => g.id === payload.grupo_edad_id);
+        if (grupo) actual.grupo_edad = { id: grupo.id, codigo: grupo.codigo, nombre: grupo.nombre };
+      }
+      enriquecerActividadesOpciones([actual]);
+      const tema = buscarTemaDev(actual.tema_id);
+      if (tema) recalcularCompletitudTemaDev(tema);
+      guardarDevStoreEnDisco();
+      return { status: 200, payload: { exito: true, datos: actual } };
+    }
+    if (method === "DELETE") {
+      const removed = devStore.actividades.splice(idx, 1)[0];
+      const tema = removed ? buscarTemaDev(removed.tema_id) : undefined;
+      if (tema) recalcularCompletitudTemaDev(tema);
+      guardarDevStoreEnDisco();
+      return { status: 200, payload: { exito: true, datos: { id: actId, eliminada: true } } };
+    }
+    if (method === "POST" && sub === "duplicar") {
+      const copia = JSON.parse(JSON.stringify(actual));
+      copia.id = crypto.randomUUID();
+      copia.titulo = `${actual.titulo} (copia)`;
+      copia.orden = devStore.actividades.filter((a) => a.tema_id === actual.tema_id).length + 1;
+      copia.creado_en = ahora;
+      copia.actualizado_en = ahora;
+      devStore.actividades.push(copia);
+      const tema = buscarTemaDev(actual.tema_id);
+      if (tema) recalcularCompletitudTemaDev(tema);
+      guardarDevStoreEnDisco();
+      return { status: 201, payload: { exito: true, datos: copia } };
+    }
+  }
+
+  // 6. Revisiones resolver
+  if (method === "POST" && pathname.startsWith("/administracion/revisiones/") && pathname.endsWith("/resolver")) {
+    const revId = pathname.split("/").filter(Boolean)[2];
+    const rev = devStore.revisiones.find((r) => r.id === revId);
+    if (rev) {
+      const decision = String(payload.decision || "aprobar");
+      rev.estado = decision === "aprobar" ? "aprobado" : "rechazado";
+      rev.notas = String(payload.notas || rev.notas || "");
+      rev.actualizado_en = ahora;
+      const tema = buscarTemaDev(rev.tema_id);
+      if (tema) {
+        tema.estado = decision === "aprobar" ? "aprobado" : "borrador";
+        tema.actualizado_en = ahora;
+        recalcularCompletitudTemaDev(tema);
+      }
+      guardarDevStoreEnDisco();
+      return { status: 200, payload: { exito: true, datos: rev } };
+    }
+  }
+
+  return null;
+}
+
 // Pre-cargar snapshots para resiliencia en desarrollo
-registrarSnapshot("/administracion/resumen/detallado", SNAPSHOT_RESUMEN_DETALLADO);
+registrarSnapshot("/administracion/resumen/detallado", construirResumenDetalladoDev());
 registrarSnapshot("/perfil", SNAPSHOT_PERFIL_ADMIN);
 registrarSnapshot("/administracion/temas-listado", SNAPSHOT_TEMAS_LISTADO);
-registrarSnapshot("/administracion/temas", { exito: true, datos: SNAPSHOT_TEMAS_LISTADO.datos.temas });
+registrarSnapshot("/administracion/temas", { exito: true, datos: devStore.temas });
 registrarSnapshot("/administracion/usuarios", SNAPSHOT_USUARIOS);
-registrarSnapshot("/administracion/actividades", SNAPSHOT_ACTIVIDADES);
+registrarSnapshot("/administracion/actividades", { exito: true, datos: { actividades: devStore.actividades, total: devStore.actividades.length } });
 registrarSnapshot("/administracion/revisiones", SNAPSHOT_REVISIONES);
 registrarSnapshot("/administracion/reportes", SNAPSHOT_REPORTES);
 registrarSnapshot("/administracion/ajustes", SNAPSHOT_AJUSTES);
@@ -1426,8 +2282,8 @@ const server = Bun.serve({
         if (typeof vc.texto === "string" && vc.texto.trim().length > 0) {
           versiculosPorTema.set(temaId, {
             libro_id: Number(vc.libro_id) || 43,
-            capitulo: Number(vc.capitulo) || 3,
-            versiculo_inicio: Number(vc.versiculo_inicio) || 16,
+            capitulo: Number(vc.capitulo) || 1,
+            versiculo_inicio: Number(vc.versiculo_inicio ?? vc.versiculo) || 1,
             versiculo_fin: vc.versiculo_fin ? Number(vc.versiculo_fin) : null,
             texto: vc.texto.trim(),
             parte_historia: typeof vc.parte_historia === "string" && vc.parte_historia.trim() ? vc.parte_historia.trim() : null,
@@ -1516,66 +2372,26 @@ const server = Bun.serve({
         }
       }
 
-      // Manejar publicación directa o envío a revisión de temas
+      // Manejar publicación directa o envío a revisión de temas delegando al estado local en caso de auth/error remoto
       if (
+        res.status >= 400 &&
         req.method === "POST" &&
         url.pathname.startsWith("/administracion/temas/") &&
         (url.pathname.endsWith("/publicar") || url.pathname.endsWith("/enviar-revision") || url.pathname.endsWith("/resolver-revision"))
       ) {
-        const parts = url.pathname.split("/");
-        const temaId = parts[3];
-        const accion = parts[4];
-        if (temaId) {
-          if (accion === "publicar") {
-            const ahora = new Date().toISOString();
-            estadosPorTema.set(temaId, { estado: "publicado", publicado_en: ahora });
-            if (res.status >= 400) {
-              console.log(`[PROXY] Publicación directa aplicada en proxy para tema ${temaId}`);
-              return new Response(
-                JSON.stringify({
-                  exito: true,
-                  datos: {
-                    id: temaId,
-                    estado: "publicado",
-                    publicado_en: ahora,
-                    actualizado_en: ahora,
-                  },
-                }),
-                {
-                  status: 200,
-                  headers: {
-                    "Content-Type": "application/json; charset=utf-8",
-                    "Access-Control-Allow-Origin": origin,
-                    "Access-Control-Allow-Credentials": "true",
-                    "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-                    "Access-Control-Allow-Headers": "*",
-                  },
-                }
-              );
-            }
-          } else if (accion === "enviar-revision") {
-            estadosPorTema.set(temaId, { estado: "revision", publicado_en: null });
-            if (res.status >= 400) {
-              return new Response(
-                JSON.stringify({
-                  exito: true,
-                  datos: { id: temaId, estado: "revision", actualizado_en: new Date().toISOString() },
-                }),
-                {
-                  status: 200,
-                  headers: {
-                    "Content-Type": "application/json; charset=utf-8",
-                    "Access-Control-Allow-Origin": origin,
-                    "Access-Control-Allow-Credentials": "true",
-                    "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-                    "Access-Control-Allow-Headers": "*",
-                  },
-                }
-              );
-            }
-          } else if (accion === "resolver-revision" && parsedRequestJson?.estado) {
-            estadosPorTema.set(temaId, { estado: parsedRequestJson.estado, publicado_en: null });
-          }
+        const resultado = aplicarMutacionDev(req.method, url.pathname, parsedRequestJson);
+        if (resultado) {
+          console.log(`[PROXY DEV RESILIENCE] Acción editorial aplicada en estado local para ${url.pathname}`);
+          return new Response(JSON.stringify(resultado.payload), {
+            status: resultado.status,
+            headers: {
+              "Content-Type": "application/json; charset=utf-8",
+              "Access-Control-Allow-Origin": origin,
+              "Access-Control-Allow-Credentials": "true",
+              "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+              "Access-Control-Allow-Headers": "*",
+            },
+          });
         }
       }
 
@@ -1707,38 +2523,20 @@ const server = Bun.serve({
         );
       }
 
-      // Resiliencia para desarrollo: Si el worker remoto responde 401/403 en endpoints de administración o perfil,
-      // o si es una petición con token admin a /perfil, servir snapshot de admin
+      // Resiliencia para desarrollo: Si el worker remoto responde 401/403/5xx en endpoints de administración o perfil,
+      // o si es una petición con token admin a /perfil, servir estado persistido/filtrado de desarrollo
       if (
         ((res.status === 401 || res.status === 403 || res.status >= 500) &&
           req.method === "GET" &&
           (url.pathname.startsWith("/administracion") || url.pathname === "/perfil")) ||
         (url.pathname === "/perfil" && authHeader && authHeader.startsWith("Bearer ") && res.status !== 200)
       ) {
-        let cached: Uint8Array | undefined;
+        const dynamicPayload = filtrarYResponderGetDev(url);
+        let cached: Uint8Array | undefined = dynamicPayload
+          ? new TextEncoder().encode(JSON.stringify(dynamicPayload))
+          : undefined;
 
-        if (url.pathname === "/perfil") {
-          cached = new TextEncoder().encode(JSON.stringify(SNAPSHOT_PERFIL_ADMIN));
-        } else if (url.pathname.startsWith("/administracion/temas/")) {
-          cached = new TextEncoder().encode(JSON.stringify(construirPayloadRutaTemaAdmin(url.pathname)));
-        } else if (url.pathname.startsWith("/administracion/actividades/")) {
-          const actId = url.pathname.split("/")[3] || "act-1";
-          let foundAct: any = null;
-          const cachedActs = cacheGet.get("/administracion/actividades");
-          if (cachedActs) {
-            try {
-              const parsed = JSON.parse(new TextDecoder().decode(cachedActs));
-              const lista = Array.isArray(parsed?.datos?.actividades) ? parsed.datos.actividades : [];
-              foundAct = lista.find((a: any) => a?.id === actId) ?? lista[0] ?? null;
-            } catch {
-              // continuar
-            }
-          }
-          const act = JSON.parse(JSON.stringify(foundAct ?? SNAPSHOT_ACTIVIDADES.datos.actividades[0]));
-          act.id = actId;
-          enriquecerActividadesOpciones([act]);
-          cached = new TextEncoder().encode(JSON.stringify({ exito: true, datos: act }));
-        } else {
+        if (!cached) {
           cached = cacheGet.get(url.pathname);
         }
 
@@ -1793,7 +2591,7 @@ const server = Bun.serve({
           }
         }
         if (cached) {
-          console.log(`[PROXY DEV RESILIENCE] Sirviendo snapshot en desarrollo para ${url.pathname} (remote respondió ${res.status})`);
+          console.log(`[PROXY DEV RESILIENCE] Sirviendo estado filtrado en desarrollo para ${url.pathname}${url.search} (remote respondió ${res.status})`);
           return new Response(cached, {
             status: 200,
             statusText: "OK",
@@ -1808,21 +2606,17 @@ const server = Bun.serve({
         }
       }
 
-      // Emular mutaciones exitosas en desarrollo si el backend remoto responde error de auth
+      // Emular mutaciones persistentes en desarrollo si el backend remoto responde error de auth/red
       if (
         (res.status === 401 || res.status === 403 || res.status >= 500) &&
         req.method !== "GET" &&
         url.pathname.startsWith("/administracion")
       ) {
-        console.log(`[PROXY DEV RESILIENCE] Emulando éxito para ${req.method} ${url.pathname}`);
-        if (url.pathname.startsWith("/administracion/temas/")) {
-          const payloadTema = construirPayloadRutaTemaAdmin(url.pathname);
-          if (parsedRequestJson && payloadTema.datos && typeof payloadTema.datos === "object") {
-            Object.assign(payloadTema.datos, parsedRequestJson);
-            enriquecerTemaConVersiculoYCompletitud(payloadTema.datos, payloadTema.datos.completitud);
-          }
-          return new Response(JSON.stringify(payloadTema), {
-            status: 200,
+        console.log(`[PROXY DEV RESILIENCE] Aplicando mutación persistente para ${req.method} ${url.pathname}`);
+        const resultado = aplicarMutacionDev(req.method, url.pathname, parsedRequestJson);
+        if (resultado) {
+          return new Response(JSON.stringify(resultado.payload), {
+            status: resultado.status,
             headers: {
               "Content-Type": "application/json; charset=utf-8",
               "Access-Control-Allow-Origin": origin,
@@ -1873,19 +2667,36 @@ const server = Bun.serve({
           return respuestaMedia;
         }
       }
-      const cached = cacheGet.get(url.pathname);
-      if (req.method === "GET" && cached) {
-        console.log(`[PROXY DEV RESILIENCE] Red caída, sirviendo cache para ${url.pathname}`);
-        return new Response(cached, {
-          status: 200,
-          headers: {
-            "Content-Type": "application/json; charset=utf-8",
-            "Access-Control-Allow-Origin": origin,
-            "Access-Control-Allow-Credentials": "true",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "*",
-          },
-        });
+      if (req.method === "GET") {
+        const dynamicPayload = filtrarYResponderGetDev(url);
+        const cached = dynamicPayload ? new TextEncoder().encode(JSON.stringify(dynamicPayload)) : cacheGet.get(url.pathname);
+        if (cached) {
+          console.log(`[PROXY DEV RESILIENCE] Red caída, sirviendo estado local para ${url.pathname}${url.search}`);
+          return new Response(cached, {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json; charset=utf-8",
+              "Access-Control-Allow-Origin": origin,
+              "Access-Control-Allow-Credentials": "true",
+              "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+              "Access-Control-Allow-Headers": "*",
+            },
+          });
+        }
+      } else if (url.pathname.startsWith("/administracion")) {
+        const resultado = aplicarMutacionDev(req.method, url.pathname, parsedRequestJson);
+        if (resultado) {
+          return new Response(JSON.stringify(resultado.payload), {
+            status: resultado.status,
+            headers: {
+              "Content-Type": "application/json; charset=utf-8",
+              "Access-Control-Allow-Origin": origin,
+              "Access-Control-Allow-Credentials": "true",
+              "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+              "Access-Control-Allow-Headers": "*",
+            },
+          });
+        }
       }
       return new Response(JSON.stringify({ exito: false, error: String(err) }), {
         status: 502,

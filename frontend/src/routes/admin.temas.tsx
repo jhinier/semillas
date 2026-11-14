@@ -8,8 +8,6 @@ import {
   Copy,
   Eye,
   FilePenLine,
-  Gamepad2,
-  Layers3,
   Loader2,
   MoreHorizontal,
   Plus,
@@ -21,10 +19,12 @@ import { toast } from "sonner";
 
 import {
   archivarTema,
+  despublicarTema,
   duplicarTema,
+  enviarTemaRevision,
+  obtenerResumenAdminDetallado,
   obtenerTemasAdminPaginados,
   publicarTema,
-  despublicarTema,
   type TemaListadoAdmin,
 } from "../features/admin/admin.api";
 import { obtenerGruposEdad } from "../features/catalog/catalog.api";
@@ -59,19 +59,26 @@ function AdminThemeLibrary() {
   const [page, setPage] = useState(1);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
 
-  const filtros = useMemo(() => ({
-    q: query.trim() || undefined,
-    estado,
-    senda_id: sendaId || undefined,
-    grupo_edad_id: grupoEdadId || undefined,
-    limit: PAGE_SIZE,
-    offset: (page - 1) * PAGE_SIZE,
-  }), [query, estado, sendaId, grupoEdadId, page]);
+  const filtros = useMemo(
+    () => ({
+      q: query.trim() || undefined,
+      estado,
+      senda_id: sendaId || undefined,
+      grupo_edad_id: grupoEdadId || undefined,
+      limit: PAGE_SIZE,
+      offset: (page - 1) * PAGE_SIZE,
+    }),
+    [query, estado, sendaId, grupoEdadId, page],
+  );
 
   const temasQuery = useQuery({
     queryKey: ["admin", "themes", "paginated", filtros],
     queryFn: () => obtenerTemasAdminPaginados(filtros),
     placeholderData: (previous) => previous,
+  });
+  const resumenQuery = useQuery({
+    queryKey: ["admin", "dashboard"],
+    queryFn: obtenerResumenAdminDetallado,
   });
   const sendasQuery = useQuery({ queryKey: ["sendas"], queryFn: obtenerSendas });
   const edadesQuery = useQuery({ queryKey: ["catalog", "age-groups"], queryFn: obtenerGruposEdad });
@@ -82,17 +89,32 @@ function AdminThemeLibrary() {
     void queryClient.invalidateQueries({ queryKey: ["temas"] });
     void queryClient.invalidateQueries({ queryKey: ["theme"] });
   };
+
   const mutation = useMutation({
-    mutationFn: async ({ id, action }: { id: string; action: "publicar" | "borrador" | "archivar" | "duplicar" }) => {
+    mutationFn: async ({
+      id,
+      action,
+    }: {
+      id: string;
+      action: "publicar" | "borrador" | "archivar" | "duplicar" | "revision";
+    }) => {
       if (action === "publicar") return publicarTema(id);
       if (action === "borrador") return despublicarTema(id);
       if (action === "archivar") return archivarTema(id);
+      if (action === "revision") return enviarTemaRevision(id);
       return duplicarTema(id);
     },
     onSuccess: (_data, variables) => {
       invalidate();
       setOpenMenu(null);
-      toast.success(variables.action === "duplicar" ? "Tema duplicado" : "Estado actualizado");
+      const mensajes = {
+        duplicar: "Copia creada en Borradores",
+        publicar: "Tema publicado",
+        borrador: "Tema movido a Borradores",
+        archivar: "Tema archivado",
+        revision: "Enviado a revisión",
+      };
+      toast.success(mensajes[variables.action]);
     },
     onError: (error) => toast.error(error instanceof Error ? error.message : "No se pudo completar la acción"),
   });
@@ -100,43 +122,139 @@ function AdminThemeLibrary() {
   const data = temasQuery.data;
   const portadasFirmadas = usePortadasFirmadasAdmin(data?.temas ?? []);
   const totalPages = Math.max(1, Math.ceil((data?.total ?? 0) / PAGE_SIZE));
-  const resetPage = <T,>(setter: (value: T) => void, value: T) => { setter(value); setPage(1); };
+  const resetPage = <T,>(setter: (value: T) => void, value: T) => {
+    setter(value);
+    setPage(1);
+  };
+
+  const conteosPorEstado = useMemo(() => {
+    const est = resumenQuery.data?.estados;
+    if (!est) return null;
+    const borrador = est.borrador ?? 0;
+    const revision = est.revision ?? 0;
+    const aprobado = est.aprobado ?? 0;
+    const publicado = est.publicado ?? 0;
+    const archivado = est.archivado ?? 0;
+    return {
+      todos: borrador + revision + aprobado + publicado + archivado,
+      borrador,
+      revision,
+      aprobado,
+      publicado,
+      archivado,
+    } as Record<string, number>;
+  }, [resumenQuery.data]);
+
+  const hayFiltrosActivos = Boolean(query.trim() || sendaId || grupoEdadId || estado !== "todos");
 
   return (
     <div className="admin-theme-library">
       <section className="admin-theme-library__hero">
         <div>
-          <span className="admin-eyebrow">Biblioteca editorial</span>
-          <h2>Temas y lecciones</h2>
-          <p>Gestiona metadatos, recorrido CRECER, actividades, medios, revisión y publicación desde cada tema.</p>
+          <span className="admin-eyebrow">Biblioteca de lecciones</span>
+          <h2>Temas y borradores</h2>
+          <p>Crea temas paso a paso, retoma tus borradores en cualquier momento y filtra por senda, edad o estado.</p>
         </div>
         <div className="admin-theme-library__hero-actions">
-          <button type="button" className="admin-secondary-button" onClick={() => navigate({ to: "/admin/revision" })}><Send size={17} /> Cola de revisión</button>
-          <button type="button" className="admin-primary-button" onClick={() => navigate({ to: "/admin/temas/new" })}><Plus size={17} /> Crear tema</button>
+          <button
+            type="button"
+            className="admin-primary-button"
+            onClick={() => navigate({ to: "/admin/temas/new" })}
+          >
+            <Plus size={17} /> Crear nuevo tema
+          </button>
         </div>
       </section>
 
       <section className="admin-theme-toolbar" aria-label="Filtros de temas">
-        <label className="admin-theme-control"><Search size={17} /><input value={query} onChange={(event) => resetPage(setQuery, event.target.value)} placeholder="Buscar por título, resumen o slug" /></label>
-        <label className="admin-theme-control"><span className="sr-only">Senda</span><select value={sendaId} onChange={(event) => resetPage(setSendaId, event.target.value)}><option value="">Todas las sendas</option>{sendasQuery.data?.map((senda) => <option key={senda.id} value={senda.id}>{senda.nombre}</option>)}</select></label>
-        <label className="admin-theme-control"><span className="sr-only">Franja</span><select value={grupoEdadId} onChange={(event) => resetPage(setGrupoEdadId, event.target.value)}><option value="">Todas las franjas</option>{edadesQuery.data?.map((grupo) => <option key={grupo.id} value={grupo.id}>{grupo.nombre}</option>)}</select></label>
-        <button type="button" className="admin-secondary-button" onClick={() => { setQuery(""); setSendaId(""); setGrupoEdadId(""); setEstado("todos"); setPage(1); }}>Limpiar</button>
+        <label className="admin-theme-control">
+          <Search size={17} />
+          <input
+            value={query}
+            onChange={(event) => resetPage(setQuery, event.target.value)}
+            placeholder="Buscar por título o resumen..."
+          />
+        </label>
+        <label className="admin-theme-control">
+          <span className="sr-only">Senda</span>
+          <select value={sendaId} onChange={(event) => resetPage(setSendaId, event.target.value)}>
+            <option value="">Todas las sendas</option>
+            {sendasQuery.data?.map((senda) => (
+              <option key={senda.id} value={senda.id}>{senda.nombre}</option>
+            ))}
+          </select>
+        </label>
+        <label className="admin-theme-control">
+          <span className="sr-only">Edad</span>
+          <select value={grupoEdadId} onChange={(event) => resetPage(setGrupoEdadId, event.target.value)}>
+            <option value="">Todas las edades</option>
+            {edadesQuery.data?.map((grupo) => (
+              <option key={grupo.id} value={grupo.id}>{grupo.nombre}</option>
+            ))}
+          </select>
+        </label>
+        {hayFiltrosActivos ? (
+          <button
+            type="button"
+            className="admin-secondary-button"
+            onClick={() => {
+              setQuery("");
+              setSendaId("");
+              setGrupoEdadId("");
+              setEstado("todos");
+              setPage(1);
+            }}
+          >
+            Limpiar filtros
+          </button>
+        ) : null}
       </section>
 
-      <nav className="admin-theme-tabs" aria-label="Estados editoriales">
-        {estados.map((item) => (
-          <button key={item.id} type="button" className={`admin-theme-tab ${estado === item.id ? "admin-theme-tab--active" : ""}`} onClick={() => { setEstado(item.id); setPage(1); }}>
-            {item.label}
-          </button>
-        ))}
+      <nav className="admin-theme-tabs" aria-label="Estados del tema">
+        {estados.map((item) => {
+          const count = conteosPorEstado?.[item.id];
+          return (
+            <button
+              key={item.id}
+              type="button"
+              className={`admin-theme-tab ${estado === item.id ? "admin-theme-tab--active" : ""}`}
+              onClick={() => {
+                setEstado(item.id);
+                setPage(1);
+              }}
+            >
+              <span>{item.label}</span>
+              {typeof count === "number" ? (
+                <span className="ml-1.5 rounded-full bg-black/10 px-1.5 py-0.5 text-[11px] font-bold">
+                  {count}
+                </span>
+              ) : null}
+            </button>
+          );
+        })}
       </nav>
 
       {temasQuery.isLoading ? (
-        <div className="admin-library-empty"><Loader2 className="mx-auto animate-spin text-violet-600" /><h3>Cargando temas</h3><p>Consultando la biblioteca editorial.</p></div>
+        <div className="admin-library-empty">
+          <Loader2 className="mx-auto animate-spin text-violet-600" />
+          <h3>Cargando temas</h3>
+          <p>Buscando lecciones y borradores guardados.</p>
+        </div>
       ) : temasQuery.isError ? (
-        <div className="admin-library-empty"><BookOpenCheck className="mx-auto text-slate-300" /><h3>No se pudo cargar la biblioteca</h3><p>{temasQuery.error instanceof Error ? temasQuery.error.message : "Vuelve a intentarlo."}</p><button type="button" className="admin-primary-button mt-4" onClick={() => temasQuery.refetch()}>Reintentar</button></div>
+        <div className="admin-library-empty">
+          <BookOpenCheck className="mx-auto text-slate-300" />
+          <h3>No se pudieron cargar los temas</h3>
+          <p>{temasQuery.error instanceof Error ? temasQuery.error.message : "Vuelve a intentarlo."}</p>
+          <button type="button" className="admin-primary-button mt-4" onClick={() => temasQuery.refetch()}>
+            Reintentar
+          </button>
+        </div>
       ) : !data?.temas?.length ? (
-        <div className="admin-library-empty"><BookOpenCheck className="mx-auto text-slate-300" size={34} /><h3>No hay temas con estos filtros</h3><p>Cambia los filtros o crea una nueva lección.</p></div>
+        <div className="admin-library-empty">
+          <BookOpenCheck className="mx-auto text-slate-300" size={34} />
+          <h3>No hay temas que coincidan con estos filtros</h3>
+          <p>Prueba quitando un filtro o crea un tema nuevo.</p>
+        </div>
       ) : (
         <section className="admin-theme-results" aria-label="Resultados de temas">
           {data.temas.map((tema) => (
@@ -147,16 +265,13 @@ function AdminThemeLibrary() {
               menuOpen={openMenu === tema.id}
               onToggleMenu={() => setOpenMenu(openMenu === tema.id ? null : tema.id)}
               onCloseMenu={() => setOpenMenu(null)}
-              onNavigate={(destination) => {
+              onOpenDetail={() => {
                 setOpenMenu(null);
-                const routes = {
-                  detalle: "/admin/temas/$themeId/detalle",
-                  editar: "/admin/temas/$themeId/edit",
-                  crecer: "/admin/temas/$themeId/crecer",
-                  actividades: "/admin/temas/$themeId/activities",
-                  preview: "/admin/temas/$themeId/preview",
-                } as const;
-                navigate({ to: routes[destination], params: { themeId: tema.id } });
+                navigate({ to: "/admin/temas/$themeId/detalle", params: { themeId: tema.id } });
+              }}
+              onPreview={() => {
+                setOpenMenu(null);
+                navigate({ to: "/admin/temas/$themeId/preview", params: { themeId: tema.id } });
               }}
               onAction={(action) => mutation.mutate({ id: tema.id, action })}
               actionPending={mutation.isPending && mutation.variables?.id === tema.id}
@@ -168,23 +283,48 @@ function AdminThemeLibrary() {
       <footer className="admin-theme-pagination">
         <span>Mostrando {data?.temas?.length ?? 0} de {data?.total ?? 0} temas</span>
         <div className="admin-theme-pagination__buttons">
-          <button type="button" aria-label="Página anterior" disabled={page <= 1 || temasQuery.isFetching} onClick={() => setPage((value) => Math.max(1, value - 1))}><ArrowLeft size={16} /></button>
+          <button
+            type="button"
+            aria-label="Página anterior"
+            disabled={page <= 1 || temasQuery.isFetching}
+            onClick={() => setPage((value) => Math.max(1, value - 1))}
+          >
+            <ArrowLeft size={16} />
+          </button>
           <span>Página {page} de {totalPages}</span>
-          <button type="button" aria-label="Página siguiente" disabled={page >= totalPages || temasQuery.isFetching} onClick={() => setPage((value) => Math.min(totalPages, value + 1))}><ArrowRight size={16} /></button>
+          <button
+            type="button"
+            aria-label="Página siguiente"
+            disabled={page >= totalPages || temasQuery.isFetching}
+            onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
+          >
+            <ArrowRight size={16} />
+          </button>
         </div>
       </footer>
     </div>
   );
 }
 
-function ThemeLibraryRow({ tema, portadaFirmada, menuOpen, onToggleMenu, onCloseMenu, onNavigate, onAction, actionPending }: {
+function ThemeLibraryRow({
+  tema,
+  portadaFirmada,
+  menuOpen,
+  onToggleMenu,
+  onCloseMenu,
+  onOpenDetail,
+  onPreview,
+  onAction,
+  actionPending,
+}: {
   tema: TemaListadoAdmin;
   portadaFirmada: string | null;
   menuOpen: boolean;
   onToggleMenu: () => void;
   onCloseMenu: () => void;
-  onNavigate: (destination: "detalle" | "editar" | "crecer" | "actividades" | "preview") => void;
-  onAction: (action: "publicar" | "borrador" | "archivar" | "duplicar") => void;
+  onOpenDetail: () => void;
+  onPreview: () => void;
+  onAction: (action: "publicar" | "borrador" | "archivar" | "duplicar" | "revision") => void;
   actionPending: boolean;
 }) {
   const cover = resolverPortadaTemaAdmin({
@@ -196,19 +336,19 @@ function ThemeLibraryRow({ tema, portadaFirmada, menuOpen, onToggleMenu, onClose
     ? tema.grupos_edad
         .map((grupo) => (typeof grupo === "string" ? grupo : grupo?.nombre ?? ""))
         .filter(Boolean)
-        .join(", ") || "Sin franja"
-    : "Sin franja";
+        .join(", ") || "Sin edad asignada"
+    : "Sin edad asignada";
   const stateLabel = estados.find((item) => item.id === tema.estado)?.label ?? tema.estado;
   const completitud = tema.completitud ?? {
-    porcentaje: tema.estado === "publicado" ? 100 : 70,
-    listo_para_revision: true,
+    porcentaje: tema.estado === "publicado" ? 100 : 25,
+    listo_para_revision: tema.estado === "publicado",
     bloqueos: [],
     estadisticas: {
       pasos_totales: 6,
       pasos_creados: 6,
-      contenidos_creados: 18,
-      contenidos_esperados: 18,
-      actividades: 6,
+      contenidos_creados: 0,
+      contenidos_esperados: 6,
+      actividades: 0,
     },
   };
   const sendaNombre = typeof tema.senda === "string" ? tema.senda : tema.senda?.nombre ?? "Sin senda";
@@ -216,21 +356,56 @@ function ThemeLibraryRow({ tema, portadaFirmada, menuOpen, onToggleMenu, onClose
   return (
     <article className={`admin-theme-row ${menuOpen ? "admin-theme-row--menu-open" : ""}`}>
       <img className="admin-theme-row__cover" src={cover} alt="" loading="lazy" />
-      <button type="button" className="admin-theme-row__identity text-left" onClick={() => onNavigate("detalle")}>
-        <strong>{tema.titulo}</strong><p>{tema.resumen || tema.objetivo}</p>
+      <button type="button" className="admin-theme-row__identity text-left" onClick={onOpenDetail}>
+        <strong>{tema.titulo}</strong>
+        <p>{tema.resumen || tema.objetivo || "Sin resumen registrado"}</p>
       </button>
-      <div className="admin-theme-row__meta"><i>🌱</i><div><strong className="block text-slate-700">{sendaNombre}</strong><small>{ages}</small></div></div>
-      <div className="admin-theme-row__progress"><header><span>Completitud</span><strong>{completitud.porcentaje}%</strong></header><div><span style={{ width: `${completitud.porcentaje}%` }} /></div><small className="text-[10px] text-slate-400">{completitud.estadisticas?.actividades ?? 0} actividades · {completitud.estadisticas?.contenidos_creados ?? 0}/{completitud.estadisticas?.contenidos_esperados ?? 0} contenidos</small></div>
-      <div className="admin-theme-row__author"><span className="admin-state-pill bg-slate-100 text-slate-600">{stateLabel}</span><small className="mt-2 block text-[10px] text-slate-400">{formatDate(tema.actualizado_en)}</small></div>
+      <div className="admin-theme-row__meta">
+        <i>🌱</i>
+        <div>
+          <strong className="block text-slate-700">{sendaNombre}</strong>
+          <small>{ages}</small>
+        </div>
+      </div>
+      <div className="admin-theme-row__progress">
+        <header>
+          <span>Avance</span>
+          <strong>{completitud.porcentaje}%</strong>
+        </header>
+        <div>
+          <span style={{ width: `${completitud.porcentaje}%` }} />
+        </div>
+        <small className="text-[10px] text-slate-400">
+          {completitud.estadisticas?.actividades ?? 0} actividades · {completitud.estadisticas?.contenidos_creados ?? 0}/
+          {completitud.estadisticas?.contenidos_esperados ?? 0} momentos
+        </small>
+      </div>
+      <div className="admin-theme-row__author">
+        <span className="admin-state-pill bg-slate-100 text-slate-600">{stateLabel}</span>
+        <small className="mt-2 block text-[10px] text-slate-400">{formatDate(tema.actualizado_en)}</small>
+      </div>
       <div className="admin-theme-row__actions relative">
-        <button type="button" className="admin-icon-button" title="Abrir vista previa" onClick={() => onNavigate("preview")}><Eye size={17} /></button>
-        <button type="button" className="admin-icon-button" title="Editar información" onClick={() => onNavigate("editar")}><FilePenLine size={17} /></button>
-        <button type="button" className="admin-icon-button" title="Editor CRECER" onClick={() => onNavigate("crecer")}><Layers3 size={17} /></button>
-        <button type="button" className="admin-icon-button" title="Actividades" onClick={() => onNavigate("actividades")}><Gamepad2 size={17} /></button>
+        <button
+          type="button"
+          className="admin-secondary-button !px-3 !py-1.5 text-xs font-bold"
+          onClick={onOpenDetail}
+        >
+          {tema.estado === "borrador" ? "Continuar" : "Abrir pasos"}
+        </button>
+        <button
+          type="button"
+          className="admin-icon-button"
+          title="Vista previa como estudiante"
+          aria-label="Vista previa como estudiante"
+          onClick={onPreview}
+        >
+          <Eye size={17} />
+        </button>
         <button
           type="button"
           className={`admin-icon-button ${menuOpen ? "bg-slate-100 text-slate-900 border-slate-300" : ""}`}
-          title="Más acciones"
+          title="Opciones de estado"
+          aria-label="Opciones de estado"
           aria-expanded={menuOpen}
           aria-haspopup="menu"
           onClick={onToggleMenu}
@@ -241,21 +416,9 @@ function ThemeLibraryRow({ tema, portadaFirmada, menuOpen, onToggleMenu, onClose
           <>
             <div className="fixed inset-0 z-40" onClick={onCloseMenu} aria-hidden="true" />
             <div role="menu" className="admin-theme-dropdown">
-              <button type="button" role="menuitem" onClick={() => onNavigate("preview")} className="admin-theme-dropdown__item">
-                <Eye size={15} />
-                <span>Vista previa</span>
-              </button>
-              <button type="button" role="menuitem" onClick={() => onNavigate("crecer")} className="admin-theme-dropdown__item">
-                <Layers3 size={15} />
-                <span>Editor CRECER</span>
-              </button>
-              <button type="button" role="menuitem" onClick={() => onNavigate("actividades")} className="admin-theme-dropdown__item">
-                <Gamepad2 size={15} />
-                <span>Actividades</span>
-              </button>
               <button type="button" role="menuitem" onClick={() => onAction("duplicar")} className="admin-theme-dropdown__item">
                 <Copy size={15} />
-                <span>Duplicar completo</span>
+                <span>Hacer una copia</span>
               </button>
               {tema.estado === "publicado" ? (
                 <button type="button" role="menuitem" onClick={() => onAction("borrador")} className="admin-theme-dropdown__item is-warning">
@@ -263,21 +426,37 @@ function ThemeLibraryRow({ tema, portadaFirmada, menuOpen, onToggleMenu, onClose
                   <span>Pasar a borrador</span>
                 </button>
               ) : (
-                <button
-                  type="button"
-                  role="menuitem"
-                  disabled={!completitud.listo_para_revision || tema.estado !== "aprobado"}
-                  onClick={() => onAction("publicar")}
-                  className="admin-theme-dropdown__item is-success"
-                >
-                  <Send size={15} />
-                  <span>{tema.estado === "aprobado" ? "Publicar" : "Requiere aprobación"}</span>
-                </button>
+                <>
+                  {tema.estado === "borrador" ? (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      disabled={!completitud.listo_para_revision}
+                      onClick={() => onAction("revision")}
+                      className="admin-theme-dropdown__item"
+                    >
+                      <Send size={15} />
+                      <span>{completitud.listo_para_revision ? "Enviar a revisión" : "Completa todos los pasos"}</span>
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    role="menuitem"
+                    disabled={!completitud.listo_para_revision}
+                    onClick={() => onAction("publicar")}
+                    className="admin-theme-dropdown__item is-success"
+                  >
+                    <Send size={15} />
+                    <span>{completitud.listo_para_revision ? "Publicar ahora" : "Aún incompleto"}</span>
+                  </button>
+                </>
               )}
-              <button type="button" role="menuitem" onClick={() => onAction("archivar")} className="admin-theme-dropdown__item is-danger">
-                <Archive size={15} />
-                <span>Archivar</span>
-              </button>
+              {tema.estado !== "archivado" ? (
+                <button type="button" role="menuitem" onClick={() => onAction("archivar")} className="admin-theme-dropdown__item is-danger">
+                  <Archive size={15} />
+                  <span>Archivar tema</span>
+                </button>
+              ) : null}
             </div>
           </>
         ) : null}
@@ -288,5 +467,8 @@ function ThemeLibraryRow({ tema, portadaFirmada, menuOpen, onToggleMenu, onClose
 
 function formatDate(value?: string | null) {
   if (!value) return "Sin fecha";
-  const parsed = new Date(value); return Number.isNaN(parsed.getTime()) ? "Sin fecha" : new Intl.DateTimeFormat("es-EC", { dateStyle: "medium", timeStyle: "short" }).format(parsed);
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime())
+    ? "Sin fecha"
+    : new Intl.DateTimeFormat("es-EC", { dateStyle: "medium", timeStyle: "short" }).format(parsed);
 }

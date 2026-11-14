@@ -406,7 +406,7 @@ export function useThemeCrecerPage({ themeId }: UseThemeCrecerPageProps) {
 
   const saveCurrentDraft = useCallback(() => {
     if (!currentDraftKey || !selectedAgeGroupId || !activeStep) {
-      toast.error("Selecciona una franja y un paso");
+      toast.error("Selecciona una edad y un momento");
       return;
     }
     if (!isCurrentDirty) {
@@ -415,6 +415,21 @@ export function useThemeCrecerPage({ themeId }: UseThemeCrecerPageProps) {
     }
 
     saveMutation.mutate({
+      key: currentDraftKey,
+      ageGroupId: selectedAgeGroupId,
+      stepCode: activeStepCode,
+      stepName: activeStep.nombre,
+      draft: currentDraft,
+    });
+  }, [activeStep, activeStepCode, currentDraft, currentDraftKey, isCurrentDirty, saveMutation, selectedAgeGroupId]);
+
+  const saveCurrentDraftAsync = useCallback(async () => {
+    if (!currentDraftKey || !selectedAgeGroupId || !activeStep) {
+      throw new Error("Selecciona una edad y un momento");
+    }
+    if (!isCurrentDirty) return;
+
+    await saveMutation.mutateAsync({
       key: currentDraftKey,
       ageGroupId: selectedAgeGroupId,
       stepCode: activeStepCode,
@@ -480,7 +495,7 @@ export function useThemeCrecerPage({ themeId }: UseThemeCrecerPageProps) {
     questions: currentDraft.questions, setQuestions,
     selectedResource, selectedAudio, media,
     themeQuery, portadaQuery, stepsQuery, ageGroupsQuery, crecerStepsQuery, mediaQuery, saveMutation, uploadMutation,
-    handleSubirImagenMarkdown, saveCurrentDraft,
+    handleSubirImagenMarkdown, saveCurrentDraft, saveCurrentDraftAsync,
     isCurrentDirty, isCurrentSaved, hasUnsavedChanges, unsavedDraftCount,
     hasDraftForStep, hasDraftForAgeGroup, hasDraftForCell,
     handleBack: () => navigate({ to: "/admin/temas/$themeId/detalle", params: { themeId } }),

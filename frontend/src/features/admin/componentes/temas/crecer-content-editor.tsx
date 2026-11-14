@@ -53,11 +53,11 @@ export function CrecerContentEditor(props: CrecerContentEditorProps) {
   return (
     <section className="admin-editor-section">
       <div className="admin-editor-section__header">
-        <div><h2>{props.activeStep?.nombre ?? "Paso CRECER"}</h2><p>Versión para {props.selectedAgeGroup?.nombre ?? "la franja seleccionada"}. El contenido, medios y preguntas se guardan juntos.</p></div>
+        <div><h2>{props.activeStep?.nombre ?? "Momento CRECER"}</h2><p>Versión para {props.selectedAgeGroup?.nombre ?? "la edad seleccionada"}. El texto, imágenes y audio se guardan juntos.</p></div>
         {props.isDirty ? (
           <span className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700" role="status">
             <span className="h-2 w-2 rounded-full bg-amber-500" aria-hidden="true" />
-            Borrador sin guardar
+            Cambios sin guardar
           </span>
         ) : props.isSuccess ? (
           <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700" role="status">
@@ -101,12 +101,12 @@ export function CrecerContentEditor(props: CrecerContentEditorProps) {
       <div className="admin-save-bar mt-5">
         <p aria-live="polite">
           {props.isUploading
-            ? "Subiendo recurso multimedia..."
+            ? "Subiendo imagen o audio..."
             : props.isDirty
               ? props.unsavedDraftCount === 1
-                ? "Este paso tiene un borrador local sin guardar."
-                : `Este paso y otros ${props.unsavedDraftCount - 1} borradores siguen sin guardar.`
-              : "No hay cambios pendientes en este paso."}
+                ? "Tienes cambios locales sin guardar en este momento."
+                : `Tienes este momento y otros ${props.unsavedDraftCount - 1} con cambios sin guardar.`
+              : "Este momento ya está guardado."}
         </p>
         <button
           type="button"
@@ -115,7 +115,7 @@ export function CrecerContentEditor(props: CrecerContentEditorProps) {
           className="admin-primary-button"
         >
           {props.isPending ? <Loader className="animate-spin" size={17} /> : <Save size={17} />}
-          {props.isPending ? "Guardando..." : props.isDirty ? "Guardar paso" : "Sin cambios"}
+          {props.isPending ? "Guardando..." : props.isDirty ? "Guardar momento" : "Guardado"}
         </button>
       </div>
 

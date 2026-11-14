@@ -3101,3 +3101,198 @@
   background: #172033 !important;
   color: #f8fafc !important;
 }
+
+/* ==========================================================================
+   Flujo Secuencial del Tema (5 pasos)
+   ========================================================================== */
+.admin-theme-flow-stepper {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+  .admin-theme-flow-stepper {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-theme-flow-stepper {
+    grid-template-columns: 1fr;
+  }
+}
+
+.admin-theme-flow-stepper__item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.78rem 0.9rem;
+  border-radius: 16px;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  color: #334155;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.14s ease, border-color 0.14s ease, background-color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.admin-theme-flow-stepper__item:hover:not(:disabled) {
+  border-color: #8b5cf6;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(109, 53, 232, 0.08);
+}
+
+.admin-theme-flow-stepper__item.is-active {
+  border-color: #6d35e8;
+  background: #f5f3ff;
+  color: #1e1b4b;
+  box-shadow: 0 6px 18px rgba(109, 53, 232, 0.14);
+}
+
+.admin-theme-flow-stepper__item.is-done {
+  border-color: #86efac;
+  background: #f0fdf4;
+  color: #14532d;
+}
+
+.admin-theme-flow-stepper__item.is-locked,
+.admin-theme-flow-stepper__item:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+  background: #f8fafc;
+}
+
+.admin-theme-flow-stepper__badge {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 800;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.admin-theme-flow-stepper__item.is-active .admin-theme-flow-stepper__badge {
+  background: #6d35e8;
+  color: #ffffff;
+}
+
+.admin-theme-flow-stepper__item.is-done .admin-theme-flow-stepper__badge {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.admin-theme-flow-stepper__copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 0.12rem;
+}
+
+.admin-theme-flow-stepper__copy strong {
+  font-size: 0.83rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-theme-flow-stepper__copy small {
+  font-size: 0.72rem;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dark .admin-theme-flow-stepper__item,
+[data-theme="admin-dark"] .admin-theme-flow-stepper__item {
+  border-color: #1e293b !important;
+  background: #101520 !important;
+  color: #cbd5e1 !important;
+}
+
+.dark .admin-theme-flow-stepper__item.is-active,
+[data-theme="admin-dark"] .admin-theme-flow-stepper__item.is-active {
+  border-color: #7c3aed !important;
+  background: #1e1638 !important;
+  color: #f8fafc !important;
+}
+
+.dark .admin-theme-flow-stepper__item.is-done,
+[data-theme="admin-dark"] .admin-theme-flow-stepper__item.is-done {
+  border-color: #166534 !important;
+  background: #062816 !important;
+  color: #dcfce7 !important;
+}
+
+.dark .admin-theme-flow-stepper__badge,
+[data-theme="admin-dark"] .admin-theme-flow-stepper__badge {
+  background: #172033;
+  color: #cbd5e1;
+}
+
+.dark .admin-theme-flow-stepper__item.is-active .admin-theme-flow-stepper__badge,
+[data-theme="admin-dark"] .admin-theme-flow-stepper__item.is-active .admin-theme-flow-stepper__badge {
+  background: #7c3aed;
+  color: #ffffff;
+}
+
+.dark .admin-theme-flow-stepper__item.is-done .admin-theme-flow-stepper__badge,
+[data-theme="admin-dark"] .admin-theme-flow-stepper__item.is-done .admin-theme-flow-stepper__badge {
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.dark .admin-theme-flow-stepper__copy small,
+[data-theme="admin-dark"] .admin-theme-flow-stepper__copy small {
+  color: #94a3b8 !important;
+}
+
+.admin-step-footer-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.dark .admin-step-footer-bar,
+[data-theme="admin-dark"] .admin-step-footer-bar {
+  border-top-color: #1e293b;
+}
+
+.admin-status-pill--pending {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.28rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.admin-status-pill--done {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.28rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: #dcfce7;
+  color: #166534;
+}

@@ -14,6 +14,7 @@ import {
   Trash2,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { toast } from "sonner";
 
 import type { ActivityDraft, OptionDraft } from "../../types";
 import type { RecursoMultimedia } from "../../../media/media.api";
@@ -55,10 +56,10 @@ interface ActivityEditorWorkspaceProps {
 }
 
 const TABS: Array<{ id: ActivityEditorTab; label: string; helper: string; icon: typeof FileText }> = [
-  { id: "contexto", label: "Contexto", helper: "Tema, franja y tipo", icon: Settings2 },
-  { id: "contenido", label: "Contenido", helper: "Título e instrucciones", icon: FileText },
-  { id: "mecanica", label: "Mecánica", helper: "Reglas y configuración", icon: Gamepad2 },
-  { id: "preview", label: "Vista previa", helper: "Experiencia del estudiante", icon: Eye },
+  { id: "contexto", label: "1. Ubicación y tipo", helper: "Edad, momento y juego", icon: Settings2 },
+  { id: "contenido", label: "2. Instrucciones", helper: "Título y mensaje", icon: FileText },
+  { id: "mecanica", label: "3. Diseño interactivo", helper: "Preguntas o recursos", icon: Gamepad2 },
+  { id: "preview", label: "4. Vista previa", helper: "Probar y guardar", icon: Eye },
 ];
 
 export function ActivityEditorWorkspace(props: ActivityEditorWorkspaceProps) {
@@ -106,17 +107,22 @@ export function ActivityEditorWorkspace(props: ActivityEditorWorkspaceProps) {
         <button type="button" className="admin-secondary-button" onClick={props.onClose}>Cerrar editor</button>
       </header>
 
-      <nav className="activity-editor-tabs" aria-label="Etapas del editor">
+      <nav className="activity-editor-tabs" aria-label="Pasos de la actividad">
         {TABS.map((item, index) => {
           const Icon = item.icon;
           const active = item.id === props.tab;
           const complete = validation.byTab[item.id].length === 0 && index < 3;
+          const previousIncomplete =
+            index > currentIndex &&
+            TABS.slice(0, index).some((prev) => validation.byTab[prev.id].length > 0);
           return (
             <button
               key={item.id}
               type="button"
-              className={`activity-editor-tab ${active ? "activity-editor-tab--active" : ""}`}
+              disabled={previousIncomplete}
+              className={`activity-editor-tab ${active ? "activity-editor-tab--active" : ""} ${previousIncomplete ? "opacity-55 cursor-not-allowed" : ""}`}
               aria-current={active ? "step" : undefined}
+              title={previousIncomplete ? "Completa los pasos anteriores primero" : undefined}
               onClick={() => props.onTabChange(item.id)}
             >
               <span className="activity-editor-tab__icon">{complete ? <CircleCheck size={18} /> : <Icon size={18} />}</span>
@@ -130,25 +136,25 @@ export function ActivityEditorWorkspace(props: ActivityEditorWorkspaceProps) {
         <main className="activity-editor-workspace__main">
           {props.tab === "contexto" ? (
             <section className="activity-editor-panel">
-              <PanelHeading eyebrow="Paso 1" title="Ubica la actividad" description="Selecciona dónde aparecerá y qué tipo de experiencia vas a construir." />
+              <PanelHeading eyebrow="Paso 1 de 4" title="Ubica la actividad" description="Selecciona para qué edad es, en qué momento CRECER aparece y qué tipo de actividad será." />
               <div className="activity-editor-context-grid">
-                <Field label="Franja" help="La actividad solo se mostrará a esta audiencia.">
+                <Field label="Edad destinataria" help="La actividad solo se mostrará a este grupo.">
                   <select value={props.draft.grupo_edad_id} onChange={(event) => update("grupo_edad_id", event.target.value)}>
-                    <option value="">Selecciona una franja</option>
+                    <option value="">Selecciona una edad</option>
                     {props.groups.map((group) => <option key={group.id} value={group.id}>{group.nombre}</option>)}
                   </select>
                 </Field>
-                <Field label="Momento CRECER" help="Define en qué parte del recorrido se presenta.">
+                <Field label="Momento CRECER" help="Elige en qué parte de la lección se presenta.">
                   <select value={props.draft.paso_id} onChange={(event) => update("paso_id", event.target.value)}>
-                    <option value="">Selecciona un paso</option>
-                    {props.steps.map((step) => <option key={step.id} value={step.id}>{step.tipo_paso?.nombre ?? "Paso"}</option>)}
+                    <option value="">Selecciona un momento</option>
+                    {props.steps.map((step) => <option key={step.id} value={step.id}>{step.tipo_paso?.nombre ?? "Momento"}</option>)}
                   </select>
                 </Field>
               </div>
 
               <div className="activity-type-picker">
                 <div className="activity-type-picker__heading">
-                  <div><strong>Tipo de actividad</strong><p>Elige una mecánica; después verás únicamente los campos necesarios.</p></div>
+                  <div><strong>Tipo de actividad</strong><p>Elige un formato interactivo; el siguiente paso se adaptará automáticamente.</p></div>
                   {selectedType ? <span>{selectedType.nombre}</span> : null}
                 </div>
                 <div className="activity-type-picker__grid">
@@ -172,27 +178,27 @@ export function ActivityEditorWorkspace(props: ActivityEditorWorkspaceProps) {
 
           {props.tab === "contenido" ? (
             <section className="activity-editor-panel">
-              <PanelHeading eyebrow="Paso 2" title="Escribe el contenido" description="Usa mensajes breves, directos y adecuados para la franja seleccionada." />
+              <PanelHeading eyebrow="Paso 2 de 4" title="Escribe el título e instrucciones" description="Usa textos claros, breves y fáciles de entender para los estudiantes." />
               <div className="activity-editor-form-grid">
-                <Field label="Título" wide help={`${props.draft.titulo.length}/120 caracteres`}>
+                <Field label="Título de la actividad" wide help={`${props.draft.titulo.length}/120 caracteres`}>
                   <input maxLength={120} value={props.draft.titulo} onChange={(event) => update("titulo", event.target.value)} placeholder="Ejemplo: Descubre los frutos del Espíritu" />
                 </Field>
-                <Field label="Consigna" wide help="Indica una sola acción clara para comenzar.">
-                  <textarea rows={4} value={props.draft.consigna} onChange={(event) => update("consigna", event.target.value)} placeholder="Ejemplo: Encuentra las palabras escondidas en la cuadrícula." />
+                <Field label="Instrucciones para el estudiante" wide help="Explica con sencillez qué debe hacer para completar la actividad.">
+                  <textarea rows={4} value={props.draft.consigna} onChange={(event) => update("consigna", event.target.value)} placeholder="Ejemplo: Elige la respuesta correcta sobre la historia de hoy." />
                 </Field>
-                <Field label="Retroalimentación" wide help="Se muestra al completar correctamente la actividad.">
-                  <textarea rows={3} value={props.draft.retroalimentacion} onChange={(event) => update("retroalimentacion", event.target.value)} placeholder="Ejemplo: ¡Excelente! Reconociste cada fruto." />
+                <Field label="Mensaje final de felicitación" wide help="Se muestra al completar correctamente la actividad.">
+                  <textarea rows={3} value={props.draft.retroalimentacion} onChange={(event) => update("retroalimentacion", event.target.value)} placeholder="Ejemplo: ¡Excelente! Recordaste muy bien la enseñanza." />
                 </Field>
-                <Field label="XP" help="Recompensa otorgada una sola vez.">
+                <Field label="Puntos (XP)" help="Recompensa por completar la actividad.">
                   <input type="number" min={0} max={500} value={props.draft.xp_recompensa} onChange={(event) => update("xp_recompensa", Number(event.target.value))} />
                 </Field>
-                <Field label="Tiempo límite" help="Déjalo vacío cuando no deba existir presión de tiempo.">
+                <Field label="Tiempo límite (opcional)" help="Déjalo vacío si no hay reloj.">
                   <div className="activity-editor-input-suffix"><input type="number" min={1} value={props.draft.limite_tiempo_seg ?? ""} onChange={(event) => update("limite_tiempo_seg", event.target.value ? Number(event.target.value) : null)} /><span>seg</span></div>
                 </Field>
-                <Field label="Dificultad">
+                <Field label="Nivel">
                   <select value={props.draft.dificultad} onChange={(event) => update("dificultad", event.target.value as ActivityDraft["dificultad"])}><option value="facil">Fácil</option><option value="normal">Normal</option><option value="dificil">Difícil</option></select>
                 </Field>
-                <Field label="Participación">
+                <Field label="Requisito">
                   <select value={props.draft.obligatorio ? "obligatoria" : "opcional"} onChange={(event) => update("obligatorio", event.target.value === "obligatoria")}><option value="obligatoria">Obligatoria</option><option value="opcional">Opcional</option></select>
                 </Field>
               </div>
@@ -201,9 +207,9 @@ export function ActivityEditorWorkspace(props: ActivityEditorWorkspaceProps) {
 
           {props.tab === "mecanica" ? (
             <section className="activity-editor-panel">
-              <PanelHeading eyebrow="Paso 3" title={selectedType ? `Configura ${selectedType.nombre}` : "Configura la mecánica"} description={selectedType?.descripcion || definition.descripcion} />
+              <PanelHeading eyebrow="Paso 3 de 4" title={selectedType ? `Configura: ${selectedType.nombre}` : "Configura el contenido interactivo"} description={selectedType?.descripcion || definition.descripcion} />
               {!selectedType ? (
-                <div className="activity-editor-empty"><CircleAlert size={22} /><strong>Primero elige un tipo de actividad</strong><p>Regresa a Contexto para seleccionar la mecánica.</p></div>
+                <div className="activity-editor-empty"><CircleAlert size={22} /><strong>Primero elige un tipo de actividad</strong><p>Regresa al Paso 1 para elegir el formato.</p></div>
               ) : (
                 <div className="activity-editor-mechanics">
                   <ActivityTypeConfigBuilder codigo={props.selectedTypeCode} configuracion={props.draft.configuracion} onChange={updateConfig} onUpload={props.onUpload} resources={props.resources} uploading={props.uploading} />
@@ -217,7 +223,7 @@ export function ActivityEditorWorkspace(props: ActivityEditorWorkspaceProps) {
 
           {props.tab === "preview" ? (
             <section className="activity-editor-panel activity-editor-panel--preview">
-              <PanelHeading eyebrow="Paso 4" title="Comprueba la experiencia" description="Esta simulación reutiliza el mismo renderizador que verá el estudiante en /app." />
+              <PanelHeading eyebrow="Paso 4 de 4" title="Prueba la actividad antes de guardar" description="Así es como interactuará el estudiante dentro de su lección." />
               <ActivityDraftPreview draft={props.draft} typeCode={props.selectedTypeCode} typeName={selectedType?.nombre} ageGroupName={selectedGroup?.nombre} stepName={selectedStep?.tipo_paso?.nombre} />
             </section>
           ) : null}
@@ -225,12 +231,31 @@ export function ActivityEditorWorkspace(props: ActivityEditorWorkspaceProps) {
           <footer className="activity-editor-footer">
             <div>
               {props.dirty ? <span className="activity-editor-dirty"><CircleAlert size={15} /> Cambios sin guardar</span> : <span className="activity-editor-clean"><CircleCheck size={15} /> Sin cambios pendientes</span>}
-              <small>{validation.all.length ? `${validation.all.length} requisito${validation.all.length === 1 ? "" : "s"} pendiente${validation.all.length === 1 ? "" : "s"}` : "Actividad lista para guardar"}</small>
+              <small>{validation.all.length ? `${validation.all.length} campo${validation.all.length === 1 ? "" : "s"} pendiente${validation.all.length === 1 ? "" : "s"}` : "Actividad lista para guardar"}</small>
             </div>
             <div className="activity-editor-footer__actions">
-              <button type="button" className="admin-secondary-button" disabled={!canGoBack} onClick={() => canGoBack && props.onTabChange(TABS[currentIndex - 1]!.id)}><ArrowLeft size={16} /> Anterior</button>
-              {canGoForward ? <button type="button" className="admin-secondary-button" onClick={() => props.onTabChange(TABS[currentIndex + 1]!.id)}>Siguiente <ArrowRight size={16} /></button> : null}
-              <button type="button" className="admin-primary-button" disabled={props.saving || props.uploading || validation.all.length > 0} onClick={props.onSave}>{props.saving ? <Loader2 className="animate-spin" size={17} /> : <Save size={17} />}{props.saving ? "Guardando..." : props.isEditMode ? "Guardar cambios" : "Crear actividad"}</button>
+              <button type="button" className="admin-secondary-button" disabled={!canGoBack} onClick={() => canGoBack && props.onTabChange(TABS[currentIndex - 1]!.id)}><ArrowLeft size={16} /> Paso anterior</button>
+              {canGoForward ? (
+                <button
+                  type="button"
+                  className={currentIndex < 3 ? "admin-primary-button" : "admin-secondary-button"}
+                  onClick={() => {
+                    const issues = validation.byTab[props.tab];
+                    if (issues.length > 0) {
+                      toast.error(issues[0]);
+                      return;
+                    }
+                    props.onTabChange(TABS[currentIndex + 1]!.id);
+                  }}
+                >
+                  Siguiente paso <ArrowRight size={16} />
+                </button>
+              ) : (
+                <button type="button" className="admin-primary-button" disabled={props.saving || props.uploading || validation.all.length > 0} onClick={props.onSave}>
+                  {props.saving ? <Loader2 className="animate-spin" size={17} /> : <Save size={17} />}
+                  {props.saving ? "Guardando..." : props.isEditMode ? "Guardar cambios" : "Guardar actividad"}
+                </button>
+              )}
             </div>
           </footer>
         </main>
@@ -241,17 +266,28 @@ export function ActivityEditorWorkspace(props: ActivityEditorWorkspaceProps) {
             <h3>{props.draft.titulo.trim() || "Actividad sin título"}</h3>
             <p>{selectedType?.nombre || "Tipo sin seleccionar"}</p>
             <dl>
-              <div><dt>Franja</dt><dd>{selectedGroup?.nombre || "Pendiente"}</dd></div>
+              <div><dt>Edad</dt><dd>{selectedGroup?.nombre || "Pendiente"}</dd></div>
               <div><dt>Momento</dt><dd>{selectedStep?.tipo_paso?.nombre || "Pendiente"}</dd></div>
-              <div><dt>XP</dt><dd>{props.draft.xp_recompensa}</dd></div>
-              <div><dt>Dificultad</dt><dd>{capitalize(props.draft.dificultad)}</dd></div>
+              <div><dt>Puntos</dt><dd>{props.draft.xp_recompensa} XP</dd></div>
+              <div><dt>Nivel</dt><dd>{capitalize(props.draft.dificultad)}</dd></div>
             </dl>
           </section>
-          <section className="activity-editor-checklist">
-            <h3>Preparación</h3>
+          <section className="activity-editor-checklist" aria-label="Progreso de llenado">
+            <h3>Progreso de esta actividad</h3>
             {TABS.slice(0, 3).map((item) => {
               const issues = validation.byTab[item.id];
-              return <button key={item.id} type="button" onClick={() => props.onTabChange(item.id)} className={issues.length ? "" : "activity-editor-checklist__complete"}><span>{issues.length ? <CircleAlert size={16} /> : <CircleCheck size={16} />}</span><div><strong>{item.label}</strong><small>{issues.length ? issues[0] : "Completo"}</small></div></button>;
+              return (
+                <div
+                  key={item.id}
+                  className={`flex items-start gap-2.5 rounded-xl border p-3 text-xs ${issues.length ? "border-slate-200 bg-white text-slate-600" : "border-emerald-200 bg-emerald-50/70 text-emerald-900"}`}
+                >
+                  <span className="mt-0.5 shrink-0">{issues.length ? <CircleAlert size={15} className="text-amber-500" /> : <CircleCheck size={15} className="text-emerald-600" />}</span>
+                  <div>
+                    <strong className="block font-bold">{item.label}</strong>
+                    <small className="block opacity-80">{issues.length ? issues[0] : "Listo"}</small>
+                  </div>
+                </div>
+              );
             })}
           </section>
         </aside>
@@ -290,19 +326,19 @@ function OptionsBuilder({ options, onChange }: { options: OptionDraft[]; onChang
 
 function getEditorValidation(draft: ActivityDraft, code: string, configText: string) {
   const byTab: Record<ActivityEditorTab, string[]> = { contexto: [], contenido: [], mecanica: [], preview: [] };
-  if (!draft.grupo_edad_id) byTab.contexto.push("Selecciona una franja");
+  if (!draft.grupo_edad_id) byTab.contexto.push("Selecciona una edad");
   if (!draft.paso_id) byTab.contexto.push("Selecciona un momento CRECER");
   if (!draft.tipo_actividad_id) byTab.contexto.push("Selecciona un tipo de actividad");
-  if (draft.titulo.trim().length < 3) byTab.contenido.push("El título debe tener al menos 3 caracteres");
-  if (draft.consigna.trim().length < 3) byTab.contenido.push("La consigna debe tener al menos 3 caracteres");
-  if (draft.xp_recompensa < 0 || draft.xp_recompensa > 500) byTab.contenido.push("La recompensa debe estar entre 0 y 500 XP");
+  if (draft.titulo.trim().length < 3) byTab.contenido.push("El título debe tener al menos 3 letras");
+  if (draft.consigna.trim().length < 3) byTab.contenido.push("Escribe instrucciones claras (mínimo 3 letras)");
+  if (draft.xp_recompensa < 0 || draft.xp_recompensa > 500) byTab.contenido.push("Los puntos deben estar entre 0 y 500 XP");
   try {
     const parsed = JSON.parse(configText) as unknown;
     if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-      byTab.mecanica.push("La configuración avanzada debe ser un objeto JSON");
+      byTab.mecanica.push("Revisa la configuración de esta actividad");
     }
   } catch {
-    byTab.mecanica.push("La configuración avanzada contiene JSON inválido");
+    byTab.mecanica.push("Revisa la configuración de esta actividad");
   }
   if (code) {
     const issue = validarActividadParaGuardar({ codigo: code, configuracion: draft.configuracion, opciones: draft.opciones });

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowDown,
   ArrowLeft,
+  ArrowRight,
   ArrowUp,
   Copy,
   Eye,
@@ -20,11 +21,13 @@ import {
   eliminarActividad,
   obtenerActividadAdmin,
   obtenerActividadesAdmin,
+  obtenerEstudioTemaAdmin,
   obtenerPasosAdmin,
   obtenerTemaAdmin,
   reordenarActividades,
   type ActividadAdmin,
 } from "../features/admin/admin.api";
+import { ThemeWorkflowStepper } from "../features/admin/componentes/temas/theme-workflow-stepper";
 import {
   actualizarGrupoEdadDelBorrador,
   defaultOptions,
@@ -77,6 +80,10 @@ function AdminThemeActivitiesPage() {
   const themeQuery = useQuery({
     queryKey: ["admin", "theme", themeId],
     queryFn: () => obtenerTemaAdmin(themeId),
+  });
+  const estudioQuery = useQuery({
+    queryKey: ["admin", "theme", themeId, "studio"],
+    queryFn: () => obtenerEstudioTemaAdmin(themeId),
   });
   const groupsQuery = useQuery({
     queryKey: ["catalog", "age-groups"],
@@ -221,6 +228,8 @@ function AdminThemeActivitiesPage() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["admin", "theme", themeId, "activities"] }),
       queryClient.invalidateQueries({ queryKey: ["admin", "theme", themeId, "studio"] }),
+      queryClient.invalidateQueries({ queryKey: ["admin", "themes"] }),
+      queryClient.invalidateQueries({ queryKey: ["admin", "dashboard"] }),
       queryClient.invalidateQueries({ queryKey: ["admin", "activities"] }),
       ...(search.actividadId
         ? [queryClient.invalidateQueries({ queryKey: ["admin", "activity", search.actividadId] })]
@@ -378,15 +387,26 @@ function AdminThemeActivitiesPage() {
     <div className="admin-activity-studio-page">
       <header className="admin-activity-studio-hero">
         <div className="admin-activity-studio-hero__title">
-          <button type="button" className="admin-icon-button" onClick={goBack} aria-label="Volver al tema"><ArrowLeft size={18} /></button>
+          <button type="button" className="admin-icon-button" onClick={goBack} aria-label="Volver al resumen del tema"><ArrowLeft size={18} /></button>
           <div>
-            <span className="admin-eyebrow">Editor interactivo</span>
+            <span className="admin-eyebrow">Paso 4 de 5 · Actividades interactivas</span>
             <h1>Actividades del tema</h1>
-            <p><strong>{themeQuery.data.titulo}</strong> · organiza las experiencias por franja y momento CRECER.</p>
+            <p><strong>{themeQuery.data.titulo}</strong> · agrega juegos o cuestionarios por edad y momento CRECER.</p>
           </div>
         </div>
-        {!isFormOpen ? <button type="button" className="admin-primary-button" onClick={openNew}><Plus size={17} /> Nueva actividad</button> : null}
+        {!isFormOpen && activities.length > 0 ? (
+          <button type="button" className="admin-primary-button" onClick={openNew}>
+            <Plus size={17} /> Agregar actividad
+          </button>
+        ) : null}
       </header>
+
+      <ThemeWorkflowStepper
+        currentStep={4}
+        themeId={themeId}
+        themeEstado={themeQuery.data.estado}
+        completitud={estudioQuery.data?.completitud}
+      />
 
       {isFormOpen ? (
         editQuery.isLoading ? (
@@ -464,6 +484,34 @@ function AdminThemeActivitiesPage() {
               </div>
             )}
           </section>
+
+          <div className="admin-step-footer-bar">
+            <button
+              type="button"
+              className="admin-secondary-button"
+              onClick={() => navigate({ to: "/admin/temas/$themeId/crecer", params: { themeId } })}
+            >
+              <ArrowLeft size={16} /> Paso anterior: Enseñanza CRECER
+            </button>
+            <button
+              type="button"
+              className="admin-primary-button"
+              onClick={() => {
+                const totalActs = estudioQuery.data?.completitud?.estadisticas?.actividades ?? activities.length;
+                if (totalActs === 0 && activities.length === 0) {
+                  toast.error("Crea al menos una actividad antes de continuar al Paso 5.");
+                  return;
+                }
+                navigate({
+                  to: "/admin/temas/$themeId/edit",
+                  params: { themeId },
+                  search: { tab: "publicacion" },
+                });
+              }}
+            >
+              Continuar al Paso 5: Revisar y publicar <ArrowRight size={17} />
+            </button>
+          </div>
         </>
       )}
     </div>
