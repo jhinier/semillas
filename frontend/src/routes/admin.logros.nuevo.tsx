@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
 import { crearLogroAdmin } from "@/features/admin/admin-logros.api";
@@ -42,14 +42,6 @@ function AdminLogrosNuevoPage() {
             </p>
           </div>
         </div>
-
-        <button
-          type="button"
-          onClick={() => navigate({ to: "/admin/logros" })}
-          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50"
-        >
-          <Sparkles className="size-4" aria-hidden="true" /> Volver al listado
-        </button>
       </header>
 
       <FormularioLogro

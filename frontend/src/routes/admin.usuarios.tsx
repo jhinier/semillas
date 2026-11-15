@@ -1,7 +1,7 @@
 ﻿import { useState } from "react";
 import { createFileRoute, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, MailPlus, UserRoundPlus, Users } from "lucide-react";
+import { MailPlus, UserRoundPlus, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { accionMasivaUsuariosAdmin } from "@/features/admin/admin.api";
@@ -52,16 +52,13 @@ function AdminUsuariosPage() {
           <p>Gestiona cuentas, perfiles, clubes, vínculos familiares y permisos.</p>
         </div>
         <div className="admin-users-page-header__actions">
-          <button type="button" className="secondary" onClick={() => navigate({ to: "/admin/usuarios/new" })}>
-            <ArrowRight size={17} /> Crear usuario
-          </button>
-          <button type="button" className="secondary" onClick={() => setDialogMode("child")}> 
+          <button type="button" className="secondary" onClick={() => setDialogMode("child")}>
             <UserRoundPlus size={17} />
-            Registrar menor
+            Registrar niño / menor
           </button>
           <button type="button" className="primary" onClick={() => setDialogMode("invite")}>
             <MailPlus size={17} />
-            Invitar usuario
+            Invitar adulto / tutor
           </button>
         </div>
       </header>

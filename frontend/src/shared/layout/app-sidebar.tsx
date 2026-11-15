@@ -89,18 +89,18 @@ export function AppSidebar({
       />
 
       <aside
-        className={`app-sidebar fixed left-0 top-0 z-[110] flex h-[100dvh] w-[280px] max-w-[82vw] flex-col overflow-hidden overscroll-contain border-r px-4 pb-[calc(env(safe-area-inset-bottom)+0.85rem)] pt-[calc(env(safe-area-inset-top)+0.85rem)] shadow-2xl transition-[transform,opacity] duration-300 ease-out will-change-transform motion-reduce:transition-none md:sticky md:top-0 md:flex md:w-[88px] md:shrink-0 md:translate-x-0 md:px-3 md:py-3.5 md:opacity-100 md:shadow-none lg:w-[236px] lg:px-3.5 xl:w-[248px] xl:px-4 ${
+        className={`app-sidebar fixed left-0 top-0 z-[110] flex h-[100dvh] w-[280px] max-w-[82vw] flex-col overflow-hidden overscroll-contain border-r px-4 pb-[calc(env(safe-area-inset-bottom)+0.85rem)] pt-[calc(env(safe-area-inset-top)+0.85rem)] shadow-2xl transition-[transform,opacity] duration-300 ease-out will-change-transform motion-reduce:transition-none md:sticky md:top-0 md:flex md:w-[88px] md:shrink-0 md:translate-x-0 md:px-3 md:opacity-100 md:shadow-none lg:w-[236px] lg:px-3.5 xl:w-[248px] xl:px-4 ${
           variant === "admin"
-            ? "border-[#e7ebf2] bg-white"
-            : "border-slate-200 bg-white"
+            ? "md:py-2.5 border-[#e7ebf2] bg-white"
+            : "md:py-3.5 border-slate-200 bg-white"
         } ${
           isOpen ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0 md:translate-x-0 md:opacity-100"
         }`}
       >
-        <div className="flex min-h-11 shrink-0 items-center justify-center gap-2.5 py-0.5 lg:justify-between">
+        <div className={`flex shrink-0 items-center justify-center gap-2.5 lg:justify-between ${variant === "admin" ? "min-h-9 py-0" : "min-h-11 py-0.5"}`}>
           <div className="flex items-center gap-2.5">
-            <img src={logoImg} alt="Semillas" className="h-9 w-9 shrink-0 object-contain" />
-            <span className={`hidden text-[1.45rem] font-black leading-none lg:inline ${variant === "admin" ? "text-violet-600" : "text-primario"}`}>Semillas</span>
+            <img src={logoImg} alt="Semillas" className={`${variant === "admin" ? "h-8 w-8" : "h-9 w-9"} shrink-0 object-contain`} />
+            <span className={`hidden font-black leading-none lg:inline ${variant === "admin" ? "text-[1.35rem] text-violet-600" : "text-[1.45rem] text-primario"}`}>Semillas</span>
           </div>
           <Boton
             type="button"
@@ -114,16 +114,16 @@ export function AppSidebar({
           </Boton>
         </div>
 
-        <p className="mb-3 ml-[46px] hidden max-w-[155px] shrink-0 text-[11px] font-semibold leading-snug text-neutro lg:block">
+        <p className={`ml-[42px] hidden max-w-[165px] shrink-0 text-[10.5px] font-semibold leading-snug text-neutro lg:block ${variant === "admin" ? "mb-1.5" : "mb-3 ml-[46px] max-w-[155px] text-[11px]"}`}>
           Crecer en la Palabra, vivir su verdad
         </p>
 
         <nav
-          className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className={`flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain ${variant === "admin" ? "gap-1 py-0.5 [scrollbar-width:thin]" : "gap-2 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"}`}
           aria-label={variant === "admin" ? "Navegación administrativa" : "Navegación principal"}
         >
           {secciones.map((seccion) => (
-            <div key={seccion.titulo ?? "principal"} className="flex flex-col gap-1">
+            <div key={seccion.titulo ?? "principal"} className={`flex flex-col ${variant === "admin" ? "gap-0.5" : "gap-1"}`}>
               {seccion.titulo ? (
                 <p className={`mb-0.5 hidden px-1 text-[10px] font-black uppercase tracking-[0.18em] lg:block ${variant === "admin" ? "text-slate-400" : "text-neutro/50"}`}>
                   {seccion.titulo}
@@ -140,7 +140,7 @@ export function AppSidebar({
                     title={item.label}
                     aria-label={item.label}
                     aria-current={activo ? "page" : undefined}
-                    className={`group relative flex ${variant === "admin" ? "min-h-10 py-1.5" : "min-h-11 py-2"} items-center justify-center gap-3 rounded-2xl px-3 text-[13px] font-semibold transition-all lg:justify-start lg:px-3.5 ${
+                    className={`group relative flex ${variant === "admin" ? "min-h-[34px] py-1 rounded-xl text-[12.5px]" : "min-h-11 py-2 rounded-2xl text-[13px]"} items-center justify-center gap-3 px-3 font-semibold transition-all lg:justify-start lg:px-3.5 ${
                       activo
                         ? variant === "admin"
                           ? "bg-violet-50 text-violet-700 shadow-[inset_0_0_0_1px_rgba(95,54,232,.12)]"
@@ -151,7 +151,7 @@ export function AppSidebar({
                     }`}
                   >
                     <span className="relative flex items-center justify-center">
-                      <i className={`fa-solid ${item.icon} w-5 text-center text-[15px]`} aria-hidden="true" />
+                      <i className={`fa-solid ${item.icon} w-5 text-center ${variant === "admin" ? "text-[14px]" : "text-[15px]"}`} aria-hidden="true" />
                       {item.badge && (
                         <span
                           className="absolute -right-1.5 -top-1 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white animate-pulse"
@@ -168,7 +168,7 @@ export function AppSidebar({
           ))}
         </nav>
 
-        <div className="mt-auto flex shrink-0 flex-col gap-2.5 border-t border-slate-100 pt-2.5">
+        <div className={`mt-auto flex shrink-0 flex-col border-t border-slate-100 ${variant === "admin" ? "gap-2 pt-2" : "gap-2.5 pt-2.5"}`}>
           {isOffline ? (
             <Card sombra="sm" className={`hidden p-3 lg:block ${variant === "admin" ? "bg-slate-50 border-slate-200" : ""}`}>
               <div className={`mb-1.5 flex items-center gap-2 text-xs font-bold ${variant === "admin" ? "text-slate-700" : "text-neutro-oscuro-max"}`}>
@@ -186,7 +186,7 @@ export function AppSidebar({
             onClick={onLogout}
             title="Cerrar sesión"
             aria-label="Cerrar sesión"
-            className="h-10 w-full justify-center gap-2 rounded-2xl bg-violet-600 px-3 text-xs font-bold text-white shadow-none hover:bg-violet-700"
+            className={`${variant === "admin" ? "h-9 rounded-xl" : "h-10 rounded-2xl"} w-full justify-center gap-2 bg-violet-600 px-3 text-xs font-bold text-white shadow-none hover:bg-violet-700`}
           >
             <i className="fa-solid fa-right-from-bracket" aria-hidden="true" />
             <span className="hidden lg:inline">Cerrar sesión</span>

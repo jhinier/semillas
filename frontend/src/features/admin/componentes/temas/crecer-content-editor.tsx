@@ -45,26 +45,49 @@ interface CrecerContentEditorProps {
   unsavedDraftCount: number;
 }
 
+const CONSEJO_MOMENTO: Record<string, string> = {
+  conectar: "Empieza con una pregunta sencilla o un juego corto para captar la atención de los niños.",
+  relatar: "Cuenta la historia bíblica de hoy con frases cortas y claras, fáciles de imaginar.",
+  ensenar: "Explica cuál es la enseñanza principal de Dios en este pasaje y por qué es importante.",
+  comprobar: "Haz preguntas o pequeños retos para asegurarte de que comprendieron la historia.",
+  experimentar: "Propón una acción práctica para vivir lo aprendido en casa o con la familia esta semana.",
+  recompensar: "Felicita a los niños por completar el tema y cierra con una oración breve.",
+};
+
 export function CrecerContentEditor(props: CrecerContentEditorProps) {
   const [galleryMode, setGalleryMode] = useState<"visual" | "audio" | null>(null);
   const selectedVisual = props.resources.find((resource) => resource.id === props.resourceId) ?? null;
   const selectedAudio = props.resources.find((resource) => resource.id === props.audioResourceId) ?? null;
+  const tituloValido = props.title.trim().length >= 2;
+  const cuerpoValido = props.body.trim().length >= 5;
+  const tieneContenidoValido = tituloValido && cuerpoValido;
+  const tipMomento = props.activeStep?.codigo ? CONSEJO_MOMENTO[props.activeStep.codigo] : undefined;
 
   return (
     <section className="admin-editor-section">
       <div className="admin-editor-section__header">
-        <div><h2>{props.activeStep?.nombre ?? "Momento CRECER"}</h2><p>Versión para {props.selectedAgeGroup?.nombre ?? "la edad seleccionada"}. El texto, imágenes y audio se guardan juntos.</p></div>
+        <div><h2>3. Escribe el contenido: {props.activeStep?.nombre ?? "Momento CRECER"}</h2><p>Editando para el grupo <strong>{props.selectedAgeGroup?.nombre ?? "seleccionado"}</strong>. El texto, la imagen y el audio se guardan juntos.</p></div>
         {props.isDirty ? (
           <span className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700" role="status">
             <span className="h-2 w-2 rounded-full bg-amber-500" aria-hidden="true" />
             Cambios sin guardar
           </span>
-        ) : props.isSuccess ? (
+        ) : tieneContenidoValido && props.isSuccess ? (
           <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700" role="status">
-            <Check size={15} /> Guardado
+            <Check size={15} /> ¡Listo y guardado!
+          </span>
+        ) : !tieneContenidoValido ? (
+          <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2 text-xs font-bold text-slate-600" role="status">
+            Falta completar
           </span>
         ) : null}
       </div>
+
+      {tipMomento ? (
+        <div className="mb-4 rounded-xl border border-violet-200 bg-violet-50/70 px-3.5 py-2.5 text-xs leading-relaxed text-violet-900">
+          <strong>💡 Qué escribir aquí:</strong> {tipMomento}
+        </div>
+      ) : null}
 
       <div className="admin-form-grid">
         <Field label="Título del bloque" help="Idea central del paso."><input value={props.title} maxLength={120} onChange={(event) => props.onTitleChange(event.target.value)} placeholder={props.activeStep?.nombre ?? "Título"} /></Field>
@@ -102,20 +125,28 @@ export function CrecerContentEditor(props: CrecerContentEditorProps) {
         <p aria-live="polite">
           {props.isUploading
             ? "Subiendo imagen o audio..."
-            : props.isDirty
-              ? props.unsavedDraftCount === 1
-                ? "Tienes cambios locales sin guardar en este momento."
-                : `Tienes este momento y otros ${props.unsavedDraftCount - 1} con cambios sin guardar.`
-              : "Este momento ya está guardado."}
+            : !tieneContenidoValido
+              ? `Falta completar: ${!tituloValido ? "escribe un Título (mín. 2 letras)" : ""}${!tituloValido && !cuerpoValido ? " y " : ""}${!cuerpoValido ? "escribe el Contenido principal (mín. 5 letras)" : ""} arriba.`
+              : props.isDirty
+                ? props.unsavedDraftCount <= 1
+                  ? "Ya puedes guardar este momento haciendo clic en el botón morado."
+                  : `Tienes este momento y otros ${props.unsavedDraftCount - 1} con cambios sin guardar.`
+                : "✓ ¡Listo! Este momento ya está guardado."}
         </p>
         <button
           type="button"
           onClick={props.onSave}
-          disabled={props.isPending || props.isUploading || !props.isDirty}
+          disabled={props.isPending || props.isUploading || (!props.isDirty && tieneContenidoValido) || !props.isDirty}
           className="admin-primary-button"
         >
           {props.isPending ? <Loader className="animate-spin" size={17} /> : <Save size={17} />}
-          {props.isPending ? "Guardando..." : props.isDirty ? "Guardar momento" : "Guardado"}
+          {props.isPending
+            ? "Guardando..."
+            : props.isDirty
+              ? "Guardar este momento"
+              : tieneContenidoValido
+                ? "Momento guardado"
+                : "Completa título y texto"}
         </button>
       </div>
 

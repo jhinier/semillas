@@ -279,12 +279,13 @@ export function AdminClubesPanel() {
     offset: (paginaActual - 1) * porPagina,
   });
   const listado = clubes.listado.data;
+  const totalClubes = listado?.meta?.total ?? (listado as { total?: number } | undefined)?.total ?? listado?.clubes?.length ?? 0;
   const mutando = clubes.crear.isPending || clubes.archivar.isPending || clubes.reactivar.isPending;
 
   useEffect(() => {
-    const totalPaginas = Math.max(1, Math.ceil((listado?.meta.total ?? 0) / porPagina));
+    const totalPaginas = Math.max(1, Math.ceil(totalClubes / porPagina));
     if (paginaActual > totalPaginas) establecerPaginaActual(totalPaginas);
-  }, [listado?.meta.total, paginaActual, porPagina]);
+  }, [totalClubes, paginaActual, porPagina]);
 
   const confirmar = async () => {
     if (!confirmacion) return;
@@ -315,7 +316,7 @@ export function AdminClubesPanel() {
       <AdminClubesPanelVista
         estado={{
           clubes: listado?.clubes ?? [],
-          total: listado?.meta.total ?? 0,
+          total: totalClubes,
           isLoading: clubes.listado.isLoading,
           online: clubes.estaConectado,
           error: clubes.listado.error ? textoError(clubes.listado.error) : undefined,

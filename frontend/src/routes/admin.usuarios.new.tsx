@@ -41,7 +41,7 @@ function AdminUsersNewPage() {
         <AdminNewUserDialog
           open
           mode={modo}
-          catalogos={query.data.catalogos}
+          catalogos={query.data.catalogos ?? { grupos_edad: [], clubes: [], tutores: [] }}
           onClose={() => navigate({ to: "/admin/usuarios" })}
         />
       ) : (

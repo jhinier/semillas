@@ -22,6 +22,8 @@ export interface CrecerMatrixCell {
 interface CrecerMatrixStatusProps {
   ageGroups: CrecerMatrixAgeGroup[];
   steps: CrecerMatrixStep[];
+  activeAgeGroupId?: string;
+  activeStepCode?: string;
   getCell: (ageGroupId: string, stepCode: string) => CrecerMatrixCellStatus | CrecerMatrixCell;
   onSelect: (ageGroupId: string, stepCode: string) => void;
 }
@@ -50,14 +52,21 @@ function StatusIcon({ status }: { status: CrecerMatrixCellStatus }) {
   return <Circle size={13} />;
 }
 
-export function CrecerMatrixStatus({ ageGroups, steps, getCell, onSelect }: CrecerMatrixStatusProps) {
+export function CrecerMatrixStatus({
+  ageGroups,
+  steps,
+  activeAgeGroupId,
+  activeStepCode,
+  getCell,
+  onSelect,
+}: CrecerMatrixStatusProps) {
   return (
     <section className="admin-editor-section admin-crecer-matrix" aria-label="Matriz de cobertura CRECER">
       <div className="admin-crecer-matrix__header">
         <div>
-          <span className="admin-eyebrow">Cobertura completa</span>
-          <h2>Estado por franja y momento</h2>
-          <p>Selecciona una celda para continuar editando sin perder contexto.</p>
+          <span className="admin-eyebrow">Mapa de avance (18 momentos)</span>
+          <h2>Tabla resumen por edad y momento</h2>
+          <p>Haz clic en cualquier casilla para saltar a ese momento. El recuadro morado indica cuál estás editando ahora.</p>
         </div>
         <div className="admin-crecer-matrix__legend" aria-label="Leyenda de estados">
           {(Object.keys(statusLabels) as CrecerMatrixCellStatus[]).map((status) => (
@@ -72,8 +81,10 @@ export function CrecerMatrixStatus({ ageGroups, steps, getCell, onSelect }: Crec
         <table className="admin-crecer-matrix__table">
           <thead>
             <tr>
-              <th scope="col">Franja</th>
-              {steps.map((step) => <th key={step.codigo} scope="col">{step.nombre}</th>)}
+              <th scope="col">Edad</th>
+              {steps.map((step, index) => (
+                <th key={step.codigo} scope="col">{index + 1}. {step.nombre}</th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -82,17 +93,19 @@ export function CrecerMatrixStatus({ ageGroups, steps, getCell, onSelect }: Crec
                 <th scope="row">{ageGroup.nombre ?? "Franja"}</th>
                 {steps.map((step) => {
                   const cell = normalizeCell(getCell(ageGroup.id, step.codigo), ageGroup.id, step.codigo);
+                  const isCurrent = ageGroup.id === activeAgeGroupId && step.codigo === activeStepCode;
                   return (
                     <td key={step.codigo}>
                       <button
                         type="button"
-                        className={`admin-crecer-matrix__cell admin-crecer-matrix__cell--${cell.status}`}
+                        className={`admin-crecer-matrix__cell admin-crecer-matrix__cell--${cell.status} ${isCurrent ? "admin-crecer-matrix__cell--current" : ""}`}
                         onClick={() => onSelect(ageGroup.id, step.codigo)}
+                        aria-current={isCurrent ? "step" : undefined}
                         aria-label={`${ageGroup.nombre ?? "Franja"}, ${step.nombre}: ${statusLabels[cell.status]}`}
-                        title={cell.message ?? statusLabels[cell.status]}
+                        title={isCurrent ? "Editando actualmente" : (cell.message ?? statusLabels[cell.status])}
                       >
                         <StatusIcon status={cell.status} />
-                        <span>{statusLabels[cell.status]}</span>
+                        <span>{isCurrent ? "Editando" : statusLabels[cell.status]}</span>
                       </button>
                     </td>
                   );

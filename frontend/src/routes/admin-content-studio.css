@@ -700,13 +700,10 @@
 .admin-crecer-step-option__copy small{
   display:block;
   margin-top:.1rem;
-  overflow:hidden;
   color:var(--admin-text-muted);
-  font-size:.6rem;
+  font-size:.63rem;
   font-weight:650;
-  line-height:1.25;
-  text-overflow:ellipsis;
-  white-space:nowrap;
+  line-height:1.3;
 }
 
 .admin-crecer-step-option--active .admin-crecer-step-option__copy strong{
@@ -857,16 +854,14 @@
 }
 
 .admin-crecer-page .admin-save-bar{
-  position:sticky;
-  bottom:1rem;
-  z-index:8;
-  margin:1rem -.15rem -.15rem;
-  padding:.7rem .75rem;
+  position:relative;
+  bottom:auto;
+  z-index:2;
+  margin:1.15rem 0 0;
+  padding:.75rem .9rem;
   border:1px solid var(--admin-border-default);
   border-radius:.95rem;
-  background:color-mix(in srgb,var(--admin-bg-surface) 94%,transparent);
-  box-shadow:0 12px 28px rgba(15,23,42,.1);
-  backdrop-filter:blur(12px);
+  background:var(--admin-bg-muted);
 }
 
 .admin-crecer-page .admin-save-bar p{
@@ -1073,6 +1068,7 @@
 .admin-crecer-matrix__cell--complete{border-color:rgba(22,128,60,.25);background:rgba(22,128,60,.08);color:#16803c}
 .admin-crecer-matrix__cell--draft{border-color:rgba(183,121,31,.25);background:rgba(183,121,31,.1);color:#a16207}
 .admin-crecer-matrix__cell--error{border-color:rgba(194,65,59,.25);background:rgba(194,65,59,.08);color:#c2413b}
+.admin-crecer-matrix__cell--current{border:2px solid var(--admin-accent-primary);background:rgba(95,54,232,.1);color:var(--admin-accent-primary);font-weight:950;box-shadow:0 0 0 2px rgba(95,54,232,.14)}
 
 @media (max-width:700px){
   .admin-crecer-matrix__header{flex-direction:column}
@@ -1185,9 +1181,9 @@
 .admin-crecer-page .admin-crecer-control{
   display:grid;
   min-width:0;
-  grid-template-columns:10.75rem minmax(0,1fr);
+  grid-template-columns:12.5rem minmax(0,1fr);
   align-items:center;
-  gap:.8rem;
+  gap:.95rem;
 }
 
 .admin-crecer-page .admin-crecer-control + .admin-crecer-control{
@@ -1209,7 +1205,7 @@
 }
 
 .admin-crecer-page .admin-crecer-control__heading p{
-  max-width:9rem;
+  max-width:11rem;
   line-height:1.35;
 }
 

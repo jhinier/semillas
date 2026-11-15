@@ -1266,6 +1266,12 @@ type DevProxyStore = {
   pasosPorTema: Record<string, any[]>;
   actividades: Record<string, any>[];
   revisiones: Record<string, any>[];
+  clubes: Record<string, any>[];
+  clubDetalles: Record<string, Record<string, any>>;
+  logros: Record<string, any>[];
+  usuarios: Record<string, any>[];
+  reportesClubes: Record<string, any>[];
+  ajustes: Record<string, any>;
 };
 
 function normalizarSlugProxy(texto: string): string {
@@ -1323,6 +1329,22 @@ function crearPasosBaseParaTema(tema: Record<string, any>, prefillsCompletos: bo
   }));
 }
 
+function construirClubDetalleBase(club: Record<string, any>): Record<string, any> {
+  const baseDetalle = JSON.parse(JSON.stringify(SNAPSHOT_CLUB_DETALLE.datos));
+  return {
+    club: {
+      id: club.id,
+      nombre: club.nombre,
+      descripcion: club.descripcion ?? null,
+      codigo_invitacion: `SEM${String(club.id || "1234").slice(0, 6).toUpperCase()}`,
+      activo: club.activo !== false,
+      creado_en: club.creado_en || new Date().toISOString(),
+    },
+    miembros: club.id === SNAPSHOT_CLUB_DETALLE.datos.club.id ? baseDetalle.miembros : [],
+    retos: club.id === SNAPSHOT_CLUB_DETALLE.datos.club.id ? baseDetalle.retos : [],
+  };
+}
+
 function inicializarDevStoreDesdeSnapshots(): DevProxyStore {
   const temas = JSON.parse(JSON.stringify(SNAPSHOT_TEMAS_LISTADO.datos.temas)) as Record<string, any>[];
   const pasosPorTema: Record<string, any[]> = {};
@@ -1331,7 +1353,27 @@ function inicializarDevStoreDesdeSnapshots(): DevProxyStore {
   }
   const actividades = JSON.parse(JSON.stringify(SNAPSHOT_ACTIVIDADES.datos.actividades)) as Record<string, any>[];
   const revisiones = JSON.parse(JSON.stringify(SNAPSHOT_REVISIONES.datos.revisiones || [])) as Record<string, any>[];
-  const initial: DevProxyStore = { temas, pasosPorTema, actividades, revisiones };
+  const clubes = JSON.parse(JSON.stringify(SNAPSHOT_CLUBES.datos.clubes || [])) as Record<string, any>[];
+  const clubDetalles: Record<string, Record<string, any>> = {};
+  for (const c of clubes) {
+    clubDetalles[c.id] = construirClubDetalleBase(c);
+  }
+  const logros = JSON.parse(JSON.stringify(SNAPSHOT_LOGROS.datos.logros || [])) as Record<string, any>[];
+  const usuarios = JSON.parse(JSON.stringify(SNAPSHOT_USUARIOS.datos.usuarios || [])) as Record<string, any>[];
+  const reportesClubes = JSON.parse(JSON.stringify(SNAPSHOT_REPORTES_CLUBES.datos || [])) as Record<string, any>[];
+  const ajustes = JSON.parse(JSON.stringify(SNAPSHOT_AJUSTES.datos)) as Record<string, any>;
+  const initial: DevProxyStore = {
+    temas,
+    pasosPorTema,
+    actividades,
+    revisiones,
+    clubes,
+    clubDetalles,
+    logros,
+    usuarios,
+    reportesClubes,
+    ajustes,
+  };
   return initial;
 }
 
@@ -1340,11 +1382,36 @@ function cargarDevStore(): DevProxyStore {
     if (existsSync(DEV_STATE_FILE)) {
       const raw = JSON.parse(readFileSync(DEV_STATE_FILE, "utf8"));
       if (raw && Array.isArray(raw.temas) && raw.pasosPorTema && Array.isArray(raw.actividades)) {
+        const clubes = Array.isArray(raw.clubes)
+          ? raw.clubes
+          : JSON.parse(JSON.stringify(SNAPSHOT_CLUBES.datos.clubes || []));
+        const clubDetalles: Record<string, Record<string, any>> =
+          raw.clubDetalles && typeof raw.clubDetalles === "object" ? raw.clubDetalles : {};
+        for (const c of clubes) {
+          if (!clubDetalles[c.id]) {
+            clubDetalles[c.id] = construirClubDetalleBase(c);
+          }
+        }
         return {
           temas: raw.temas,
           pasosPorTema: raw.pasosPorTema,
           actividades: raw.actividades,
           revisiones: Array.isArray(raw.revisiones) ? raw.revisiones : [],
+          clubes,
+          clubDetalles,
+          logros: Array.isArray(raw.logros)
+            ? raw.logros
+            : JSON.parse(JSON.stringify(SNAPSHOT_LOGROS.datos.logros || [])),
+          usuarios: Array.isArray(raw.usuarios)
+            ? raw.usuarios
+            : JSON.parse(JSON.stringify(SNAPSHOT_USUARIOS.datos.usuarios || [])),
+          reportesClubes: Array.isArray(raw.reportesClubes)
+            ? raw.reportesClubes
+            : JSON.parse(JSON.stringify(SNAPSHOT_REPORTES_CLUBES.datos || [])),
+          ajustes:
+            raw.ajustes && typeof raw.ajustes === "object"
+              ? raw.ajustes
+              : JSON.parse(JSON.stringify(SNAPSHOT_AJUSTES.datos)),
         };
       }
     }
@@ -1607,7 +1674,9 @@ function construirResumenDetalladoDev() {
         ...SNAPSHOT_RESUMEN_DETALLADO.datos.metricas,
         temas: devStore.temas.length,
         publicados: estados.publicado,
+        usuarios_activos: Math.max(SNAPSHOT_RESUMEN_DETALLADO.datos.metricas.usuarios_activos, devStore.usuarios.length),
         actividades: devStore.actividades.length,
+        clubes_activos: devStore.clubes.filter((c) => c.activo !== false).length,
         pendientes_revision: revisionesPendientes.length,
       },
       estados,
@@ -1759,39 +1828,170 @@ function filtrarYResponderGetDev(url: URL): Record<string, any> | null {
   if (path === "/administracion/usuarios") {
     const q = (params.get("q") || "").trim().toLowerCase();
     const rol = (params.get("rol") || "").trim().toLowerCase();
+    const estado = (params.get("estado") || "").trim().toLowerCase();
     const grupoEdadId = (params.get("grupo_edad_id") || "").trim();
-    const list = SNAPSHOT_USUARIOS.datos.usuarios.filter((u: any) => {
+    const clubId = (params.get("club_id") || "").trim();
+    const limit = Math.max(1, Number(params.get("limit")) || 20);
+    const offset = Math.max(0, Number(params.get("offset")) || 0);
+
+    const list = devStore.usuarios.filter((u: any) => {
       if (rol && rol !== "todos" && String(u.rol || "").toLowerCase() !== rol) return false;
-      if (grupoEdadId && u.grupo_edad_id !== grupoEdadId) return false;
+      const uEstado = String(u.estado ?? (u.activo === false ? "bloqueado" : "activo")).toLowerCase();
+      if (estado && estado !== "todos" && uEstado !== estado) return false;
+      const uGrupoId = u.grupo_edad?.id || u.perfil?.grupo_edad_id || u.grupo_edad_id || "";
+      if (grupoEdadId && uGrupoId !== grupoEdadId) return false;
+      if (clubId && !(Array.isArray(u.clubes) && u.clubes.some((c: any) => c.id === clubId))) return false;
       if (q) {
         const hay = [u.nombre_visible, u.correo, u.apodo].filter(Boolean).join(" ").toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
     });
-    return { exito: true, datos: { usuarios: list, total: list.length } };
+
+    const resumen = {
+      total: devStore.usuarios.length,
+      activos: devStore.usuarios.filter((u: any) => (u.estado ?? (u.activo === false ? "bloqueado" : "activo")) === "activo").length,
+      pendientes: devStore.usuarios.filter((u: any) => u.estado === "pendiente").length,
+      bloqueados: devStore.usuarios.filter((u: any) => u.activo === false || u.estado === "bloqueado").length,
+      administradores: devStore.usuarios.filter((u: any) => u.rol === "administrador").length,
+      padres: devStore.usuarios.filter((u: any) => u.rol === "padre").length,
+    };
+
+    const catalogos = {
+      ...SNAPSHOT_USUARIOS.datos.catalogos,
+      clubes: devStore.clubes.map((c: any) => ({ id: c.id, nombre: c.nombre, activo: c.activo !== false })),
+    };
+
+    return {
+      exito: true,
+      datos: {
+        usuarios: list.slice(offset, offset + limit),
+        total: list.length,
+        limit,
+        offset,
+        resumen,
+        catalogos,
+      },
+    };
+  }
+
+  if (path.startsWith("/administracion/usuarios/")) {
+    const userId = path.split("/")[3];
+    const baseUser = devStore.usuarios.find((u: any) => u.id === userId);
+    if (!baseUser) return null;
+    return {
+      exito: true,
+      datos: {
+        ...baseUser,
+        vinculos: Array.isArray(baseUser.vinculos) ? baseUser.vinculos : [],
+        estadisticas: baseUser.estadisticas ?? {
+          temas_total: 4,
+          temas_completados: 2,
+          actividades_total: 12,
+          actividades_completadas: 8,
+          intentos: 10,
+          xp_total: baseUser.progreso?.xp_total ?? 420,
+        },
+        actividad_reciente: Array.isArray(baseUser.actividad_reciente) ? baseUser.actividad_reciente : [],
+        auditoria: Array.isArray(baseUser.auditoria) ? baseUser.auditoria : [],
+      },
+    };
   }
 
   if (path === "/administracion/clubes") {
     const q = (params.get("q") || "").trim().toLowerCase();
+    const estado = (params.get("estado") || "").trim().toLowerCase();
     const activo = params.get("activo");
-    const list = SNAPSHOT_CLUBES.datos.clubes.filter((c: any) => {
-      if (activo === "true" && !c.activo) return false;
-      if (activo === "false" && c.activo) return false;
-      if (q && !`${c.nombre} ${c.descripcion}`.toLowerCase().includes(q)) return false;
-      return true;
-    });
-    return { exito: true, datos: { clubes: list, total: list.length } };
+    const orden = (params.get("orden") || "recientes").trim().toLowerCase();
+    const limit = Math.max(1, Number(params.get("limit")) || 20);
+    const offset = Math.max(0, Number(params.get("offset")) || 0);
+
+    const list = devStore.clubes
+      .filter((c: any) => {
+        const esActivo = c.activo !== false;
+        if (estado === "activo" && !esActivo) return false;
+        if (estado === "archivado" && esActivo) return false;
+        if (activo === "true" && !esActivo) return false;
+        if (activo === "false" && esActivo) return false;
+        if (q && !`${c.nombre || ""} ${c.descripcion || ""} ${c.lider?.apodo || ""}`.toLowerCase().includes(q)) return false;
+        return true;
+      })
+      .sort((a: any, b: any) => {
+        if (orden === "nombre") return String(a.nombre || "").localeCompare(String(b.nombre || ""), "es");
+        if (orden === "miembros") return Number(b.miembros || 0) - Number(a.miembros || 0);
+        return String(b.creado_en || "").localeCompare(String(a.creado_en || ""));
+      });
+
+    return {
+      exito: true,
+      datos: {
+        clubes: list.slice(offset, offset + limit),
+        total: list.length,
+        meta: { total: list.length, limit, offset },
+      },
+    };
+  }
+
+  if (path.startsWith("/administracion/clubes/")) {
+    const clubId = path.split("/")[3];
+    const detalle = devStore.clubDetalles[clubId];
+    if (detalle) return { exito: true, datos: detalle };
+    const club = devStore.clubes.find((c: any) => c.id === clubId);
+    return club ? { exito: true, datos: construirClubDetalleBase(club) } : null;
+  }
+
+  if (path === "/administracion/reportes-clubes") {
+    const estado = (params.get("estado") || "").trim().toLowerCase();
+    const list = devStore.reportesClubes.filter((r: any) => !estado || String(r.estado || "").toLowerCase() === estado);
+    return { exito: true, datos: list };
   }
 
   if (path === "/administracion/logros" || path === "/administracion/logros/catalogo") {
+    if (path.endsWith("/catalogo")) {
+      return {
+        exito: true,
+        datos: devStore.logros.map((l: any) => ({ id: l.id, codigo: l.codigo, nombre: l.nombre })),
+      };
+    }
+
     const q = (params.get("q") || "").trim().toLowerCase();
-    const list = SNAPSHOT_LOGROS.datos.logros.filter((l: any) =>
-      !q || `${l.nombre} ${l.descripcion} ${l.codigo}`.toLowerCase().includes(q),
-    );
-    return path.endsWith("/catalogo")
-      ? { exito: true, datos: list }
-      : { exito: true, datos: { logros: list, total: list.length } };
+    const estado = (params.get("estado") || "").trim().toLowerCase();
+    const criterio = (params.get("criterio") || "").trim().toLowerCase();
+    const limit = Math.max(1, Number(params.get("limit")) || 20);
+    const offset = Math.max(0, Number(params.get("offset")) || 0);
+
+    const list = devStore.logros.filter((l: any) => {
+      const esActivo = l.activo !== false;
+      if (estado === "activo" && !esActivo) return false;
+      if (estado === "archivado" && esActivo) return false;
+      const critCodigo = String(l.codigo_criterio || l.criterio_raiz?.tipo || "").toLowerCase();
+      if (criterio && criterio !== "todos" && critCodigo !== criterio) return false;
+      if (q && !`${l.nombre || ""} ${l.descripcion || ""} ${l.codigo || ""}`.toLowerCase().includes(q)) return false;
+      return true;
+    });
+
+    return {
+      exito: true,
+      datos: {
+        logros: list.slice(offset, offset + limit),
+        total: list.length,
+        meta: { total: list.length, limit, offset },
+      },
+    };
+  }
+
+  if (path.startsWith("/administracion/logros/")) {
+    const logroId = path.split("/")[3];
+    const logro = devStore.logros.find((l: any) => l.id === logroId);
+    return logro ? { exito: true, datos: logro } : null;
+  }
+
+  if (path === "/administracion/reportes") {
+    return SNAPSHOT_REPORTES;
+  }
+
+  if (path === "/administracion/ajustes") {
+    return { exito: true, datos: devStore.ajustes };
   }
 
   return null;
@@ -2202,6 +2402,343 @@ function aplicarMutacionDev(method: string, pathname: string, body: Record<strin
       guardarDevStoreEnDisco();
       return { status: 200, payload: { exito: true, datos: rev } };
     }
+  }
+
+  // 7. Clubes CRUD & subrutas
+  if (method === "POST" && pathname === "/administracion/clubes") {
+    const id = crypto.randomUUID();
+    const liderUsuario = devStore.usuarios.find((u) => u.id === payload.lider_usuario_id) ?? devStore.usuarios[0];
+    const nuevoClub = {
+      id,
+      nombre: String(payload.nombre || "Club Semillas").trim(),
+      descripcion: payload.descripcion ? String(payload.descripcion).trim() : null,
+      activo: true,
+      creado_en: ahora,
+      miembros: liderUsuario ? 1 : 0,
+      retos_abiertos: 0,
+      lider: liderUsuario
+        ? { usuario_id: liderUsuario.id, apodo: liderUsuario.apodo || liderUsuario.nombre_visible || "Líder" }
+        : null,
+    };
+    const codigoInv = `SEM${id.slice(0, 6).toUpperCase()}`;
+    devStore.clubes.unshift(nuevoClub);
+    devStore.clubDetalles[id] = {
+      club: {
+        id,
+        nombre: nuevoClub.nombre,
+        descripcion: nuevoClub.descripcion,
+        codigo_invitacion: codigoInv,
+        activo: true,
+        creado_en: ahora,
+      },
+      miembros: liderUsuario
+        ? [
+            {
+              usuario_id: liderUsuario.id,
+              apodo: liderUsuario.apodo || liderUsuario.nombre_visible || "Líder",
+              rol_miembro: "lider",
+              unido_en: ahora,
+              url_avatar: null,
+              xp_total: liderUsuario.progreso?.xp_total ?? 0,
+              xp_semana: 0,
+              actividades_semana: 0,
+            },
+          ]
+        : [],
+      retos: [],
+    };
+    guardarDevStoreEnDisco();
+    return {
+      status: 201,
+      payload: {
+        exito: true,
+        datos: {
+          ...devStore.clubDetalles[id].club,
+          lider: nuevoClub.lider ?? { usuario_id: "", apodo: "Administrador" },
+        },
+      },
+    };
+  }
+
+  if (pathname.startsWith("/administracion/clubes/")) {
+    const parts = pathname.split("/").filter(Boolean);
+    const clubId = parts[2];
+    const sub = parts[3];
+    const subId = parts[4];
+    const action = parts[5];
+    const club = devStore.clubes.find((c) => c.id === clubId);
+    if (club) {
+      if (!devStore.clubDetalles[clubId]) {
+        devStore.clubDetalles[clubId] = construirClubDetalleBase(club);
+      }
+      const detalle = devStore.clubDetalles[clubId];
+
+      if (method === "PATCH" && !sub) {
+        if (typeof payload.nombre === "string") {
+          club.nombre = payload.nombre.trim();
+          detalle.club.nombre = club.nombre;
+        }
+        if ("descripcion" in payload) {
+          club.descripcion = payload.descripcion ?? null;
+          detalle.club.descripcion = club.descripcion;
+        }
+        guardarDevStoreEnDisco();
+        return { status: 200, payload: { exito: true, datos: detalle.club } };
+      }
+
+      if (method === "POST" && sub === "archivar") {
+        club.activo = false;
+        detalle.club.activo = false;
+        guardarDevStoreEnDisco();
+        return { status: 200, payload: { exito: true, datos: { archived: true } } };
+      }
+
+      if (method === "POST" && sub === "reactivar") {
+        club.activo = true;
+        detalle.club.activo = true;
+        guardarDevStoreEnDisco();
+        return { status: 200, payload: { exito: true, datos: { reactivated: true } } };
+      }
+
+      if (method === "POST" && sub === "regenerar-codigo") {
+        const codigo = `SEM${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+        detalle.club.codigo_invitacion = codigo;
+        guardarDevStoreEnDisco();
+        return { status: 200, payload: { exito: true, datos: { codigo_invitacion: codigo } } };
+      }
+
+      if (method === "POST" && sub === "miembros" && typeof payload.usuario_id === "string") {
+        const u = devStore.usuarios.find((x) => x.id === payload.usuario_id);
+        const yaExiste = detalle.miembros.some((m: any) => m.usuario_id === payload.usuario_id);
+        if (!yaExiste) {
+          detalle.miembros.push({
+            usuario_id: payload.usuario_id,
+            apodo: u?.apodo || u?.nombre_visible || "Miembro",
+            rol_miembro: "miembro",
+            unido_en: ahora,
+            url_avatar: null,
+            xp_total: u?.progreso?.xp_total ?? 0,
+            xp_semana: 0,
+            actividades_semana: 0,
+          });
+          club.miembros = detalle.miembros.length;
+        }
+        guardarDevStoreEnDisco();
+        return { status: 200, payload: { exito: true, datos: { added: true, usuario_id: payload.usuario_id } } };
+      }
+
+      if (method === "DELETE" && sub === "miembros" && subId) {
+        detalle.miembros = detalle.miembros.filter((m: any) => m.usuario_id !== subId);
+        club.miembros = detalle.miembros.length;
+        guardarDevStoreEnDisco();
+        return { status: 200, payload: { exito: true, datos: { removed: true } } };
+      }
+
+      if (method === "POST" && sub === "transferir-liderazgo" && typeof payload.usuario_id === "string") {
+        let nuevoLiderApodo = "Líder";
+        detalle.miembros = detalle.miembros.map((m: any) => {
+          if (m.usuario_id === payload.usuario_id) {
+            nuevoLiderApodo = m.apodo || nuevoLiderApodo;
+            return { ...m, rol_miembro: "lider" };
+          }
+          return m.rol_miembro === "lider" ? { ...m, rol_miembro: "miembro" } : m;
+        });
+        club.lider = { usuario_id: payload.usuario_id, apodo: nuevoLiderApodo };
+        guardarDevStoreEnDisco();
+        return { status: 200, payload: { exito: true, datos: { transferred: true, usuario_id: payload.usuario_id } } };
+      }
+
+      if (method === "POST" && sub === "retos" && !subId) {
+        const retoId = crypto.randomUUID();
+        detalle.retos.unshift({
+          id: retoId,
+          nombre: String(payload.nombre || "Nuevo reto"),
+          descripcion: payload.descripcion ?? null,
+          codigo_metrica: String(payload.codigo_metrica || "actividades_completadas"),
+          valor_objetivo: Number(payload.valor_objetivo) || 10,
+          xp_reto: Number(payload.xp_reto) || 50,
+          fecha_inicio: String(payload.fecha_inicio || ahora),
+          fecha_fin: String(payload.fecha_fin || ahora),
+        });
+        club.retos_abiertos = detalle.retos.length;
+        guardarDevStoreEnDisco();
+        return { status: 201, payload: { exito: true, datos: { id: retoId } } };
+      }
+
+      if (method === "POST" && sub === "retos" && subId && action === "cerrar") {
+        detalle.retos = detalle.retos.filter((r: any) => r.id !== subId);
+        club.retos_abiertos = detalle.retos.length;
+        guardarDevStoreEnDisco();
+        return { status: 200, payload: { exito: true, datos: { closed: true } } };
+      }
+    }
+  }
+
+  if (method === "PATCH" && pathname.startsWith("/administracion/reportes-clubes/")) {
+    const repId = pathname.split("/").filter(Boolean)[2];
+    const rep = devStore.reportesClubes.find((r) => r.id === repId);
+    if (rep) {
+      if (payload.estado) rep.estado = payload.estado;
+      if ("nota" in payload) rep.nota = payload.nota;
+      guardarDevStoreEnDisco();
+      return { status: 200, payload: { exito: true, datos: rep } };
+    }
+  }
+
+  // 8. Logros CRUD & archivar/reactivar
+  if (method === "POST" && pathname === "/administracion/logros") {
+    const id = crypto.randomUUID();
+    const nuevoLogro = {
+      id,
+      codigo: String(payload.codigo || `logro_${id.slice(0, 6)}`).trim(),
+      nombre: String(payload.nombre || "Nuevo logro").trim(),
+      titulo: String(payload.nombre || "Nuevo logro").trim(),
+      descripcion: payload.descripcion ?? null,
+      url_icono: payload.url_icono ?? null,
+      icono_url: payload.url_icono ?? null,
+      bono_xp: Number(payload.bono_xp) || 25,
+      xp_recompensa: Number(payload.bono_xp) || 25,
+      codigo_criterio: String(payload.codigo_criterio || "temas_completados"),
+      valor_criterio: Number(payload.valor_criterio) || 1,
+      activo: true,
+      creado_en: ahora,
+      actualizado_en: ahora,
+      otorgados: 0,
+      otorgados_count: 0,
+    };
+    devStore.logros.unshift(nuevoLogro);
+    guardarDevStoreEnDisco();
+    return { status: 201, payload: { exito: true, datos: nuevoLogro } };
+  }
+
+  if (pathname.startsWith("/administracion/logros/")) {
+    const parts = pathname.split("/").filter(Boolean);
+    const logroId = parts[2];
+    const action = parts[3];
+    const logro = devStore.logros.find((l) => l.id === logroId);
+    if (logro) {
+      if (method === "PATCH" && !action) {
+        Object.assign(logro, {
+          ...payload,
+          titulo: payload.nombre ?? logro.nombre,
+          icono_url: "url_icono" in payload ? payload.url_icono : logro.icono_url,
+          xp_recompensa: payload.bono_xp ?? logro.xp_recompensa,
+          actualizado_en: ahora,
+        });
+        guardarDevStoreEnDisco();
+        return { status: 200, payload: { exito: true, datos: logro } };
+      }
+      if (method === "POST" && action === "archivar") {
+        logro.activo = false;
+        logro.actualizado_en = ahora;
+        guardarDevStoreEnDisco();
+        return { status: 200, payload: { exito: true, datos: { archived: true } } };
+      }
+      if (method === "POST" && action === "reactivar") {
+        logro.activo = true;
+        logro.actualizado_en = ahora;
+        guardarDevStoreEnDisco();
+        return { status: 200, payload: { exito: true, datos: { reactivated: true } } };
+      }
+    }
+  }
+
+  // 9. Usuarios invitar / menor / crear / actualizar / acciones masivas
+  if (method === "POST" && (pathname === "/administracion/usuarios/invitar" || pathname === "/administracion/usuarios/cuenta" || pathname === "/administracion/usuarios/menores" || pathname === "/administracion/usuarios")) {
+    const id = crypto.randomUUID();
+    const esMenor = pathname === "/administracion/usuarios/menores";
+    const grupoObj = SNAPSHOT_USUARIOS.datos.catalogos.grupos_edad.find((g) => g.id === payload.grupo_edad_id) ?? null;
+    const clubObj = devStore.clubes.find((c) => c.id === payload.club_id) ?? null;
+    const nuevoUsuario = {
+      id,
+      nombre_visible: String(payload.nombre_visible || payload.apodo || "Nuevo usuario").trim(),
+      correo: payload.correo ? String(payload.correo).trim() : null,
+      rol: esMenor ? "usuario" : String(payload.rol || "usuario"),
+      apodo: String(payload.apodo || payload.nombre_visible || "Nuevo").trim(),
+      proveedor: esMenor ? "menor" : "correo",
+      activo: true,
+      estado: pathname === "/administracion/usuarios/invitar" ? "pendiente" : "activo",
+      creado_en: ahora,
+      actualizado_en: ahora,
+      ultimo_acceso: null,
+      ultimo_login_en: null,
+      perfil: {
+        id: `perfil-${id.slice(0, 8)}`,
+        apodo: String(payload.apodo || payload.nombre_visible || "Nuevo").trim(),
+        avatar_url: null,
+        clave_avatar: null,
+        grupo_edad_id: grupoObj?.id ?? null,
+        prefiere_audio: true,
+        tamano_texto_preferido: "mediano",
+      },
+      grupo_edad: grupoObj,
+      clubes: clubObj ? [{ id: clubObj.id, nombre: clubObj.nombre, rol_miembro: "miembro", unido_en: ahora }] : [],
+      vinculos_familiares: payload.tutor_id ? 1 : 0,
+      progreso: { xp_total: 0, eventos: 0 },
+    };
+    devStore.usuarios.unshift(nuevoUsuario);
+    guardarDevStoreEnDisco();
+    if (esMenor) {
+      return {
+        status: 201,
+        payload: {
+          exito: true,
+          datos: {
+            usuario: nuevoUsuario,
+            credencial_temporal: { usuario_id: id, token: `SEM-${id.slice(0, 6).toUpperCase()}` },
+          },
+        },
+      };
+    }
+    return { status: 201, payload: { exito: true, datos: nuevoUsuario } };
+  }
+
+  if (method === "POST" && pathname === "/administracion/usuarios/acciones") {
+    const ids = Array.isArray(payload.usuario_ids) ? payload.usuario_ids : [];
+    const accion = String(payload.accion || "activar");
+    let actualizados = 0;
+    for (const u of devStore.usuarios) {
+      if (ids.includes(u.id)) {
+        u.activo = accion === "activar";
+        u.estado = accion === "activar" ? "activo" : "bloqueado";
+        u.actualizado_en = ahora;
+        actualizados += 1;
+      }
+    }
+    guardarDevStoreEnDisco();
+    return { status: 200, payload: { exito: true, datos: { actualizados } } };
+  }
+
+  if (pathname.startsWith("/administracion/usuarios/")) {
+    const userId = pathname.split("/").filter(Boolean)[2];
+    const usuario = devStore.usuarios.find((u) => u.id === userId);
+    if (usuario) {
+      if (method === "PATCH") {
+        Object.assign(usuario, { ...payload, id: usuario.id, actualizado_en: ahora });
+        if ("activo" in payload) {
+          usuario.estado = payload.activo ? "activo" : "bloqueado";
+        }
+        guardarDevStoreEnDisco();
+        return { status: 200, payload: { exito: true, datos: usuario } };
+      }
+      if (method === "DELETE") {
+        usuario.activo = false;
+        usuario.estado = "bloqueado";
+        usuario.actualizado_en = ahora;
+        guardarDevStoreEnDisco();
+        return { status: 200, payload: { exito: true, datos: { desactivado: true } } };
+      }
+    }
+  }
+
+  // 10. Ajustes de plataforma
+  if ((method === "PATCH" || method === "PUT") && (pathname === "/administracion/ajustes-plataforma" || pathname === "/administracion/ajustes")) {
+    Object.assign(devStore.ajustes, payload, { actualizado_en: ahora });
+    if (devStore.ajustes.ajustes && typeof devStore.ajustes.ajustes === "object") {
+      Object.assign(devStore.ajustes.ajustes, payload);
+    }
+    guardarDevStoreEnDisco();
+    return { status: 200, payload: { exito: true, datos: devStore.ajustes } };
   }
 
   return null;

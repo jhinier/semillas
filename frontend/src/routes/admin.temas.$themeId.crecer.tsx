@@ -162,20 +162,10 @@ function AdminThemeCrecerPage() {
         completitud={estudioQuery.data?.completitud}
       />
 
-      <CrecerMatrixStatus
-        ageGroups={availableAgeGroups ?? []}
-        steps={editor.pasos}
-        getCell={getMatrixCell}
-        onSelect={(ageGroupId, stepCode) => {
-          editor.setSelectedAgeGroupId(ageGroupId);
-          editor.setActiveStepCode(stepCode);
-        }}
-      />
-
       <section className="admin-crecer-workflow" aria-label="Selección de edad y momento">
         <div className="admin-crecer-workflow__intro">
-          <span>Momento actual</span>
-          <p>Elige la edad y avanza uno a uno por los 6 momentos.</p>
+          <span>¿Cómo completar este paso?</span>
+          <p>1️⃣ Elige la edad · 2️⃣ Elige un momento del 1 al 6 · 3️⃣ Escribe el título y el texto abajo y pulsa «Guardar este momento».</p>
         </div>
 
         <div className="admin-crecer-workflow__controls">
@@ -307,6 +297,18 @@ function AdminThemeCrecerPage() {
           </section>
         </aside>
       </div>
+
+      <CrecerMatrixStatus
+        ageGroups={availableAgeGroups ?? []}
+        steps={editor.pasos}
+        activeAgeGroupId={editor.selectedAgeGroupId}
+        activeStepCode={editor.activeStepCode}
+        getCell={getMatrixCell}
+        onSelect={(ageGroupId, stepCode) => {
+          editor.setSelectedAgeGroupId(ageGroupId);
+          editor.setActiveStepCode(stepCode);
+        }}
+      />
     </div>
   );
 }

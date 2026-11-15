@@ -26,6 +26,15 @@ interface CrecerStepSelectorProps {
   hasDraft?: (codigo: string) => boolean;
 }
 
+const MOMENTO_GUIA_FACIL: Record<string, { orden: number; explicacion: string }> = {
+  conectar: { orden: 1, explicacion: "Pregunta o juego para despertar interés" },
+  relatar: { orden: 2, explicacion: "Cuenta la historia bíblica con palabras sencillas" },
+  ensenar: { orden: 3, explicacion: "Explica qué nos enseña Dios hoy" },
+  comprobar: { orden: 4, explicacion: "Preguntas para ver si comprendieron" },
+  experimentar: { orden: 5, explicacion: "Reto práctico para hacer en la semana" },
+  recompensar: { orden: 6, explicacion: "Celebra lo aprendido y cierra con oración" },
+};
+
 export function CrecerStepSelector({
   pasos,
   activeStepCode,
@@ -41,8 +50,8 @@ export function CrecerStepSelector({
           <BookOpenText size={18} />
         </div>
         <div>
-          <h2>Momento CRECER</h2>
-          <p>Elige un momento para editarlo.</p>
+          <h2>2. Elige el momento (del 1 al 6)</h2>
+          <p>Avanza en orden del 1 al 6 para completar la lección.</p>
         </div>
       </div>
 
@@ -50,6 +59,7 @@ export function CrecerStepSelector({
         {pasos.map((step) => {
           const isActive = activeStepCode === step.codigo;
           const hasLocalDraft = hasDraft?.(step.codigo) ?? false;
+          const guia = MOMENTO_GUIA_FACIL[step.codigo];
           const completed = selectedAgeGroupId
             ? stepsData?.some(
                 (record) =>
@@ -75,7 +85,7 @@ export function CrecerStepSelector({
               className={`admin-crecer-step-option ${isActive ? "admin-crecer-step-option--active" : ""} ${completed ? "admin-crecer-step-option--complete" : ""}`}
               style={style}
               aria-pressed={isActive}
-              title={hasLocalDraft ? `${step.nombre}: borrador sin guardar` : step.nombre}
+              title={hasLocalDraft ? `${step.nombre}: borrador sin guardar` : guia?.explicacion ?? step.nombre}
             >
               <span className="admin-crecer-step-option__status" aria-hidden="true">
                 {hasLocalDraft ? (
@@ -87,8 +97,16 @@ export function CrecerStepSelector({
                 )}
               </span>
               <span className="admin-crecer-step-option__copy">
-                <strong>{step.nombre}</strong>
-                <small>{hasLocalDraft ? "Borrador sin guardar" : completed ? "Contenido guardado" : isActive ? "Editando ahora" : "Pendiente"}</small>
+                <strong>{guia ? `${guia.orden}. ${step.nombre}` : step.nombre}</strong>
+                <small>
+                  {hasLocalDraft
+                    ? "✏️ Borrador sin guardar"
+                    : completed
+                      ? "✓ Listo y guardado"
+                      : isActive
+                        ? `👉 Editando: ${guia?.explicacion ?? "Completa abajo"}`
+                        : (guia?.explicacion ?? "Pendiente")}
+                </small>
               </span>
             </button>
           );

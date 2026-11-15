@@ -28,8 +28,8 @@ export function AgeGroupSelector({
           <Target size={18} />
         </div>
         <div>
-          <h2>Franja de edad</h2>
-          <p>Cada audiencia conserva su propia versión.</p>
+          <h2>1. Elige la edad de los niños</h2>
+          <p>Cada grupo de edad guarda su propia explicación adaptada.</p>
         </div>
       </div>
 
