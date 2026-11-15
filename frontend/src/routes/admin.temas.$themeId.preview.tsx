@@ -6,6 +6,7 @@ import { AdminStudentPreviewWorkspace } from "@/features/admin/componentes/temas
 import { ThemeWorkflowStepper } from "@/features/admin/componentes/temas/theme-workflow-stepper";
 import { obtenerEstudioTemaAdmin } from "@/features/admin/admin.api";
 import { useThemePreviewPage } from "@/features/admin/hooks/use-theme-preview-page";
+import "@/features/crecer/componentes/crecer-focus.css";
 import "./theme-detail.css";
 
 export const Route = createFileRoute("/admin/temas/$themeId/preview")({

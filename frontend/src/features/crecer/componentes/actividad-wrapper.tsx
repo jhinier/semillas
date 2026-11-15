@@ -114,7 +114,7 @@ function ContenidoActividad({ actividad, onComplete, mode = "live" }: ActividadW
 
   if (codigo === "cuestionario" && actividad.opciones && actividad.opciones.length > 0) {
     return mode === "preview"
-      ? <OpcionMultiplePreview actividad={actividad} />
+      ? <OpcionMultiplePreview actividad={actividad} onComplete={() => complete(actividad.id, actividad.xp_recompensa || 0)} />
       : <OpcionMultipleServidor actividad={actividad} onComplete={onComplete} />;
   }
 
@@ -207,7 +207,13 @@ function ActividadGenericaInteractiva({
   );
 }
 
-function OpcionMultiplePreview({ actividad }: { actividad: Actividad }) {
+function OpcionMultiplePreview({
+  actividad,
+  onComplete,
+}: {
+  actividad: Actividad;
+  onComplete?: () => void;
+}) {
   const [seleccionada, setSeleccionada] = useState<string | null>(null);
   const correcta = actividad.opciones.find((opcion) => opcion.correcta)?.id ?? null;
 
@@ -223,7 +229,12 @@ function OpcionMultiplePreview({ actividad }: { actividad: Actividad }) {
               key={opcion.id}
               type="button"
               disabled={respondida}
-              onClick={() => setSeleccionada(opcion.id)}
+              onClick={() => {
+                setSeleccionada(opcion.id);
+                if (opcion.id === correcta || !correcta) {
+                  onComplete?.();
+                }
+              }}
               className={`activity-preview-option ${respondida && isCorrect ? "activity-preview-option--correct" : ""} ${respondida && isSelected && !isCorrect ? "activity-preview-option--wrong" : ""}`}
             >
               <span>{opcion.etiqueta || "•"}</span>

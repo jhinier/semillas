@@ -943,10 +943,20 @@
 .dark .crecer-activity-card,
 .dark .crecer-question-card,
 [data-theme="app-dark"] .crecer-activity-card,
-[data-theme="app-dark"] .crecer-question-card {
+[data-theme="app-dark"] .crecer-question-card,
+[data-theme="admin-dark"] .crecer-activity-card,
+[data-theme="admin-dark"] .crecer-question-card {
   background-color: #101520 !important;
   border: 1px solid #1e293b !important;
   color: #f8fafc !important;
+}
+
+.dark .crecer-activity-card__badge,
+[data-theme="app-dark"] .crecer-activity-card__badge,
+[data-theme="admin-dark"] .crecer-activity-card__badge {
+  border: 1px solid color-mix(in srgb, var(--lesson-accent, #7c3aed) 45%, transparent) !important;
+  background: color-mix(in srgb, var(--lesson-accent, #7c3aed) 24%, #0f172a) !important;
+  color: color-mix(in srgb, var(--lesson-accent, #7c3aed) 35%, #ffffff) !important;
 }
 
 .dark .crecer-activity-card__header h2,

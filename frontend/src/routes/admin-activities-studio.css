@@ -1115,6 +1115,35 @@
   color: #94a3b8 !important;
 }
 
+.dark .activity-editor-checklist__item--pending,
+[data-theme="admin-dark"] .activity-editor-checklist__item--pending {
+  border-color: #2d3b55 !important;
+  background: #141d31 !important;
+  color: #e2e8f0 !important;
+}
+
+.dark .activity-editor-checklist__item--pending strong,
+[data-theme="admin-dark"] .activity-editor-checklist__item--pending strong {
+  color: #f8fafc !important;
+}
+
+.dark .activity-editor-checklist__item--complete,
+[data-theme="admin-dark"] .activity-editor-checklist__item--complete {
+  border-color: rgba(52, 211, 153, 0.35) !important;
+  background: rgba(16, 185, 129, 0.14) !important;
+  color: #ecfdf5 !important;
+}
+
+.dark .activity-editor-checklist__item--complete strong,
+[data-theme="admin-dark"] .activity-editor-checklist__item--complete strong {
+  color: #ecfdf5 !important;
+}
+
+.dark .activity-editor-checklist__item--complete small,
+[data-theme="admin-dark"] .activity-editor-checklist__item--complete small {
+  color: #6ee7b7 !important;
+}
+
 .dark .activity-editor-summary dl > div,
 [data-theme="admin-dark"] .activity-editor-summary dl > div {
   border-top-color: #1e293b !important;
@@ -1163,6 +1192,13 @@
   border-color: #283548 !important;
   background: #141c2c !important;
   color: #cbd5e1 !important;
+}
+
+.dark .activity-type-picker__heading > span,
+[data-theme="admin-dark"] .activity-type-picker__heading > span {
+  border: 1px solid rgba(167, 139, 250, 0.35) !important;
+  background: rgba(124, 58, 237, 0.24) !important;
+  color: #ddd6fe !important;
 }
 
 .dark .activity-type-card--active,

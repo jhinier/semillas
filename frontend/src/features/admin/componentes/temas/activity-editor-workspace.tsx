@@ -279,12 +279,16 @@ export function ActivityEditorWorkspace(props: ActivityEditorWorkspaceProps) {
               return (
                 <div
                   key={item.id}
-                  className={`flex items-start gap-2.5 rounded-xl border p-3 text-xs ${issues.length ? "border-slate-200 bg-white text-slate-600" : "border-emerald-200 bg-emerald-50/70 text-emerald-900"}`}
+                  className={`activity-editor-checklist__item flex items-start gap-2.5 rounded-xl border p-3 text-xs ${
+                    issues.length
+                      ? "activity-editor-checklist__item--pending border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200"
+                      : "activity-editor-checklist__item--complete border-emerald-200 bg-emerald-50/70 text-emerald-900 dark:border-emerald-500/35 dark:bg-emerald-500/15 dark:text-emerald-100"
+                  }`}
                 >
-                  <span className="mt-0.5 shrink-0">{issues.length ? <CircleAlert size={15} className="text-amber-500" /> : <CircleCheck size={15} className="text-emerald-600" />}</span>
+                  <span className="mt-0.5 shrink-0">{issues.length ? <CircleAlert size={15} className="text-amber-500 dark:text-amber-400" /> : <CircleCheck size={15} className="text-emerald-600 dark:text-emerald-400" />}</span>
                   <div>
                     <strong className="block font-bold">{item.label}</strong>
-                    <small className="block opacity-80">{issues.length ? issues[0] : "Listo"}</small>
+                    <small className="block opacity-90">{issues.length ? issues[0] : "Listo"}</small>
                   </div>
                 </div>
               );

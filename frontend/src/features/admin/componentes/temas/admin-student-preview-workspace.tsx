@@ -1,10 +1,11 @@
-import type { CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import {
   ArrowLeft,
   ArrowRight,
   BookOpen,
   BookOpenCheck,
   Check,
+  CheckCircle2,
   Clock3,
   Edit3,
   Eye,
@@ -14,11 +15,15 @@ import {
   Layers3,
   Play,
   Quote,
+  RotateCcw,
   Sparkles,
+  Trophy,
 } from "lucide-react";
 
+import type { Actividad } from "@/shared/api/api";
 import { obtenerNombreLibroBiblico } from "@/features/catalog/catalog.api";
 import { FASES_CRECER } from "@/features/crecer/crecer-fases";
+import { ActividadWrapper } from "@/features/crecer/componentes/actividad-wrapper";
 import type { ActividadAdmin } from "@/features/admin/admin.api";
 import type { ThemePreviewMode } from "../../hooks/use-theme-preview-page";
 
@@ -136,6 +141,67 @@ export function AdminStudentPreviewWorkspace({
   onEditCrecer,
   onEditActivities,
 }: Props) {
+  const [simulatedStepCodes, setSimulatedStepCodes] = useState<string[]>([]);
+  const [simulatedActivityIds, setSimulatedActivityIds] = useState<string[]>([]);
+  const [lessonCompleted, setLessonCompleted] = useState(false);
+
+  useEffect(() => {
+    setSimulatedStepCodes([]);
+    setSimulatedActivityIds([]);
+    setLessonCompleted(false);
+  }, [selectedAgeGroupId, theme.id]);
+
+  const simulatedStepSet = useMemo(() => new Set(simulatedStepCodes), [simulatedStepCodes]);
+  const simulatedActivitySet = useMemo(() => new Set(simulatedActivityIds), [simulatedActivityIds]);
+  const hasSimulationProgress =
+    simulatedStepCodes.length > 0 || simulatedActivityIds.length > 0 || lessonCompleted;
+  const simulatedProgressPercent = Math.round(
+    (simulatedStepSet.size / Math.max(1, FASES_CRECER.length)) * 100,
+  );
+
+  const handleResetSimulation = () => {
+    setSimulatedStepCodes([]);
+    setSimulatedActivityIds([]);
+    setLessonCompleted(false);
+    onStepChange(FASES_CRECER[0]?.codigo ?? "conectar");
+  };
+
+  const handleStartLesson = () => {
+    if (simulatedStepCodes.length === 0) {
+      onStepChange(FASES_CRECER[0]?.codigo ?? "conectar");
+    }
+    setLessonCompleted(false);
+    onPreviewModeChange("lesson");
+  };
+
+  const handleSelectStepFromOverview = (stepCode: string) => {
+    setLessonCompleted(false);
+    onStepChange(stepCode);
+    onPreviewModeChange("lesson");
+  };
+
+  const handleContinueLessonStep = () => {
+    const currentIndex = Math.max(
+      0,
+      FASES_CRECER.findIndex((item) => item.codigo === activeStepCode),
+    );
+    const currentCode = FASES_CRECER[currentIndex]?.codigo;
+    if (currentCode) {
+      setSimulatedStepCodes((prev) => (prev.includes(currentCode) ? prev : [...prev, currentCode]));
+    }
+    if (currentIndex < FASES_CRECER.length - 1) {
+      const nextCode = FASES_CRECER[currentIndex + 1]?.codigo ?? "conectar";
+      onStepChange(nextCode);
+      setLessonCompleted(false);
+    } else {
+      setLessonCompleted(true);
+    }
+  };
+
+  const handleSimulateActivityComplete = (activityId: string) => {
+    setSimulatedActivityIds((prev) => (prev.includes(activityId) ? prev : [...prev, activityId]));
+  };
+
   return (
     <div className="admin-student-preview">
       <header className="admin-student-preview__toolbar">
@@ -224,9 +290,19 @@ export function AdminStudentPreviewWorkspace({
       <div className="admin-student-preview__notice" role="note">
         <Eye size={16} />
         <span>
-          Modo simulación para <strong>{selectedAgeGroup?.nombre ?? "la franja seleccionada"}</strong>.
-          Las acciones del estudiante están desactivadas.
+          Simulación interactiva para <strong>{selectedAgeGroup?.nombre ?? "la franja seleccionada"}</strong>:
+          recorre los momentos CRECER y prueba las actividades sin guardar progreso real.
         </span>
+        {hasSimulationProgress ? (
+          <button
+            type="button"
+            className="admin-student-preview__reset"
+            onClick={handleResetSimulation}
+          >
+            <RotateCcw size={13} />
+            Reiniciar simulación
+          </button>
+        ) : null}
       </div>
 
       <section className="admin-student-preview__frame" aria-label="Simulación de la experiencia del estudiante">
@@ -234,7 +310,7 @@ export function AdminStudentPreviewWorkspace({
           <span />
           <span />
           <span />
-          <strong>Semillas · vista del estudiante</strong>
+          <strong>Semillas · vista interactiva del estudiante</strong>
         </div>
 
         <div className="admin-student-preview__viewport">
@@ -244,13 +320,28 @@ export function AdminStudentPreviewWorkspace({
               portadaUrl={portadaUrl}
               steps={steps}
               completedStepCodes={completedStepCodes}
+              simulatedStepCodes={simulatedStepSet}
+              simulatedProgressPercent={simulatedProgressPercent}
+              lessonCompleted={lessonCompleted}
+              onStartLesson={handleStartLesson}
+              onSelectStep={handleSelectStepFromOverview}
             />
           ) : (
             <LessonPreview
               theme={theme}
               steps={steps}
               activeStepCode={activeStepCode}
-              onStepChange={onStepChange}
+              onStepChange={(code) => {
+                setLessonCompleted(false);
+                onStepChange(code);
+              }}
+              onBackToOverview={() => onPreviewModeChange("overview")}
+              onContinueStep={handleContinueLessonStep}
+              simulatedStepCodes={simulatedStepSet}
+              simulatedActivityIds={simulatedActivitySet}
+              onSimulateActivityComplete={handleSimulateActivityComplete}
+              lessonCompleted={lessonCompleted}
+              onResetSimulation={handleResetSimulation}
               selectedStep={selectedStep}
               selectedContent={selectedContent}
               selectedQuestions={selectedQuestions}
@@ -289,12 +380,28 @@ function ThemeOverviewPreview({
   portadaUrl,
   steps,
   completedStepCodes,
+  simulatedStepCodes,
+  simulatedProgressPercent,
+  lessonCompleted,
+  onStartLesson,
+  onSelectStep,
 }: {
   theme: PreviewTheme;
   portadaUrl: string | null;
   steps: PreviewStep[];
   completedStepCodes: Set<string>;
+  simulatedStepCodes: Set<string>;
+  simulatedProgressPercent: number;
+  lessonCompleted: boolean;
+  onStartLesson: () => void;
+  onSelectStep: (stepCode: string) => void;
 }) {
+  const startLabel = lessonCompleted
+    ? "Volver a recorrer lección"
+    : simulatedStepCodes.size > 0
+      ? "Continuar lección"
+      : "Comenzar lección";
+
   return (
     <div className="theme-detail admin-student-preview__theme-detail">
       <div className="theme-detail__back admin-student-preview__disabled-control" aria-hidden="true">
@@ -343,18 +450,25 @@ function ThemeOverviewPreview({
           <div className="theme-detail__progress-card">
             <div>
               <strong>Tu progreso</strong>
-              <span>0%</span>
+              <span>{simulatedProgressPercent}%</span>
             </div>
-            <div className="theme-detail__progress-track" aria-label="0% completado">
-              <span style={{ width: "0%" }} />
+            <div
+              className="theme-detail__progress-track"
+              aria-label={`${simulatedProgressPercent}% completado`}
+            >
+              <span style={{ width: `${simulatedProgressPercent}%` }} />
             </div>
-            <small>Comienza con Conectar y avanza a tu ritmo.</small>
+            <small>
+              {simulatedStepCodes.size > 0
+                ? `Avance en simulación: ${simulatedStepCodes.size} de ${FASES_CRECER.length} pasos completados.`
+                : "Pulsa Comenzar lección o haz clic en cualquier paso inferior para probarlo."}
+            </small>
           </div>
 
           <div className="theme-detail__actions">
-            <button type="button" className="theme-detail__primary admin-student-preview__disabled-control">
+            <button type="button" className="theme-detail__primary" onClick={onStartLesson}>
               <Play fill="currentColor" />
-              Comenzar lección
+              {startLabel}
               <ArrowRight />
             </button>
           </div>
@@ -367,21 +481,37 @@ function ThemeOverviewPreview({
             <span>METODOLOGÍA CRECER</span>
             <h2 id="admin-preview-journey-title">Tu recorrido en seis pasos</h2>
           </div>
-          <p>Lee, participa y aplica cada enseñanza antes de recibir tu recompensa.</p>
+          <p>Haz clic en cualquier momento CRECER para probar su lectura, preguntas y actividades.</p>
         </div>
 
         <ol className="theme-detail__steps">
           {FASES_CRECER.map((phase) => {
-            const available = completedStepCodes.has(phase.codigo ?? "");
+            const code = phase.codigo ?? "conectar";
+            const available = completedStepCodes.has(code);
+            const simulatedDone = simulatedStepCodes.has(code);
+            const stateClass = simulatedDone
+              ? "is-complete"
+              : available
+                ? "is-available"
+                : "";
             return (
-              <li key={phase.numero} className={available ? "is-complete" : ""}>
-                <span className="theme-detail__step-number">
-                  {available ? <Check aria-hidden="true" /> : phase.numero}
-                </span>
-                <div>
-                  <strong>{phase.nombre}</strong>
-                  <p>{phase.descripcion}</p>
-                </div>
+              <li key={phase.numero} className={stateClass}>
+                <button
+                  type="button"
+                  className="admin-student-preview__step-button"
+                  onClick={() => onSelectStep(code)}
+                >
+                  <span className="theme-detail__step-number">
+                    {simulatedDone || available ? <Check aria-hidden="true" /> : phase.numero}
+                  </span>
+                  <div>
+                    <strong>{phase.nombre}</strong>
+                    <p>{phase.descripcion}</p>
+                    <small className="admin-student-preview__step-cta">
+                      {simulatedDone ? "Completado en simulación" : available ? "Probar paso →" : "Revisar paso →"}
+                    </small>
+                  </div>
+                </button>
               </li>
             );
           })}
@@ -398,6 +528,13 @@ function LessonPreview({
   steps,
   activeStepCode,
   onStepChange,
+  onBackToOverview,
+  onContinueStep,
+  simulatedStepCodes,
+  simulatedActivityIds,
+  onSimulateActivityComplete,
+  lessonCompleted,
+  onResetSimulation,
   selectedStep,
   selectedContent,
   selectedQuestions,
@@ -409,6 +546,13 @@ function LessonPreview({
   steps: PreviewStep[];
   activeStepCode: string;
   onStepChange: (code: string) => void;
+  onBackToOverview: () => void;
+  onContinueStep: () => void;
+  simulatedStepCodes: Set<string>;
+  simulatedActivityIds: Set<string>;
+  onSimulateActivityComplete: (activityId: string) => void;
+  lessonCompleted: boolean;
+  onResetSimulation: () => void;
   selectedStep: PreviewStep | null;
   selectedContent: StepContent | null;
   selectedQuestions: ReflectionQuestion[];
@@ -416,29 +560,59 @@ function LessonPreview({
   onEditCrecer: () => void;
   onEditActivities: () => void;
 }) {
+  const [selectedActivityId, setSelectedActivityId] = useState<string>("");
+  const [replaySeed, setReplaySeed] = useState(0);
+
+  useEffect(() => {
+    setSelectedActivityId(activities[0]?.id ?? "");
+    setReplaySeed(0);
+  }, [activeStepCode, activities]);
+
+  const activeActivity =
+    activities.find((activity) => activity.id === selectedActivityId) ?? activities[0] ?? null;
+
   const phase = FASES_CRECER.find((item) => item.codigo === activeStepCode) ?? FASES_CRECER[0]!;
   const phaseIndex = Math.max(0, FASES_CRECER.findIndex((item) => item.codigo === phase.codigo));
   const style = {
     "--preview-phase": phase.colorAccent,
     "--preview-phase-soft": phase.colorSuave ?? "#eef6ef",
+    "--lesson-accent": phase.colorAccent,
+    "--lesson-soft": phase.colorSuave ?? "#eef6ef",
   } as CSSProperties;
 
   return (
     <div className="admin-student-lesson" style={style}>
+      <div className="admin-student-lesson__topbar">
+        <button
+          type="button"
+          className="admin-student-lesson__overview-back"
+          onClick={onBackToOverview}
+        >
+          <ArrowLeft size={15} />
+          Volver a la portada
+        </button>
+        <span className="admin-student-lesson__sim-stats">
+          {simulatedStepCodes.size}/6 pasos recorridos · {simulatedActivityIds.size}{" "}
+          {simulatedActivityIds.size === 1 ? "actividad probada" : "actividades probadas"}
+        </span>
+      </div>
+
       <nav className="admin-student-lesson__steps" aria-label="Momentos CRECER">
         {FASES_CRECER.map((item) => {
+          const code = item.codigo ?? "conectar";
           const exists = steps.some((step) => step.tipo_paso?.codigo === item.codigo);
+          const simulated = simulatedStepCodes.has(code);
           return (
             <button
               key={item.numero}
               type="button"
-              className={item.codigo === activeStepCode ? "is-active" : ""}
-              aria-current={item.codigo === activeStepCode ? "step" : undefined}
-              onClick={() => onStepChange(item.codigo ?? "conectar")}
+              className={`${code === activeStepCode ? "is-active" : ""} ${simulated ? "is-simulated-done" : ""}`.trim()}
+              aria-current={code === activeStepCode ? "step" : undefined}
+              onClick={() => onStepChange(code)}
             >
-              <span>{item.numero}</span>
+              <span>{simulated ? <Check size={14} /> : item.numero}</span>
               <strong>{item.nombre}</strong>
-              <small>{exists ? "Configurado" : "Pendiente"}</small>
+              <small>{simulated ? "Probado" : exists ? "Configurado" : "Pendiente"}</small>
             </button>
           );
         })}
@@ -505,26 +679,111 @@ function LessonPreview({
                 <section className="admin-student-lesson__activities">
                   <div className="admin-student-lesson__section-title">
                     <Gamepad2 size={18} />
-                    <h2>Actividades de este momento</h2>
+                    <h2>Actividades interactivas de este momento</h2>
                   </div>
-                  <div>
-                    {activities.map((activity) => (
-                      <article key={activity.id}>
-                        <span>{activity.tipo_actividad?.nombre ?? "Actividad"}</span>
-                        <h3>{activity.titulo}</h3>
-                        <p>{activity.consigna}</p>
-                        <small>{activity.xp_recompensa} XP</small>
-                      </article>
-                    ))}
+
+                  {activities.length > 1 ? (
+                    <div className="admin-student-lesson__activity-picker" role="tablist" aria-label="Elegir actividad a probar">
+                      {activities.map((activity, index) => {
+                        const selected = activeActivity?.id === activity.id;
+                        const probada = simulatedActivityIds.has(activity.id);
+                        return (
+                          <button
+                            key={activity.id}
+                            type="button"
+                            role="tab"
+                            aria-selected={selected}
+                            className={`admin-student-lesson__activity-tab ${selected ? "is-selected" : ""}`}
+                            onClick={() => {
+                              setSelectedActivityId(activity.id);
+                              setReplaySeed(0);
+                            }}
+                          >
+                            <div>
+                              <span>{activity.tipo_actividad?.nombre ?? `Actividad ${index + 1}`}</span>
+                              <strong>{activity.titulo}</strong>
+                            </div>
+                            <small>
+                              {probada ? (
+                                <span className="admin-student-lesson__activity-done">
+                                  <CheckCircle2 size={13} /> Probada
+                                </span>
+                              ) : (
+                                `${activity.xp_recompensa} XP`
+                              )}
+                            </small>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+
+                  {activeActivity ? (
+                    <div className="admin-student-lesson__simulator">
+                      <div className="admin-student-lesson__simulator-bar">
+                        <div>
+                          <span className="admin-student-lesson__simulator-pill">
+                            {activeActivity.tipo_actividad?.nombre ?? "Actividad"}
+                          </span>
+                          <strong>{activeActivity.xp_recompensa} XP simulados</strong>
+                          {simulatedActivityIds.has(activeActivity.id) ? (
+                            <span className="admin-student-lesson__activity-done">
+                              <CheckCircle2 size={14} /> Completada en simulación
+                            </span>
+                          ) : null}
+                        </div>
+                        <button
+                          type="button"
+                          className="admin-student-lesson__simulator-replay"
+                          onClick={() => setReplaySeed((seed) => seed + 1)}
+                        >
+                          <RotateCcw size={13} />
+                          Reiniciar actividad
+                        </button>
+                      </div>
+
+                      <ActividadWrapper
+                        key={`${activeStepCode}-${activeActivity.id}-${replaySeed}`}
+                        actividad={adaptarActividadParaPreview(activeActivity)}
+                        mode="preview"
+                        onComplete={(id) => onSimulateActivityComplete(id)}
+                      />
+                    </div>
+                  ) : null}
+                </section>
+              ) : null}
+
+              {lessonCompleted && phaseIndex === 5 ? (
+                <section className="admin-student-lesson__complete-banner" role="status">
+                  <div className="admin-student-lesson__complete-copy">
+                    <span className="admin-student-lesson__complete-icon" aria-hidden="true">
+                      <Trophy size={22} />
+                    </span>
+                    <div>
+                      <strong>¡Recorrido simulado completado!</strong>
+                      <p>
+                        Probaste {simulatedStepCodes.size} de 6 momentos y {simulatedActivityIds.size}{" "}
+                        {simulatedActivityIds.size === 1 ? "actividad" : "actividades"} sin guardar datos reales.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="admin-student-lesson__complete-actions">
+                    <button type="button" className="admin-secondary-button" onClick={onResetSimulation}>
+                      <RotateCcw size={14} />
+                      Reiniciar
+                    </button>
+                    <button type="button" className="admin-primary-button" onClick={onBackToOverview}>
+                      Volver a la portada
+                    </button>
                   </div>
                 </section>
               ) : null}
 
               <div className="admin-student-lesson__continue">
-                <button type="button" className="admin-student-preview__disabled-control">
+                <button type="button" onClick={onContinueStep}>
                   <span>
-                    <small>{phaseIndex < 5 ? `Siguiente: ${FASES_CRECER[phaseIndex + 1]?.nombre}` : "Tema completado"}</small>
-                    <strong>Continuar</strong>
+                    <small>{phaseIndex < 5 ? `Siguiente: ${FASES_CRECER[phaseIndex + 1]?.nombre}` : "Último paso del recorrido"}</small>
+                    <strong>{phaseIndex < 5 ? "Continuar" : "Finalizar recorrido"}</strong>
                   </span>
                   <ArrowRight />
                 </button>
@@ -539,6 +798,15 @@ function LessonPreview({
                 <Edit3 size={16} />
                 Completar en Editor CRECER
               </button>
+              <div className="admin-student-lesson__continue mt-2">
+                <button type="button" onClick={onContinueStep}>
+                  <span>
+                    <small>{phaseIndex < 5 ? `Saltar a: ${FASES_CRECER[phaseIndex + 1]?.nombre}` : "Cerrar recorrido"}</small>
+                    <strong>{phaseIndex < 5 ? "Siguiente paso" : "Finalizar recorrido"}</strong>
+                  </span>
+                  <ArrowRight />
+                </button>
+              </div>
             </div>
           )}
 
@@ -557,6 +825,54 @@ function LessonPreview({
       ) : null}
     </div>
   );
+}
+
+function adaptarActividadParaPreview(actividad: ActividadAdmin): Actividad {
+  const codigo = actividad.tipo_actividad?.codigo ?? "cuestionario";
+  return {
+    id: actividad.id,
+    tema_id: actividad.tema_id,
+    paso_id: actividad.paso_id,
+    grupo_edad_id: actividad.grupo_edad_id,
+    tipo_actividad_id: actividad.tipo_actividad_id,
+    titulo: actividad.titulo,
+    consigna: actividad.consigna,
+    orden: actividad.orden,
+    xp_recompensa: actividad.xp_recompensa,
+    dificultad: actividad.dificultad,
+    limite_tiempo_seg: actividad.limite_tiempo_seg,
+    obligatorio: actividad.obligatorio,
+    retroalimentacion: actividad.retroalimentacion,
+    configuracion: actividad.configuracion ?? {},
+    tipo_actividad: actividad.tipo_actividad
+      ? {
+          id: actividad.tipo_actividad.id,
+          codigo: actividad.tipo_actividad.codigo,
+          nombre: actividad.tipo_actividad.nombre,
+          descripcion: null,
+          es_juego: true,
+          activo: true,
+          creado_en: new Date(0).toISOString(),
+        }
+      : {
+          id: actividad.tipo_actividad_id,
+          codigo,
+          nombre: "Actividad",
+          descripcion: null,
+          es_juego: true,
+          activo: true,
+          creado_en: new Date(0).toISOString(),
+        },
+    opciones: (actividad.opciones ?? []).map((opcion, index) => ({
+      id: opcion.id,
+      actividad_id: opcion.actividad_id,
+      etiqueta: opcion.etiqueta || String.fromCharCode(65 + index),
+      texto: opcion.texto,
+      correcta: opcion.correcta,
+      orden: opcion.orden,
+      retroalimentacion: opcion.retroalimentacion,
+    })),
+  };
 }
 
 function GeneralVerseFooterCard({ theme }: { theme: PreviewTheme }) {

@@ -267,26 +267,26 @@ function AdminThemeStudioPage() {
                 return (
                   <div
                     key={item.step}
-                    className={`flex flex-wrap items-center justify-between gap-4 rounded-2xl border p-4 ${
+                    className={`flex flex-wrap items-center justify-between gap-4 rounded-2xl border p-4 transition-colors ${
                       item.done
-                        ? "border-emerald-200 bg-emerald-50/40"
+                        ? "border-emerald-200 bg-emerald-50/40 dark:border-emerald-500/35 dark:bg-emerald-950/35"
                         : item.step === nextStep
-                          ? "border-violet-300 bg-violet-50/50"
-                          : "border-slate-200 bg-white"
+                          ? "border-violet-300 bg-violet-50/50 dark:border-violet-500/45 dark:bg-violet-950/40"
+                          : "border-slate-200 bg-white dark:border-slate-700/90 dark:bg-slate-900/75"
                     }`}
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         {item.done ? (
-                          <CheckCircle2 size={18} className="shrink-0 text-emerald-600" />
+                          <CheckCircle2 size={18} className="shrink-0 text-emerald-600 dark:text-emerald-400" />
                         ) : locked ? (
-                          <Lock size={16} className="shrink-0 text-slate-400" />
+                          <Lock size={16} className="shrink-0 text-slate-400 dark:text-slate-500" />
                         ) : (
-                          <Circle size={16} className="shrink-0 text-violet-600" />
+                          <Circle size={16} className="shrink-0 text-violet-600 dark:text-violet-400" />
                         )}
-                        <strong className="text-sm font-extrabold text-slate-900">{item.title}</strong>
+                        <strong className="text-sm font-extrabold text-slate-900 dark:text-slate-100">{item.title}</strong>
                       </div>
-                      <p className="mt-1 text-xs leading-5 text-slate-600">
+                      <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-300">
                         {item.lockedReason ?? item.summary}
                       </p>
                     </div>
