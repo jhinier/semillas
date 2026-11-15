@@ -1063,10 +1063,17 @@
 }
 
 .dark .admin-activity-meta span,
-[data-theme="admin-dark"] .admin-activity-meta span {
+[data-theme="admin-dark"] .admin-activity-meta span,
+.dark .admin-activity-sequence-row__copy > div:first-child > span,
+[data-theme="admin-dark"] .admin-activity-sequence-row__copy > div:first-child > span {
   background: #1e293b !important;
   color: #cbd5e1 !important;
   border: 1px solid #334155 !important;
+}
+
+.dark .admin-activity-sequence-row__copy h3,
+[data-theme="admin-dark"] .admin-activity-sequence-row__copy h3 {
+  color: #f8fafc !important;
 }
 
 .dark .activity-library-status-tabs button span,

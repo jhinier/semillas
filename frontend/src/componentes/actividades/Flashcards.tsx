@@ -31,7 +31,7 @@ export function Flashcards({ actividad, onComplete }: FlashcardsProps) {
                       card.isFlipped ? "[transform:rotateY(180deg)]" : ""
                     }`}
                   >
-                    <div className="absolute inset-0 w-full h-full [backface-visibility:hidden] bg-slate-100 rounded-xl border-4 border-white flex items-center justify-center overflow-hidden">
+                    <div className="absolute inset-0 flex h-full w-full items-center justify-center overflow-hidden rounded-xl border-4 border-white bg-slate-100 [backface-visibility:hidden] dark:border-slate-700 dark:bg-slate-800">
                       <img
                         src={dorsoCarta}
                         alt="Reverso Flashcard"
@@ -40,14 +40,22 @@ export function Flashcards({ actividad, onComplete }: FlashcardsProps) {
                     </div>
 
                     <div
-                      className={`absolute inset-0 w-full h-full [backface-visibility:hidden] [transform:rotateY(180deg)] rounded-xl border-2 sm:border-4 flex flex-col items-center justify-center p-2 text-center overflow-hidden ${
-                        card.isMatched ? "bg-green-100 border-green-500" : "bg-amber-50 border-amber-400"
+                      className={`absolute inset-0 flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-xl border-2 p-2 text-center [backface-visibility:hidden] [transform:rotateY(180deg)] sm:border-4 ${
+                        card.isMatched
+                          ? "border-green-500 bg-green-100 dark:border-emerald-500 dark:bg-emerald-950/80"
+                          : "border-amber-400 bg-amber-50 dark:border-amber-500 dark:bg-amber-950/80"
                       }`}
                     >
-                      <p className={`font-bold ${card.isMatched ? "text-green-800" : "text-amber-700"} text-xs sm:text-sm break-words w-full px-1`}>
+                      <p
+                        className={`w-full break-words px-1 text-xs font-bold sm:text-sm ${
+                          card.isMatched
+                            ? "text-green-800 dark:text-emerald-200"
+                            : "text-amber-700 dark:text-amber-200"
+                        }`}
+                      >
                         {card.texto}
                       </p>
-                      {card.isMatched && <Check className="text-green-600 mt-1 shrink-0" size={16} strokeWidth={3} />}
+                      {card.isMatched && <Check className="mt-1 shrink-0 text-green-600 dark:text-emerald-300" size={16} strokeWidth={3} />}
                     </div>
                   </div>
                 </div>

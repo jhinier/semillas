@@ -9,6 +9,28 @@ import { Boton } from "../../../componentes/ui/boton";
 
 type ResultadoRespuesta = Awaited<ReturnType<typeof responderActividad>>;
 
+/** Normaliza la retroalimentación para evitar prefijos duplicados junto al título del resultado. */
+export function obtenerTextoRetroalimentacion(
+  retroalimentacion: string | null | undefined,
+  correcta: boolean,
+  xpOtorgada?: number,
+): string {
+  const limpio = (retroalimentacion ?? "")
+    .replace(
+      /^\s*(?:¡\s*)?(?:respuesta\s+(?:correcta|incorrecta)|correcto|incorrecto)(?:\s*[!.:,-]+)?\s*/i,
+      "",
+    )
+    .trim();
+
+  if (limpio) {
+    return limpio;
+  }
+
+  return correcta
+    ? `Ganaste ${xpOtorgada ?? 10} XP.`
+    : "Revisa la respuesta correcta e inténtalo nuevamente.";
+}
+
 type Props = {
   actividad: Actividad;
   onComplete?: (actividadId: string, xp?: number) => void;
@@ -127,7 +149,7 @@ export function OpcionMultipleServidor({ actividad, onComplete }: Props) {
       })}
 
       {respuestaMutation.isError ? (
-        <div className="rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-700 flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700 dark:border-red-800 dark:bg-red-950/60 dark:text-red-200">
           <span>
             {respuestaMutation.error instanceof Error
               ? respuestaMutation.error.message
@@ -140,18 +162,28 @@ export function OpcionMultipleServidor({ actividad, onComplete }: Props) {
       ) : null}
 
       {resultado ? (
-        <div className={`mt-2 rounded-xl p-4 border ${resultado.resultado.correcta ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-950/50 dark:text-green-300 dark:border-green-800" : "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/50 dark:text-red-300 dark:border-red-800"}`}>
-          <p className="font-black">
+        <div
+          className={`mt-2 rounded-2xl border p-4 ${
+            resultado.resultado.correcta
+              ? "border-green-300 bg-green-50/90 text-green-800 dark:border-green-800 dark:bg-green-950/60 dark:text-green-200"
+              : "border-red-300 bg-red-50/90 text-red-800 dark:border-red-800 dark:bg-red-950/60 dark:text-red-200"
+          }`}
+        >
+          <p
+            className={`text-base font-black ${
+              resultado.resultado.correcta
+                ? "text-green-800 dark:text-green-200"
+                : "text-red-800 dark:text-red-200"
+            }`}
+          >
             {resultado.resultado.correcta ? "¡Correcto!" : "Respuesta incorrecta"}
           </p>
-          <p className={`font-black ${resultado.resultado.correcta ? "text-green-700" : "text-red-700"}`}>
-            {resultado.resultado.correcta ? "¡Correcto!" : "Respuesta incorrecta"}
-          </p>
-          <p className="mt-1 text-sm font-medium text-slate-600 dark:text-slate-300">
-            {resultado.resultado.retroalimentacion
-              ?? (resultado.resultado.correcta
-                ? `Ganaste ${resultado.resultado.xp_otorgada} XP.`
-                : "Revisa la respuesta correcta e inténtalo nuevamente.")}
+          <p className="mt-1 text-sm font-medium text-slate-700 dark:text-slate-200">
+            {obtenerTextoRetroalimentacion(
+              resultado.resultado.retroalimentacion,
+              resultado.resultado.correcta,
+              resultado.resultado.xp_otorgada,
+            )}
           </p>
           {!resultado.resultado.correcta ? (
             <Boton variante="contorno" tamano="pequeno" onClick={reintentar} className="mt-3">

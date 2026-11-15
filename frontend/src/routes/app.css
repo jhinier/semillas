@@ -3521,21 +3521,21 @@ html[data-semillas-text-size="grande"] {
   color: #f8fafc !important;
 }
 
-.dark .crecer-activity-card h2,
-.dark .crecer-activity-card h3,
-.dark .crecer-question-card h2,
-.dark .crecer-question-card h3,
-[data-theme="app-dark"] .crecer-activity-card h2,
-[data-theme="app-dark"] .crecer-activity-card h3,
-[data-theme="app-dark"] .crecer-question-card h2,
-[data-theme="app-dark"] .crecer-question-card h3 {
+.dark .crecer-activity-card__header h2,
+.dark .crecer-activity-card__header h3,
+.dark .crecer-question-card > h2,
+.dark .crecer-question-card > h3,
+[data-theme="app-dark"] .crecer-activity-card__header h2,
+[data-theme="app-dark"] .crecer-activity-card__header h3,
+[data-theme="app-dark"] .crecer-question-card > h2,
+[data-theme="app-dark"] .crecer-question-card > h3 {
   color: #f8fafc !important;
 }
 
-.dark .crecer-activity-card p,
-.dark .crecer-question-card p,
-[data-theme="app-dark"] .crecer-activity-card p,
-[data-theme="app-dark"] .crecer-question-card p {
+.dark .crecer-activity-card__header p,
+.dark .crecer-question-card > p,
+[data-theme="app-dark"] .crecer-activity-card__header p,
+[data-theme="app-dark"] .crecer-question-card > p {
   color: #cbd5e1 !important;
 }
 

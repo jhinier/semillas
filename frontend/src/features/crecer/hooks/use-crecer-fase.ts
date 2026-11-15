@@ -813,7 +813,7 @@ export function construirActividadesFallback(
         pregunta: "¿Qué nos enseña la Senda del Padre sobre el amor de Dios?",
         retro: "¡Muy bien! Dios Padre nos creó, nos cuida siempre y nos dio a su Hijo Jesús por amor.",
         opciones: [
-          { etiqueta: "A", texto: "Que Dios Padre nos creó y nos ama siempre", correcta: true, retro: "¡Correcto! Eres un hijo muy amado de Dios Padre." },
+          { etiqueta: "A", texto: "Que Dios Padre nos creó y nos ama siempre", correcta: true, retro: "Eres un hijo muy amado de Dios Padre." },
           { etiqueta: "B", texto: "Que Dios solo nos quiere cuando no nos equivocamos", correcta: false, retro: "El amor de Dios Padre nunca se acaba y siempre nos cuida." },
           { etiqueta: "C", texto: "Que Dios está lejos y no nos escucha", correcta: false, retro: "Dios Padre está siempre cerca y escucha nuestras oraciones." },
         ],
@@ -835,7 +835,7 @@ export function construirActividadesFallback(
         pregunta: "Según Romanos 8:38-39 TLA y 1 Juan 3:1 TLA en la Senda del Padre, ¿qué afirma la Escritura?",
         retro: "Somos llamados hijos de Dios y absolutamente nada creado puede separarnos de su amor.",
         opciones: [
-          { etiqueta: "A", texto: "Que somos adoptados como hijos suyos y nada nos separa de su amor", correcta: true, retro: "¡Correcto! Nuestra identidad descansa en el amor eterno del Padre." },
+          { etiqueta: "A", texto: "Que somos adoptados como hijos suyos y nada nos separa de su amor", correcta: true, retro: "Nuestra identidad descansa en el amor eterno del Padre." },
           { etiqueta: "B", texto: "Que las pruebas pueden anular las promesas del Padre", correcta: false, retro: "Romanos 8:38-39 asegura que ninguna tribulación nos separa de su amor." },
           { etiqueta: "C", texto: "Que nuestro valor depende de la aprobación del mundo", correcta: false, retro: "1 Juan 3:1 enseña que nuestra identidad proviene del amor del Padre." },
         ],
@@ -956,7 +956,7 @@ export function construirActividadesFallback(
         pregunta: "¿Qué nos enseñó Jesús en la parábola del Buen Samaritano (Lucas 10 TLA)?",
         retro: "¡Muy bien! Jesús nos enseñó a ayudar con amor y compasión a quien lo necesita.",
         opciones: [
-          { etiqueta: "A", texto: "A ayudar y cuidar con amor a nuestro prójimo", correcta: true, retro: "¡Correcto! Así seguimos el ejemplo de Jesús." },
+          { etiqueta: "A", texto: "A ayudar y cuidar con amor a nuestro prójimo", correcta: true, retro: "Así seguimos el ejemplo de Jesús." },
           { etiqueta: "B", texto: "A pasar de largo sin ayudar a nadie", correcta: false, retro: "Jesús nos enseña a ser compasivos como el Buen Samaritano." },
           { etiqueta: "C", texto: "A ayudar solamente a quienes nos dan regalos", correcta: false, retro: "Jesús nos invita a amar a todos sin interés." },
         ],
@@ -978,7 +978,7 @@ export function construirActividadesFallback(
         pregunta: "¿Cuál es el mensaje central de Jesús al enseñar mediante las parábolas del Reino (Mateo 13, Lucas 10 y 15 TLA)?",
         retro: "Las parábolas revelan la gracia redentora de Dios y nos llaman a una fe que se demuestra en compasión, perdón y fruto.",
         opciones: [
-          { etiqueta: "A", texto: "Transformar el corazón para vivir la gracia, la misericordia y la obediencia del Reino", correcta: true, retro: "¡Correcto! Las parábolas confrontan la indiferencia y nos llaman a vivir como Cristo." },
+          { etiqueta: "A", texto: "Transformar el corazón para vivir la gracia, la misericordia y la obediencia del Reino", correcta: true, retro: "Las parábolas confrontan la indiferencia y nos llaman a vivir como Cristo." },
           { etiqueta: "B", texto: "Cumplir apariencias externas sin amar al prójimo", correcta: false, retro: "Jesús confrontó precisamente la religiosidad sin compasión." },
           { etiqueta: "C", texto: "Guardar los talentos por miedo sin servir a nadie", correcta: false, retro: "Jesús nos llama a multiplicar nuestros dones al servicio del Reino." },
         ],
@@ -1121,7 +1121,7 @@ export function construirActividadesFallback(
       pregunta: "Según Gálatas 5:16-25 TLA y 2 Timoteo 1:7 TLA, ¿qué significa «andar en el Espíritu»?",
       retro: "Significa vivir bajo la dirección diaria del Espíritu Santo, manifestando amor, poder y dominio propio frente al egoísmo.",
       opciones: [
-        { etiqueta: "A", texto: "Permitir que el Espíritu gobierne nuestro carácter, decisiones y relaciones con amor y dominio propio", correcta: true, retro: "¡Correcto! Quienes viven por el Espíritu también andan guiados por Él." },
+        { etiqueta: "A", texto: "Permitir que el Espíritu gobierne nuestro carácter, decisiones y relaciones con amor y dominio propio", correcta: true, retro: "Quienes viven por el Espíritu también andan guiados por Él." },
         { etiqueta: "B", texto: "Dejarse llevar por cada impulso de ira o rivalidad", correcta: false, retro: "Pablo enseña que el Espíritu vence precisamente esos impulsos." },
         { etiqueta: "C", texto: "Vivir con espíritu de cobardía ante las presiones del entorno", correcta: false, retro: "2 Timoteo 1:7 afirma que Dios nos dio espíritu de poder, amor y dominio propio." },
       ],

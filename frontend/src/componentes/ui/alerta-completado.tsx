@@ -16,16 +16,16 @@ export function AlertaCompletado({
 }: PropiedadesAlertaCompletado) {
   return (
     <div className={unirClases(
-      "w-full p-8 bg-green-50 rounded-3xl border-2 border-green-200 text-center animate-in zoom-in-95 mt-4 shadow-sm",
+      "mt-4 w-full animate-in zoom-in-95 rounded-3xl border-2 border-green-200 bg-green-50 p-8 text-center shadow-sm dark:border-emerald-700 dark:bg-emerald-950/70",
       clase,
     )}>
-      <div className="flex justify-center mb-6 text-green-500">
-        <div className="bg-white p-4 rounded-full shadow-md">
+      <div className="mb-6 flex justify-center text-green-500 dark:text-emerald-400">
+        <div className="rounded-full bg-white p-4 shadow-md dark:bg-emerald-900">
           <Check size={64} strokeWidth={3} />
         </div>
       </div>
-      <h4 className="text-3xl font-bold text-green-800 mb-4">{titulo}</h4>
-      <p className="text-green-700 text-xl font-medium max-w-lg mx-auto">{mensaje}</p>
+      <h4 className="mb-4 text-3xl font-bold text-green-800 dark:text-emerald-200">{titulo}</h4>
+      <p className="mx-auto max-w-lg text-xl font-medium text-green-700 dark:text-emerald-300">{mensaje}</p>
     </div>
   );
 }

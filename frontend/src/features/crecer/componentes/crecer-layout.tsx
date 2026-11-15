@@ -393,62 +393,58 @@ export function CrecerLayout({
               )}
             </div>
           </StateView>
+
+          {!isLoading && !isError ? (
+            <footer className="crecer-focus__actions">
+              <button
+                type="button"
+                className="crecer-focus__back"
+                onClick={() => navigateTo(botonesAccion.regresar)}
+              >
+                <ArrowLeft aria-hidden="true" />
+                <span>Anterior</span>
+              </button>
+
+              <div className="crecer-focus__next-wrap">
+                {actionError || progressError ? (
+                  <p className="crecer-focus__action-error" role="alert">
+                    {actionError || "No pudimos guardar tu avance. Intenta nuevamente."}
+                  </p>
+                ) : null}
+                <button
+                  type="button"
+                  className="crecer-focus__next"
+                  disabled={isSavingProgress || bloqueadoPorActividades}
+                  aria-disabled={isSavingProgress || bloqueadoPorActividades}
+                  onClick={handleContinue}
+                >
+                  <span className="crecer-focus__next-copy">
+                    <small>
+                      {bloqueadoPorActividades
+                        ? `Actividades completadas: ${completedActivityCount} de ${activityCount}`
+                        : nextPhase
+                          ? `Siguiente: ${nextPhase.nombre}`
+                          : "Senda completada"}
+                    </small>
+                    <strong>
+                      {isSavingProgress
+                        ? "Guardando..."
+                        : bloqueadoPorActividades
+                          ? "Completa las actividades para continuar"
+                          : botonesAccion.siguiente.label || "Continuar"}
+                    </strong>
+                  </span>
+                  {bloqueadoPorActividades ? (
+                    <Lock aria-hidden="true" />
+                  ) : (
+                    <ArrowRight aria-hidden="true" />
+                  )}
+                </button>
+              </div>
+            </footer>
+          ) : null}
         </section>
       </main>
-
-      {!isLoading && !isError ? (
-        <footer className="crecer-focus__actions">
-          <button
-            type="button"
-            className="crecer-focus__back"
-            onClick={() => navigateTo(botonesAccion.regresar)}
-          >
-            <ArrowLeft aria-hidden="true" />
-            <span>Anterior</span>
-          </button>
-
-          <div className="crecer-focus__next-wrap">
-            {actionError || progressError ? (
-              <p className="crecer-focus__action-error" role="alert">
-                {actionError || "No pudimos guardar tu avance. Intenta nuevamente."}
-              </p>
-            ) : bloqueadoPorActividades ? (
-              <p className="crecer-focus__action-hint" role="status">
-                Completa las actividades para habilitar el botón de continuar ({completedActivityCount}/{activityCount}).
-              </p>
-            ) : null}
-            <button
-              type="button"
-              className="crecer-focus__next"
-              disabled={isSavingProgress || bloqueadoPorActividades}
-              aria-disabled={isSavingProgress || bloqueadoPorActividades}
-              onClick={handleContinue}
-            >
-              <span className="crecer-focus__next-copy">
-                <small>
-                  {bloqueadoPorActividades
-                    ? `Actividades completadas: ${completedActivityCount} de ${activityCount}`
-                    : nextPhase
-                      ? `Siguiente: ${nextPhase.nombre}`
-                      : "Senda completada"}
-                </small>
-                <strong>
-                  {isSavingProgress
-                    ? "Guardando..."
-                    : bloqueadoPorActividades
-                      ? "Completa las actividades para continuar"
-                      : botonesAccion.siguiente.label || "Continuar"}
-                </strong>
-              </span>
-              {bloqueadoPorActividades ? (
-                <Lock aria-hidden="true" />
-              ) : (
-                <ArrowRight aria-hidden="true" />
-              )}
-            </button>
-          </div>
-        </footer>
-      ) : null}
 
       {showExitDialog ? (
         <div className="crecer-exit" role="presentation" onMouseDown={() => setShowExitDialog(false)}>

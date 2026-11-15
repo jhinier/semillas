@@ -55,7 +55,7 @@ export function ActividadWrapper({ actividad, onComplete, mode = "live" }: Activ
         <h2>{actividad.titulo}</h2>
         {actividad.consigna ? <p>{actividad.consigna}</p> : null}
         {mostrarImagenCabecera && mediaCabecera.src ? (
-          <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 max-h-64 flex items-center justify-center">
+          <div className="mt-4 flex max-h-64 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900">
             <img
               src={mediaCabecera.src}
               alt={actividad.titulo}
@@ -172,8 +172,8 @@ function ActividadGenericaInteractiva({
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5">
-      <p className="text-sm font-medium text-slate-600">
+    <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800/90">
+      <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
         {actividad.consigna || "Realiza esta actividad y confirma cuando la hayas completado."}
       </p>
       {!completada ? (
@@ -183,7 +183,7 @@ function ActividadGenericaInteractiva({
             onChange={(e) => setReflexion(e.target.value)}
             rows={3}
             placeholder="Escribe aquí tu respuesta o reflexión sobre esta actividad (opcional)..."
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 focus:border-violet-400 focus:bg-white focus:outline-none"
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 focus:border-violet-400 focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-400 dark:focus:border-violet-500 dark:focus:bg-slate-900"
           />
           <button
             type="button"
@@ -198,7 +198,7 @@ function ActividadGenericaInteractiva({
           </button>
         </>
       ) : (
-        <div className="flex items-center gap-2 rounded-xl bg-emerald-50 p-4 text-sm font-bold text-emerald-700">
+        <div className="flex items-center gap-2 rounded-xl bg-emerald-50 p-4 text-sm font-bold text-emerald-700 dark:border dark:border-emerald-700 dark:bg-emerald-950/70 dark:text-emerald-200">
           <Check size={18} />
           {actividad.retroalimentacion || "¡Actividad completada con éxito!"}
         </div>
