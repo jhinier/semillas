@@ -3363,3 +3363,316 @@
 [data-theme="admin-dark"] .admin-theme-flow-stepper .is-active {
   box-shadow: 0 2px 8px rgba(139, 92, 246, 0.22);
 }
+
+/* ==========================================================================
+   Modo Oscuro: MDXEditor, Matriz CRECER, Dropdowns y Vista Previa Paso 5
+   ========================================================================== */
+
+/* Barra de herramientas de MDXEditor (Paso 3 CRECER) */
+.dark .admin-markdown-editor .mdxeditor-toolbar,
+[data-theme="admin-dark"] .admin-markdown-editor .mdxeditor-toolbar {
+  background: #172033 !important;
+  border-bottom-color: #263349 !important;
+  color: #e2e8f0 !important;
+}
+
+.dark .admin-markdown-editor .mdxeditor-toolbar button,
+.dark .admin-markdown-editor .mdxeditor-toolbar [role="combobox"],
+.dark .admin-markdown-editor .mdxeditor-toolbar select,
+[data-theme="admin-dark"] .admin-markdown-editor .mdxeditor-toolbar button,
+[data-theme="admin-dark"] .admin-markdown-editor .mdxeditor-toolbar [role="combobox"],
+[data-theme="admin-dark"] .admin-markdown-editor .mdxeditor-toolbar select {
+  color: #e2e8f0 !important;
+  background: transparent;
+}
+
+.dark .admin-markdown-editor .mdxeditor-toolbar svg,
+[data-theme="admin-dark"] .admin-markdown-editor .mdxeditor-toolbar svg {
+  color: #e2e8f0 !important;
+  stroke: currentColor;
+}
+
+.dark .admin-markdown-editor .mdxeditor-toolbar button:hover,
+.dark .admin-markdown-editor .mdxeditor-toolbar [role="combobox"]:hover,
+[data-theme="admin-dark"] .admin-markdown-editor .mdxeditor-toolbar button:hover,
+[data-theme="admin-dark"] .admin-markdown-editor .mdxeditor-toolbar [role="combobox"]:hover {
+  background: #263349 !important;
+  color: #ffffff !important;
+}
+
+.dark .admin-markdown-editor .mdxeditor-toolbar button[data-state="on"],
+.dark .admin-markdown-editor .mdxeditor-toolbar button[aria-pressed="true"],
+[data-theme="admin-dark"] .admin-markdown-editor .mdxeditor-toolbar button[data-state="on"],
+[data-theme="admin-dark"] .admin-markdown-editor .mdxeditor-toolbar button[aria-pressed="true"] {
+  background: rgba(139, 92, 246, 0.28) !important;
+  color: #ddd6fe !important;
+}
+
+.dark .admin-markdown-editor [contenteditable="true"],
+[data-theme="admin-dark"] .admin-markdown-editor [contenteditable="true"] {
+  color: #f8fafc !important;
+}
+
+/* Badges y celdas de cobertura CRECER */
+.dark .admin-crecer-page .admin-crecer-step-option__status,
+[data-theme="admin-dark"] .admin-crecer-page .admin-crecer-step-option__status {
+  background: rgba(16, 185, 129, 0.16);
+  color: #34d399;
+}
+
+.dark .admin-crecer-page .admin-crecer-step-option--active .admin-crecer-step-option__status,
+[data-theme="admin-dark"] .admin-crecer-page .admin-crecer-step-option--active .admin-crecer-step-option__status {
+  border-color: color-mix(in srgb, var(--step-color, #a78bfa) 70%, #ffffff);
+  background: color-mix(in srgb, var(--step-color, #a78bfa) 24%, #141c2c);
+  color: #f8fafc;
+}
+
+.dark .admin-crecer-matrix__cell--complete,
+[data-theme="admin-dark"] .admin-crecer-matrix__cell--complete {
+  border-color: rgba(34, 197, 94, 0.35);
+  background: rgba(20, 83, 45, 0.45);
+  color: #86efac;
+}
+
+.dark .admin-crecer-matrix__cell--draft,
+[data-theme="admin-dark"] .admin-crecer-matrix__cell--draft {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(120, 53, 15, 0.45);
+  color: #fde68a;
+}
+
+.dark .admin-crecer-matrix__cell--error,
+[data-theme="admin-dark"] .admin-crecer-matrix__cell--error {
+  border-color: rgba(248, 113, 113, 0.35);
+  background: rgba(127, 29, 29, 0.45);
+  color: #fca5a5;
+}
+
+.dark .admin-crecer-matrix__cell--current,
+[data-theme="admin-dark"] .admin-crecer-matrix__cell--current {
+  border-color: #a78bfa;
+  background: rgba(109, 40, 217, 0.35);
+  color: #ede9fe;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.25);
+}
+
+.dark .admin-status-pill--pending,
+[data-theme="admin-dark"] .admin-status-pill--pending {
+  background: rgba(120, 53, 15, 0.55);
+  color: #fde68a;
+}
+
+.dark .admin-status-pill--done,
+[data-theme="admin-dark"] .admin-status-pill--done {
+  background: rgba(20, 83, 45, 0.55);
+  color: #86efac;
+}
+
+/* Ítems de estado del menú desplegable de temas */
+.dark .admin-theme-dropdown__item.is-warning,
+[data-theme="admin-dark"] .admin-theme-dropdown__item.is-warning {
+  color: #fbbf24 !important;
+}
+.dark .admin-theme-dropdown__item.is-warning:hover:not(:disabled),
+[data-theme="admin-dark"] .admin-theme-dropdown__item.is-warning:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.14) !important;
+  color: #fde68a !important;
+}
+
+.dark .admin-theme-dropdown__item.is-success,
+[data-theme="admin-dark"] .admin-theme-dropdown__item.is-success {
+  color: #34d399 !important;
+}
+.dark .admin-theme-dropdown__item.is-success:hover:not(:disabled),
+[data-theme="admin-dark"] .admin-theme-dropdown__item.is-success:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.14) !important;
+  color: #6ee7b7 !important;
+}
+
+.dark .admin-theme-dropdown__item.is-danger,
+[data-theme="admin-dark"] .admin-theme-dropdown__item.is-danger {
+  color: #f87171 !important;
+}
+.dark .admin-theme-dropdown__item.is-danger:hover:not(:disabled),
+[data-theme="admin-dark"] .admin-theme-dropdown__item.is-danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.14) !important;
+  color: #fca5a5 !important;
+}
+
+/* Selectores nativos en estudio admin */
+.dark .app-shell--admin select option,
+[data-theme="admin-dark"] select option {
+  background-color: #131b2e !important;
+  color: #f8fafc !important;
+}
+
+/* Vista Previa Paso 5 (.admin-student-preview y .admin-student-lesson) */
+.dark .admin-student-preview__age button,
+[data-theme="admin-dark"] .admin-student-preview__age button {
+  background: #141c2c;
+  border-color: #263349;
+  color: #cbd5e1;
+}
+
+.dark .admin-student-preview__age button.is-active,
+[data-theme="admin-dark"] .admin-student-preview__age button.is-active {
+  border-color: #22c55e;
+  background: rgba(20, 83, 45, 0.45);
+  color: #86efac;
+}
+
+.dark .admin-student-preview__notice,
+[data-theme="admin-dark"] .admin-student-preview__notice {
+  border-color: rgba(59, 130, 246, 0.35);
+  background: rgba(30, 58, 138, 0.35);
+  color: #bfdbfe;
+}
+
+.dark .admin-student-preview__notice svg,
+[data-theme="admin-dark"] .admin-student-preview__notice svg {
+  color: #60a5fa;
+}
+
+.dark .admin-student-preview__frame,
+[data-theme="admin-dark"] .admin-student-preview__frame {
+  border-color: #263349;
+  background: #0f172a;
+}
+
+.dark .admin-student-preview__framebar,
+[data-theme="admin-dark"] .admin-student-preview__framebar {
+  border-bottom-color: #1e293b;
+  background: #131b2e;
+}
+
+.dark .admin-student-preview__framebar strong,
+[data-theme="admin-dark"] .admin-student-preview__framebar strong {
+  color: #94a3b8;
+}
+
+.dark .admin-student-preview__viewport,
+[data-theme="admin-dark"] .admin-student-preview__viewport {
+  background: #0b1120;
+}
+
+.dark .admin-student-lesson__steps button,
+[data-theme="admin-dark"] .admin-student-lesson__steps button {
+  border-color: #263349;
+  background: #131b2e;
+}
+
+.dark .admin-student-lesson__steps button > span,
+[data-theme="admin-dark"] .admin-student-lesson__steps button > span {
+  background: #1e293b;
+  color: #94a3b8;
+}
+
+.dark .admin-student-lesson__steps button strong,
+[data-theme="admin-dark"] .admin-student-lesson__steps button strong {
+  color: #f8fafc;
+}
+
+.dark .admin-student-lesson__steps button small,
+[data-theme="admin-dark"] .admin-student-lesson__steps button small {
+  color: #94a3b8;
+}
+
+.dark .admin-student-lesson__steps button.is-active,
+[data-theme="admin-dark"] .admin-student-lesson__steps button.is-active {
+  background: color-mix(in srgb, var(--preview-phase, #8b5cf6) 20%, #131b2e);
+}
+
+.dark .admin-student-lesson__shell,
+[data-theme="admin-dark"] .admin-student-lesson__shell {
+  border-color: #263349;
+  background: #131b2e;
+}
+
+.dark .admin-student-lesson__visual,
+[data-theme="admin-dark"] .admin-student-lesson__visual {
+  background: #172033;
+}
+
+.dark .admin-student-lesson__progress span,
+[data-theme="admin-dark"] .admin-student-lesson__progress span {
+  background: #1e293b;
+}
+
+.dark .admin-student-lesson__content-heading h1,
+[data-theme="admin-dark"] .admin-student-lesson__content-heading h1 {
+  color: #f8fafc;
+}
+
+.dark .admin-student-lesson__instruction,
+[data-theme="admin-dark"] .admin-student-lesson__instruction {
+  background: color-mix(in srgb, var(--preview-phase, #8b5cf6) 14%, #172033);
+  color: #e2e8f0;
+}
+
+.dark .admin-student-lesson__reading,
+[data-theme="admin-dark"] .admin-student-lesson__reading {
+  color: #e2e8f0;
+}
+
+.dark .admin-student-lesson__questions,
+.dark .admin-student-lesson__activities,
+[data-theme="admin-dark"] .admin-student-lesson__questions,
+[data-theme="admin-dark"] .admin-student-lesson__activities {
+  border-top-color: #263349;
+}
+
+.dark .admin-student-lesson__questions > div,
+.dark .admin-student-lesson__section-title,
+[data-theme="admin-dark"] .admin-student-lesson__questions > div,
+[data-theme="admin-dark"] .admin-student-lesson__section-title {
+  color: #f8fafc;
+}
+
+.dark .admin-student-lesson__questions li,
+[data-theme="admin-dark"] .admin-student-lesson__questions li {
+  background: #172033;
+  color: #cbd5e1;
+}
+
+.dark .admin-student-lesson__activities article,
+[data-theme="admin-dark"] .admin-student-lesson__activities article {
+  border-color: #263349;
+  background: #172033;
+}
+
+.dark .admin-student-lesson__activities h3,
+[data-theme="admin-dark"] .admin-student-lesson__activities h3 {
+  color: #f8fafc;
+}
+
+.dark .admin-student-lesson__activities p,
+[data-theme="admin-dark"] .admin-student-lesson__activities p {
+  color: #94a3b8;
+}
+
+.dark .admin-student-lesson__activities small,
+[data-theme="admin-dark"] .admin-student-lesson__activities small {
+  color: #fbbf24;
+}
+
+.dark .admin-student-lesson__empty h2,
+[data-theme="admin-dark"] .admin-student-lesson__empty h2 {
+  color: #f8fafc;
+}
+
+.dark .admin-student-lesson__empty p,
+[data-theme="admin-dark"] .admin-student-lesson__empty p {
+  color: #94a3b8;
+}
+
+.dark .admin-student-lesson__activity-note,
+[data-theme="admin-dark"] .admin-student-lesson__activity-note {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(120, 53, 15, 0.35);
+  color: #fde68a;
+}
+
+.dark .admin-student-lesson__activity-note button,
+[data-theme="admin-dark"] .admin-student-lesson__activity-note button {
+  color: #c4b5fd;
+}

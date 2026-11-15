@@ -27,7 +27,7 @@ export const PillsFiltros: React.FC<PropiedadesPillsFiltros> = ({
               "px-3.5 py-1.5 rounded-full text-xs font-bold transition-all border",
               esActivo
                 ? "bg-[#6C3AED] border-[#6C3AED] text-white shadow-sm"
-                : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
+                : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
             )}
           >
             {opcion}

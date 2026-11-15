@@ -122,6 +122,7 @@ export function ProfileDashboard({
               grupoEdadLabel={grupoEdadLabel}
               prefiereAudio={perfil.prefiere_audio}
               tamanoTextoLabel={tamanoTextoLabel}
+              scopeId={perfil.id || usuario?.id}
               onEditarPerfil={() => onSectionChange("editar")}
               onEditarPreferencias={() => onSectionChange("ajustes")}
             />

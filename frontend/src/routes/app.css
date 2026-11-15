@@ -2897,8 +2897,30 @@ html[data-semillas-text-size="grande"] {
   color: var(--color-text-dark) !important;
 }
 
+.dark button.bg-white,
+.dark a.bg-white,
+.dark button.bg-slate-50,
+.dark a.bg-slate-50,
+.dark button.bg-slate-100,
+.dark a.bg-slate-100 {
+  background-color: #151d2a !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+.dark button.bg-white:hover,
+.dark a.bg-white:hover,
+.dark button.bg-slate-50:hover,
+.dark a.bg-slate-50:hover,
+.dark button.bg-slate-100:hover,
+.dark a.bg-slate-100:hover {
+  background-color: #1e293b !important;
+  border-color: #475569 !important;
+}
+
 .dark .app-sidebar,
 [data-theme="app-dark"] .app-sidebar,
+[data-theme="admin-dark"] .app-sidebar,
 .alto-contraste .app-sidebar {
   background-color: var(--color-bg-sidebar, #101520) !important;
   border-color: var(--color-border, #1e293b) !important;
@@ -2917,14 +2939,25 @@ html[data-semillas-text-size="grande"] {
   color: #4ade80 !important;
 }
 
+[data-theme="admin-dark"] .app-sidebar a[aria-current="page"] {
+  background-color: #2e1065 !important;
+  color: #c4b5fd !important;
+}
+
+[data-theme="admin-dark"] .app-sidebar a[aria-current="page"] * {
+  color: #c4b5fd !important;
+}
+
 .dark .app-sidebar a:not([aria-current="page"]),
 [data-theme="app-dark"] .app-sidebar a:not([aria-current="page"]),
+[data-theme="admin-dark"] .app-sidebar a:not([aria-current="page"]),
 .alto-contraste .app-sidebar a:not([aria-current="page"]) {
   color: #94a3b8 !important;
 }
 
 .dark .app-sidebar a:not([aria-current="page"]):hover,
 [data-theme="app-dark"] .app-sidebar a:not([aria-current="page"]):hover,
+[data-theme="admin-dark"] .app-sidebar a:not([aria-current="page"]):hover,
 .alto-contraste .app-sidebar a:not([aria-current="page"]):hover {
   background-color: #1e293b !important;
   color: #f8fafc !important;
@@ -2936,6 +2969,13 @@ html[data-semillas-text-size="grande"] {
   background-color: #1e293b !important;
   border-color: #334155 !important;
   color: #ffffff !important;
+}
+
+.dark select option,
+[data-theme="app-dark"] select option,
+[data-theme="admin-dark"] select option {
+  background-color: #131b2e !important;
+  color: #f8fafc !important;
 }
 
 /* Aplicar color de texto por defecto sin sobreescribir colores específicos ni botones/enlaces ni iconos */
@@ -3591,37 +3631,42 @@ html[data-semillas-text-size="grande"] {
 }
 
 /* ── Chips en Modo Oscuro ── */
-.dark .chip--azul, [data-theme="app-dark"] .chip--azul {
+.dark [class*="chip--"] > span:last-child,
+[data-theme="app-dark"] [class*="chip--"] > span:last-child,
+[data-theme="admin-dark"] [class*="chip--"] > span:last-child {
+  color: inherit !important;
+}
+.dark .chip--azul, [data-theme="app-dark"] .chip--azul, [data-theme="admin-dark"] .chip--azul {
   background-color: #1e3a8a !important;
   border-color: #3b82f6 !important;
   color: #bfdbfe !important;
 }
-.dark .chip--morado, [data-theme="app-dark"] .chip--morado {
+.dark .chip--morado, [data-theme="app-dark"] .chip--morado, [data-theme="admin-dark"] .chip--morado {
   background-color: #2e1065 !important;
   border-color: #7c3aed !important;
   color: #ddd6fe !important;
 }
-.dark .chip--naranja, [data-theme="app-dark"] .chip--naranja {
+.dark .chip--naranja, [data-theme="app-dark"] .chip--naranja, [data-theme="admin-dark"] .chip--naranja {
   background-color: #451a03 !important;
   border-color: #ea580c !important;
   color: #fed7aa !important;
 }
-.dark .chip--verde, [data-theme="app-dark"] .chip--verde {
+.dark .chip--verde, [data-theme="app-dark"] .chip--verde, [data-theme="admin-dark"] .chip--verde {
   background-color: #052e16 !important;
   border-color: #16a34a !important;
   color: #bbf7d0 !important;
 }
-.dark .chip--amarillo, [data-theme="app-dark"] .chip--amarillo {
+.dark .chip--amarillo, [data-theme="app-dark"] .chip--amarillo, [data-theme="admin-dark"] .chip--amarillo {
   background-color: #451a03 !important;
   border-color: #d97706 !important;
   color: #fef08a !important;
 }
-.dark .chip--gris, [data-theme="app-dark"] .chip--gris {
+.dark .chip--gris, [data-theme="app-dark"] .chip--gris, [data-theme="admin-dark"] .chip--gris {
   background-color: #1e293b !important;
   border-color: #475569 !important;
   color: #e2e8f0 !important;
 }
-.dark .chip--rosa, [data-theme="app-dark"] .chip--rosa {
+.dark .chip--rosa, [data-theme="app-dark"] .chip--rosa, [data-theme="admin-dark"] .chip--rosa {
   background-color: #4c0519 !important;
   border-color: #db2777 !important;
   color: #fbcfe8 !important;

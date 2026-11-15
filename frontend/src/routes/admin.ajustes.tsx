@@ -1,10 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, RotateCcw, ShieldCheck, Save } from "lucide-react";
+import { Eye, Loader2, Monitor, Moon, RotateCcw, Save, ShieldCheck, Sun, Type } from "lucide-react";
 import { toast } from "sonner";
 
 import { guardarAjustesAdmin, obtenerAjustesAdmin, type AjustesAdmin } from "@/features/admin/admin.api";
+import { obtenerMiPerfil } from "@/features/perfil/profile.api";
+import {
+  aplicarContraste,
+  aplicarTamanoTexto,
+  aplicarTemaVisual,
+  guardarPreferenciaPerfil,
+  leerPreferenciaPerfil,
+  normalizarTamanoTexto,
+  type TamanoTexto,
+  type TemaVisual,
+} from "@/shared/accessibility/preferences";
 
 export const Route = createFileRoute("/admin/ajustes")({ component: AdminAjustesPage });
 
@@ -60,6 +71,61 @@ function AdminAjustesPage() {
   const queryClient = useQueryClient();
   const [settings, setSettings] = useState<Ajustes>(() => cargarAjustesLocales() ?? defaults);
   const [dirty, setDirty] = useState(false);
+
+  const meQuery = useQuery({
+    queryKey: ["me"],
+    queryFn: obtenerMiPerfil,
+    staleTime: 1000 * 60 * 5,
+  });
+  const scopeId = meQuery.data?.perfil?.id || meQuery.data?.usuario?.id;
+
+  const [temaVisual, setTemaVisual] = useState<TemaVisual>(() => {
+    const raw = leerPreferenciaPerfil("semillas-pref-tema", scopeId, "claro");
+    return raw === "oscuro" || raw === "claro" || raw === "sistema" ? raw : "claro";
+  });
+  const [tamanoTexto, setTamanoTexto] = useState<TamanoTexto>(() => {
+    return normalizarTamanoTexto(leerPreferenciaPerfil("semillas-pref-text-size", scopeId, "mediano"));
+  });
+  const [altoContraste, setAltoContraste] = useState<boolean>(() => {
+    return leerPreferenciaPerfil("semillas-pref-contraste", scopeId) === "alto";
+  });
+
+  useEffect(() => {
+    const sincronizarPreferencias = () => {
+      const temaRaw = leerPreferenciaPerfil("semillas-pref-tema", scopeId, "claro");
+      setTemaVisual(temaRaw === "oscuro" || temaRaw === "claro" || temaRaw === "sistema" ? temaRaw : "claro");
+      setTamanoTexto(normalizarTamanoTexto(leerPreferenciaPerfil("semillas-pref-text-size", scopeId, "mediano")));
+      setAltoContraste(leerPreferenciaPerfil("semillas-pref-contraste", scopeId) === "alto");
+    };
+
+    sincronizarPreferencias();
+    window.addEventListener("semillas:preferences-changed", sincronizarPreferencias);
+    window.addEventListener("storage", sincronizarPreferencias);
+    return () => {
+      window.removeEventListener("semillas:preferences-changed", sincronizarPreferencias);
+      window.removeEventListener("storage", sincronizarPreferencias);
+    };
+  }, [scopeId]);
+
+  const handleSeleccionarTema = (nuevoTema: TemaVisual) => {
+    setTemaVisual(nuevoTema);
+    guardarPreferenciaPerfil("semillas-pref-tema", nuevoTema, scopeId);
+    aplicarTemaVisual(nuevoTema);
+    toast.success(`Tema visual cambiado a ${nuevoTema}.`);
+  };
+
+  const handleSeleccionarTexto = (nuevoTamano: TamanoTexto) => {
+    setTamanoTexto(nuevoTamano);
+    guardarPreferenciaPerfil("semillas-pref-text-size", nuevoTamano, scopeId);
+    aplicarTamanoTexto(nuevoTamano);
+  };
+
+  const handleToggleContraste = () => {
+    const siguiente = !altoContraste;
+    setAltoContraste(siguiente);
+    guardarPreferenciaPerfil("semillas-pref-contraste", siguiente ? "alto" : "normal", scopeId);
+    aplicarContraste(siguiente);
+  };
 
   const ajustesQuery = useQuery({
     queryKey: ["admin", "ajustes"],
@@ -176,6 +242,111 @@ function AdminAjustesPage() {
                   Exigir motivo al rechazar
                 </span>
               </label>
+            </div>
+          </section>
+
+          <section className="admin-editor-section">
+            <div className="admin-editor-section__header">
+              <div>
+                <h2>Apariencia y Accesibilidad del Panel</h2>
+                <p>Personaliza el modo claro u oscuro, el tamaño de letra y el contraste en todo Semillas.</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-5">
+              <div>
+                <span className="mb-2 block text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  Tema visual
+                </span>
+                <div className="grid grid-cols-3 gap-2.5" role="radiogroup" aria-label="Tema visual">
+                  {(
+                    [
+                      { id: "claro", label: "Claro", Icon: Sun },
+                      { id: "oscuro", label: "Oscuro", Icon: Moon },
+                      { id: "sistema", label: "Sistema", Icon: Monitor },
+                    ] as const
+                  ).map(({ id, label, Icon }) => {
+                    const activo = temaVisual === id;
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        role="radio"
+                        aria-checked={activo}
+                        onClick={() => handleSeleccionarTema(id)}
+                        className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold transition ${
+                          activo
+                            ? "border-violet-600 bg-violet-50 text-violet-700 dark:border-violet-500 dark:bg-violet-950/60 dark:text-violet-300"
+                            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                        }`}
+                      >
+                        <Icon size={16} aria-hidden="true" />
+                        <span>{label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <span className="mb-2 flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  <Type size={14} aria-hidden="true" /> Tamaño de texto
+                </span>
+                <div className="grid grid-cols-3 gap-2.5" role="radiogroup" aria-label="Tamaño de texto">
+                  {(
+                    [
+                      { id: "pequeno", label: "Pequeño" },
+                      { id: "mediano", label: "Mediano" },
+                      { id: "grande", label: "Grande" },
+                    ] as const
+                  ).map(({ id, label }) => {
+                    const activo = tamanoTexto === id;
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        role="radio"
+                        aria-checked={activo}
+                        onClick={() => handleSeleccionarTexto(id)}
+                        className={`rounded-xl border px-3 py-2 text-sm font-bold transition ${
+                          activo
+                            ? "border-violet-600 bg-violet-50 text-violet-700 dark:border-violet-500 dark:bg-violet-950/60 dark:text-violet-300"
+                            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-900/70">
+                <div className="flex items-center gap-3">
+                  <Eye size={18} className="shrink-0 text-slate-600 dark:text-slate-300" aria-hidden="true" />
+                  <div>
+                    <strong className="block text-sm font-bold text-slate-800 dark:text-slate-100">
+                      Alto contraste
+                    </strong>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      Refuerza bordes y legibilidad de textos en pantalla.
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={altoContraste}
+                  onClick={handleToggleContraste}
+                  className={`rounded-full px-3.5 py-1.5 text-xs font-extrabold transition ${
+                    altoContraste
+                      ? "bg-emerald-600 text-white"
+                      : "bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
+                  }`}
+                >
+                  {altoContraste ? "Activado" : "Desactivado"}
+                </button>
+              </div>
             </div>
           </section>
         </main>

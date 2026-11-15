@@ -16,6 +16,7 @@ type AppUserHeaderProps = {
   isOffline: boolean;
   esInicio?: boolean;
   rol?: string;
+  scopeId?: string;
 };
 
 export function AppUserHeader({
@@ -28,6 +29,7 @@ export function AppUserHeader({
   isOffline,
   esInicio = false,
   rol,
+  scopeId,
 }: AppUserHeaderProps) {
   const [cuentaAbierta, setCuentaAbierta] = useState(false);
 
@@ -43,7 +45,7 @@ export function AppUserHeader({
         </div>
 
         <div className="flex items-center gap-4">
-          <BotonTemaToggle />
+          <BotonTemaToggle scopeId={scopeId} />
           <AppAccountMenu
             nombreVisible={nombreVisible}
             nivelTexto={nivelTexto}

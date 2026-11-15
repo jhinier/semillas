@@ -119,3 +119,67 @@
   background: #fee2e2;
   color: #be123c;
 }
+
+.dark .account-sheet,
+[data-theme="app-dark"] .account-sheet,
+[data-theme="admin-dark"] .account-sheet {
+  background: #131b2e;
+  border-top: 1px solid #334155;
+  color: #f8fafc;
+}
+
+.dark .account-sheet__handle,
+[data-theme="app-dark"] .account-sheet__handle,
+[data-theme="admin-dark"] .account-sheet__handle {
+  background: #475569;
+}
+
+.dark .account-sheet__title,
+[data-theme="app-dark"] .account-sheet__title,
+[data-theme="admin-dark"] .account-sheet__title {
+  color: #f8fafc;
+}
+
+.dark .account-sheet__action,
+[data-theme="app-dark"] .account-sheet__action,
+[data-theme="admin-dark"] .account-sheet__action {
+  color: #e2e8f0;
+}
+
+.dark .account-sheet__action:hover,
+.dark .account-sheet__action:focus-visible,
+[data-theme="app-dark"] .account-sheet__action:hover,
+[data-theme="app-dark"] .account-sheet__action:focus-visible,
+[data-theme="admin-dark"] .account-sheet__action:hover,
+[data-theme="admin-dark"] .account-sheet__action:focus-visible {
+  background: #1e293b;
+}
+
+.dark .account-sheet__icon,
+[data-theme="app-dark"] .account-sheet__icon,
+[data-theme="admin-dark"] .account-sheet__icon {
+  background: rgba(16, 185, 129, 0.16);
+  color: #34d399;
+}
+
+.dark .account-sheet__action.is-danger,
+[data-theme="app-dark"] .account-sheet__action.is-danger,
+[data-theme="admin-dark"] .account-sheet__action.is-danger {
+  color: #fda4af;
+}
+
+.dark .account-sheet__action.is-danger:hover,
+.dark .account-sheet__action.is-danger:focus-visible,
+[data-theme="app-dark"] .account-sheet__action.is-danger:hover,
+[data-theme="app-dark"] .account-sheet__action.is-danger:focus-visible,
+[data-theme="admin-dark"] .account-sheet__action.is-danger:hover,
+[data-theme="admin-dark"] .account-sheet__action.is-danger:focus-visible {
+  background: rgba(244, 63, 94, 0.14);
+}
+
+.dark .account-sheet__action.is-danger .account-sheet__icon,
+[data-theme="app-dark"] .account-sheet__action.is-danger .account-sheet__icon,
+[data-theme="admin-dark"] .account-sheet__action.is-danger .account-sheet__icon {
+  background: rgba(244, 63, 94, 0.18);
+  color: #fda4af;
+}

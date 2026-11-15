@@ -80,6 +80,25 @@ export function ProfilePreferencesForm({
     setTextSize(normalizarTamanoTexto(perfil.tamano_texto_preferido));
   }, [perfil.prefiere_audio, perfil.tamano_texto_preferido]);
 
+  useEffect(() => {
+    const sincronizarLocal = () => {
+      const temaActual = (leerPreferenciaPerfil("semillas-pref-tema", scopeId, "claro") || "claro") as
+        | "sistema"
+        | "claro"
+        | "oscuro";
+      const contrasteActual = leerPreferenciaPerfil("semillas-pref-contraste", scopeId) === "alto";
+      setTema(temaActual);
+      setContraste(contrasteActual);
+    };
+
+    window.addEventListener("semillas:preferences-changed", sincronizarLocal);
+    window.addEventListener("storage", sincronizarLocal);
+    return () => {
+      window.removeEventListener("semillas:preferences-changed", sincronizarLocal);
+      window.removeEventListener("storage", sincronizarLocal);
+    };
+  }, [scopeId]);
+
   const hasApiChanges = useMemo(
     () =>
       audio !== Boolean(perfil.prefiere_audio) ||

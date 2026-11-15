@@ -108,7 +108,7 @@ export function AppAccountMenu({ nombreVisible, nivelTexto, avatarUrl, onLogout,
     <div ref={menuRef} className="account-menu-desktop relative">
       <button
         type="button"
-        className="inline-flex min-h-11 flex-row items-center gap-3 rounded-full border-0 bg-transparent px-2 py-1 text-left transition-colors hover:bg-slate-100/80 md:rounded-none md:border-l md:border-[#e5e7eb] md:pl-4 md:pr-1 md:hover:bg-transparent cursor-pointer"
+        className="inline-flex min-h-11 flex-row items-center gap-3 rounded-full border-0 bg-transparent px-2 py-1 text-left transition-colors hover:bg-slate-100/80 md:rounded-none md:border-l md:border-[#e5e7eb] md:pl-4 md:pr-1 md:hover:bg-transparent dark:hover:bg-slate-800/80 md:dark:border-slate-700 md:dark:hover:bg-transparent cursor-pointer"
         aria-label="Abrir menú de cuenta"
         aria-expanded={isOpen}
         aria-haspopup="menu"
@@ -122,10 +122,10 @@ export function AppAccountMenu({ nombreVisible, nivelTexto, avatarUrl, onLogout,
           />
         </div>
         <div className="hidden min-w-0 flex-col justify-center text-left leading-tight md:flex">
-          <span className="truncate text-[13.6px] font-extrabold text-violet-700 leading-tight">
+          <span className="truncate text-[13.6px] font-extrabold text-violet-700 dark:text-violet-400 leading-tight">
             {nombreVisible}
           </span>
-          <span className="truncate text-xs font-semibold text-slate-500 leading-tight mt-0.5">
+          <span className="truncate text-xs font-semibold text-slate-500 dark:text-slate-400 leading-tight mt-0.5">
             {nivelTexto}
           </span>
         </div>
@@ -136,7 +136,7 @@ export function AppAccountMenu({ nombreVisible, nivelTexto, avatarUrl, onLogout,
           role="menu"
           aria-label="Menú de cuenta"
           sombra="lg"
-          className={`account-menu absolute right-0 top-full z-[160] mt-2 w-60 origin-top-right rounded-2xl border border-[#e5e7eb] p-2 transition-all duration-200 ease-out motion-reduce:transition-none before:content-[''] before:absolute before:-top-1.5 before:right-6 before:w-3 before:h-3 before:bg-white before:rotate-45 before:border-l before:border-t before:border-[#e5e7eb] ${
+          className={`account-menu absolute right-0 top-full z-[160] mt-2 w-60 origin-top-right rounded-2xl border border-[#e5e7eb] bg-white p-2 transition-all duration-200 ease-out motion-reduce:transition-none before:content-[''] before:absolute before:-top-1.5 before:right-6 before:w-3 before:h-3 before:bg-white before:rotate-45 before:border-l before:border-t before:border-[#e5e7eb] dark:border-slate-700 dark:bg-[#131b2e] dark:before:bg-[#131b2e] dark:before:border-slate-700 ${
             isOpen ? "translate-y-0 scale-100 opacity-100" : "pointer-events-none -translate-y-1 scale-95 opacity-0"
           }`}
         >
@@ -149,9 +149,9 @@ export function AppAccountMenu({ nombreVisible, nivelTexto, avatarUrl, onLogout,
                 search={opcion.search}
                 role="menuitem"
                 onClick={closeMenu}
-                className="account-menu__item flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-neutro transition-colors hover:bg-black/5 hover:text-neutro-oscuro-max cursor-pointer"
+                className="account-menu__item flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-neutro transition-colors hover:bg-black/5 hover:text-neutro-oscuro-max dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white cursor-pointer"
               >
-                <span className="account-menu__icon flex h-7 w-7 items-center justify-center rounded-lg bg-[#eef6f1] text-[#2e9e5b]">
+                <span className="account-menu__icon flex h-7 w-7 items-center justify-center rounded-lg bg-[#eef6f1] text-[#2e9e5b] dark:bg-emerald-950/60 dark:text-emerald-400">
                   {renderIcono(Icono)}
                 </span>
                 {opcion.label}
@@ -166,9 +166,9 @@ export function AppAccountMenu({ nombreVisible, nivelTexto, avatarUrl, onLogout,
               closeMenu();
               void onLogout();
             }}
-            className="account-menu__item account-menu__item--danger mt-1 flex w-full items-center gap-3 rounded-xl border-t border-black/5 px-3 py-2 pt-2.5 text-sm font-semibold text-peligro transition-colors hover:bg-red-500/10 cursor-pointer"
+            className="account-menu__item account-menu__item--danger mt-1 flex w-full items-center gap-3 rounded-xl border-t border-black/5 px-3 py-2 pt-2.5 text-sm font-semibold text-peligro transition-colors hover:bg-red-500/10 dark:border-slate-800 dark:text-rose-400 dark:hover:bg-rose-500/15 cursor-pointer"
           >
-            <span className="account-menu__icon flex h-7 w-7 items-center justify-center rounded-lg bg-red-500/10 text-peligro">
+            <span className="account-menu__icon flex h-7 w-7 items-center justify-center rounded-lg bg-red-500/10 text-peligro dark:bg-rose-950/60 dark:text-rose-400">
               {renderIcono(LogOut)}
             </span>
             Cerrar sesión

@@ -69,24 +69,24 @@ export function CrecerContentEditor(props: CrecerContentEditorProps) {
       <div className="admin-editor-section__header">
         <div><h2>3. Escribe el contenido: {props.activeStep?.nombre ?? "Momento CRECER"}</h2><p>Editando para el grupo <strong>{props.selectedAgeGroup?.nombre ?? "seleccionado"}</strong>. El texto, la imagen y el audio se guardan juntos.</p></div>
         {props.isDirty ? (
-          <span className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700" role="status">
+          <span className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700 dark:bg-amber-950/60 dark:text-amber-300" role="status">
             <span className="h-2 w-2 rounded-full bg-amber-500" aria-hidden="true" />
             Cambios sin guardar
           </span>
         ) : tieneContenidoValido && props.isSuccess ? (
-          <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700" role="status">
+          <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300" role="status">
             <Check size={15} /> Listo y guardado
           </span>
         ) : !tieneContenidoValido ? (
-          <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2 text-xs font-bold text-slate-600" role="status">
+          <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300" role="status">
             Falta completar
           </span>
         ) : null}
       </div>
 
       {tipMomento ? (
-        <div className="mb-4 flex items-start gap-2 rounded-xl border border-violet-200 bg-violet-50/70 px-3.5 py-2.5 text-xs leading-relaxed text-violet-900">
-          <Lightbulb size={15} className="mt-0.5 shrink-0 text-violet-600" aria-hidden="true" />
+        <div className="mb-4 flex items-start gap-2 rounded-xl border border-violet-200 bg-violet-50/70 px-3.5 py-2.5 text-xs leading-relaxed text-violet-900 dark:border-violet-800/60 dark:bg-violet-950/40 dark:text-violet-200">
+          <Lightbulb size={15} className="mt-0.5 shrink-0 text-violet-600 dark:text-violet-400" aria-hidden="true" />
           <p>
             <strong>Guía para este momento:</strong> {tipMomento}
           </p>

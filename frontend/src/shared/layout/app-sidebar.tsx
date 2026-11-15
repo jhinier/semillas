@@ -91,8 +91,8 @@ export function AppSidebar({
       <aside
         className={`app-sidebar fixed left-0 top-0 z-[110] flex h-[100dvh] w-[280px] max-w-[82vw] flex-col overflow-hidden overscroll-contain border-r px-4 pb-[calc(env(safe-area-inset-bottom)+0.85rem)] pt-[calc(env(safe-area-inset-top)+0.85rem)] shadow-2xl transition-[transform,opacity] duration-300 ease-out will-change-transform motion-reduce:transition-none md:sticky md:top-0 md:flex md:w-[88px] md:shrink-0 md:translate-x-0 md:px-3 md:opacity-100 md:shadow-none lg:w-[236px] lg:px-3.5 xl:w-[248px] xl:px-4 ${
           variant === "admin"
-            ? "md:py-2.5 border-[#e7ebf2] bg-white"
-            : "md:py-3.5 border-slate-200 bg-white"
+            ? "md:py-2.5 border-[#e7ebf2] bg-white dark:border-slate-800 dark:bg-[#101520]"
+            : "md:py-3.5 border-slate-200 bg-white dark:border-slate-800 dark:bg-[#101520]"
         } ${
           isOpen ? "translate-x-0 opacity-100" : "-translate-x-full opacity-0 md:translate-x-0 md:opacity-100"
         }`}
@@ -100,7 +100,7 @@ export function AppSidebar({
         <div className={`flex shrink-0 items-center justify-center gap-2.5 lg:justify-between ${variant === "admin" ? "min-h-9 py-0" : "min-h-11 py-0.5"}`}>
           <div className="flex items-center gap-2.5">
             <img src={logoImg} alt="Semillas" className={`${variant === "admin" ? "h-8 w-8" : "h-9 w-9"} shrink-0 object-contain`} />
-            <span className={`hidden font-black leading-none lg:inline ${variant === "admin" ? "text-[1.35rem] text-violet-600" : "text-[1.45rem] text-primario"}`}>Semillas</span>
+            <span className={`hidden font-black leading-none lg:inline ${variant === "admin" ? "text-[1.35rem] text-violet-600 dark:text-violet-400" : "text-[1.45rem] text-primario dark:text-emerald-400"}`}>Semillas</span>
           </div>
           <Boton
             type="button"
@@ -114,7 +114,7 @@ export function AppSidebar({
           </Boton>
         </div>
 
-        <p className={`ml-[42px] hidden max-w-[165px] shrink-0 text-[10.5px] font-semibold leading-snug text-neutro lg:block ${variant === "admin" ? "mb-1.5" : "mb-3 ml-[46px] max-w-[155px] text-[11px]"}`}>
+        <p className={`ml-[42px] hidden max-w-[165px] shrink-0 text-[10.5px] font-semibold leading-snug text-neutro dark:text-slate-400 lg:block ${variant === "admin" ? "mb-1.5" : "mb-3 ml-[46px] max-w-[155px] text-[11px]"}`}>
           Crecer en la Palabra, vivir su verdad
         </p>
 
@@ -125,7 +125,7 @@ export function AppSidebar({
           {secciones.map((seccion) => (
             <div key={seccion.titulo ?? "principal"} className={`flex flex-col ${variant === "admin" ? "gap-0.5" : "gap-1"}`}>
               {seccion.titulo ? (
-                <p className={`mb-0.5 hidden px-1 text-[10px] font-black uppercase tracking-[0.18em] lg:block ${variant === "admin" ? "text-slate-400" : "text-neutro/50"}`}>
+                <p className={`mb-0.5 hidden px-1 text-[10px] font-black uppercase tracking-[0.18em] lg:block ${variant === "admin" ? "text-slate-400 dark:text-slate-500" : "text-neutro/50 dark:text-slate-500"}`}>
                   {seccion.titulo}
                 </p>
               ) : null}
@@ -136,6 +136,7 @@ export function AppSidebar({
                   <Link
                     key={item.to}
                     to={item.to as any}
+                    activeOptions={{ exact: item.to === "/app" || item.to === "/admin" }}
                     onClick={onClose}
                     title={item.label}
                     aria-label={item.label}
@@ -143,24 +144,24 @@ export function AppSidebar({
                     className={`group relative flex ${variant === "admin" ? "min-h-[34px] py-1 rounded-xl text-[12.5px]" : "min-h-11 py-2 rounded-2xl text-[13px]"} items-center justify-center gap-3 px-3 font-semibold transition-all lg:justify-start lg:px-3.5 ${
                       activo
                         ? variant === "admin"
-                          ? "bg-violet-50 text-violet-700 shadow-[inset_0_0_0_1px_rgba(95,54,232,.12)]"
-                          : "bg-primario-palido text-primario shadow-[inset_0_0_0_1px_rgba(67,160,71,.12)]"
+                          ? "bg-violet-50 text-violet-700 shadow-[inset_0_0_0_1px_rgba(95,54,232,.12)] dark:bg-violet-950/60 dark:text-violet-300 dark:shadow-[inset_0_0_0_1px_rgba(167,139,250,.22)]"
+                          : "bg-primario-palido text-primario shadow-[inset_0_0_0_1px_rgba(67,160,71,.12)] dark:bg-emerald-950/60 dark:text-emerald-400 dark:shadow-[inset_0_0_0_1px_rgba(74,222,128,.22)]"
                         : variant === "admin"
-                          ? "text-slate-600 hover:bg-slate-100 hover:text-slate-800"
-                          : "text-neutro hover:bg-slate-100 hover:text-neutro-oscuro-max"
+                          ? "text-slate-600 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-800/80 dark:hover:text-white"
+                          : "text-neutro hover:bg-slate-100 hover:text-neutro-oscuro-max dark:text-slate-300 dark:hover:bg-slate-800/80 dark:hover:text-white"
                     }`}
                   >
                     <span className="relative flex items-center justify-center">
                       <i className={`fa-solid ${item.icon} w-5 text-center ${variant === "admin" ? "text-[14px]" : "text-[15px]"}`} aria-hidden="true" />
                       {item.badge && (
                         <span
-                          className="absolute -right-1.5 -top-1 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white animate-pulse"
+                          className="absolute -right-1.5 -top-1 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-[#101520] animate-pulse"
                           aria-label="Tienes logros por reclamar"
                         />
                       )}
                     </span>
                     <span className="hidden lg:inline">{item.label}</span>
-                    {activo ? <span className={`absolute left-0 h-5 w-1 rounded-r-full lg:-left-1 ${variant === "admin" ? "bg-violet-600" : "bg-primario"}`} aria-hidden="true" /> : null}
+                    {activo ? <span className={`absolute left-0 h-5 w-1 rounded-r-full lg:-left-1 ${variant === "admin" ? "bg-violet-600 dark:bg-violet-400" : "bg-primario dark:bg-emerald-400"}`} aria-hidden="true" /> : null}
                   </Link>
                 );
               })}
@@ -168,14 +169,14 @@ export function AppSidebar({
           ))}
         </nav>
 
-        <div className={`mt-auto flex shrink-0 flex-col border-t border-slate-100 ${variant === "admin" ? "gap-2 pt-2" : "gap-2.5 pt-2.5"}`}>
+        <div className={`mt-auto flex shrink-0 flex-col border-t border-slate-100 dark:border-slate-800 ${variant === "admin" ? "gap-2 pt-2" : "gap-2.5 pt-2.5"}`}>
           {isOffline ? (
-            <Card sombra="sm" className={`hidden p-3 lg:block ${variant === "admin" ? "bg-slate-50 border-slate-200" : ""}`}>
-              <div className={`mb-1.5 flex items-center gap-2 text-xs font-bold ${variant === "admin" ? "text-slate-700" : "text-neutro-oscuro-max"}`}>
+            <Card sombra="sm" className={`hidden p-3 lg:block ${variant === "admin" ? "bg-slate-50 border-slate-200 dark:bg-slate-900 dark:border-slate-800" : ""}`}>
+              <div className={`mb-1.5 flex items-center gap-2 text-xs font-bold ${variant === "admin" ? "text-slate-700 dark:text-slate-200" : "text-neutro-oscuro-max"}`}>
                 <i className="fa-solid fa-cloud-arrow-up text-primario" aria-hidden="true" />
                 Sin conexión
               </div>
-              <p className={`text-[11px] leading-normal ${variant === "admin" ? "text-slate-500" : "text-neutro"}`}>
+              <p className={`text-[11px] leading-normal ${variant === "admin" ? "text-slate-500 dark:text-slate-400" : "text-neutro"}`}>
                 Tu progreso se sincronizará cuando vuelva internet.
               </p>
             </Card>

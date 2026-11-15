@@ -37,7 +37,7 @@ export function aplicarTemaVisual(temaRaw?: string | null): TemaVisual {
       ? temaRaw
       : "claro";
 
-  if (typeof document !== "undefined" && typeof window !== "undefined") {
+  if (typeof document !== "undefined" && document?.documentElement && typeof window !== "undefined") {
     let esOscuro = false;
     if (tema === "oscuro") {
       esOscuro = true;
@@ -45,16 +45,37 @@ export function aplicarTemaVisual(temaRaw?: string | null): TemaVisual {
       esOscuro = window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ?? false;
     }
 
+    const esAdmin = window.location?.pathname?.startsWith("/admin") ?? false;
+
     if (esOscuro) {
-      document.documentElement.classList.add("dark");
-      document.documentElement.setAttribute("data-theme", "app-dark");
+      document.documentElement.classList?.add("dark");
+      document.documentElement.setAttribute?.("data-theme", esAdmin ? "admin-dark" : "app-dark");
     } else {
-      document.documentElement.classList.remove("dark");
-      document.documentElement.setAttribute("data-theme", "app-light");
+      document.documentElement.classList?.remove("dark");
+      document.documentElement.setAttribute?.("data-theme", esAdmin ? "admin-light" : "app-light");
     }
   }
 
   return tema;
+}
+
+export function esTemaOscuroActivo(scopeId?: string | null): boolean {
+  if (typeof document !== "undefined" && document?.documentElement?.classList?.contains?.("dark")) {
+    return true;
+  }
+  const temaGuardado = leerPreferenciaPerfil("semillas-pref-tema", scopeId, "claro");
+  if (temaGuardado === "oscuro") return true;
+  if (temaGuardado === "sistema" && typeof window !== "undefined") {
+    return window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ?? false;
+  }
+  return false;
+}
+
+export function alternarTemaVisual(scopeId?: string | null): TemaVisual {
+  const siguiente: TemaVisual = esTemaOscuroActivo(scopeId) ? "claro" : "oscuro";
+  guardarPreferenciaPerfil("semillas-pref-tema", siguiente, scopeId);
+  aplicarTemaVisual(siguiente);
+  return siguiente;
 }
 
 export function obtenerClavePref(claveBase: string, scopeId?: string | null): string {
@@ -71,10 +92,9 @@ export function leerPreferenciaPerfil(
 ): string | null {
   if (typeof window === "undefined") return fallback;
   try {
-    if (scopeId) {
+    if (scopeId && scopeId !== "default") {
       const valScoped = window.localStorage.getItem(obtenerClavePref(claveBase, scopeId));
       if (valScoped !== null) return valScoped;
-      return fallback;
     }
     const valGlobal = window.localStorage.getItem(claveBase);
     return valGlobal !== null ? valGlobal : fallback;
@@ -92,9 +112,9 @@ export function guardarPreferenciaPerfil(
   try {
     if (scopeId && scopeId !== "default") {
       window.localStorage.setItem(obtenerClavePref(claveBase, scopeId), valor);
-    } else {
-      window.localStorage.setItem(claveBase, valor);
     }
+    window.localStorage.setItem(claveBase, valor);
+    window.dispatchEvent(new CustomEvent("semillas:preferences-changed"));
   } catch {
     // ignorar si localStorage está bloqueado
   }

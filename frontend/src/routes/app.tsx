@@ -19,7 +19,12 @@ import { router } from "@/router";
 import { DialogoConflictoVinculacion } from "@/componentes/ui/dialogo-conflicto-vinculacion";
 import { obtenerMiPerfil } from "@/features/perfil/profile.api";
 import { obtenerGamificacionPropia } from "@/features/gamification/gamification.api";
-import { aplicarPreferenciasDispositivo, aplicarTamanoTexto } from "@/shared/accessibility/preferences";
+import {
+  aplicarPreferenciasDispositivo,
+  aplicarTamanoTexto,
+  aplicarTemaVisual,
+  leerPreferenciaPerfil,
+} from "@/shared/accessibility/preferences";
 import "./app.css";
 
 export const Route = createFileRoute("/app")({
@@ -74,9 +79,28 @@ function AppLayout() {
   const [mensajeConflicto, setMensajeConflicto] = useState<string | null>(null);
 
   useEffect(() => {
-    const perfilId = meQuery.data?.perfil?.id;
-    aplicarPreferenciasDispositivo(perfilId);
-  }, [meQuery.data?.perfil?.id]);
+    const scopeId = meQuery.data?.perfil?.id || meQuery.data?.usuario?.id;
+    const aplicar = () => aplicarPreferenciasDispositivo(scopeId);
+    aplicar();
+
+    const mediaQuery = window.matchMedia?.("(prefers-color-scheme: dark)");
+    const handleMediaChange = () => {
+      const tema = leerPreferenciaPerfil("semillas-pref-tema", scopeId, "claro");
+      if (tema === "sistema") {
+        aplicarTemaVisual("sistema");
+      }
+    };
+
+    window.addEventListener("semillas:preferences-changed", aplicar);
+    window.addEventListener("storage", aplicar);
+    mediaQuery?.addEventListener?.("change", handleMediaChange);
+
+    return () => {
+      window.removeEventListener("semillas:preferences-changed", aplicar);
+      window.removeEventListener("storage", aplicar);
+      mediaQuery?.removeEventListener?.("change", handleMediaChange);
+    };
+  }, [meQuery.data?.perfil?.id, meQuery.data?.usuario?.id]);
 
   useEffect(() => {
     const inicial = consumirConflictoVinculacion();
@@ -168,6 +192,7 @@ function AppLayout() {
               isOffline={isOffline}
               esInicio={esInicio}
               rol={cuenta.rol}
+              scopeId={meQuery.data?.perfil?.id || meQuery.data?.usuario?.id}
             />
           ) : null}
 

@@ -36,7 +36,7 @@ export const TabsOpciones: React.FC<PropiedadesTabsOpciones> = ({
       className={unirClases(
         esVariantePildora
           ? "flex flex-wrap gap-2"
-          : "flex gap-6 border-b border-slate-100 pb-px mb-6 text-left select-none overflow-x-auto whitespace-nowrap",
+          : "flex gap-6 border-b border-slate-100 pb-px mb-6 text-left select-none overflow-x-auto whitespace-nowrap dark:border-slate-800",
         clase,
       )}
     >
@@ -54,11 +54,11 @@ export const TabsOpciones: React.FC<PropiedadesTabsOpciones> = ({
                 : "flex items-center gap-2 pb-3 font-bold text-xs transition-all border-b-2 outline-none cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-green-600/30 sm:text-sm",
               esActivo
                 ? esVariantePildora
-                  ? "bg-violet-600 text-white shadow-sm"
-                  : "border-green-600 text-green-600"
+                  ? "bg-violet-600 text-white shadow-sm dark:bg-violet-600 dark:text-white"
+                  : "border-green-600 text-green-600 dark:border-emerald-400 dark:text-emerald-400"
                 : esVariantePildora
-                  ? "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                  : "border-transparent text-slate-500 hover:text-slate-700",
+                  ? "bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                  : "border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200",
               esActivo ? claseActiva : claseInactiva,
             )}
           >

@@ -1,9 +1,12 @@
-import { Headphones, Languages, Type, UserRoundCog } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Eye, Headphones, Languages, SunMoon, Type, UserRoundCog } from "lucide-react";
+import { leerPreferenciaPerfil } from "@/shared/accessibility/preferences";
 
 interface SeccionPreferenciasProps {
   grupoEdadLabel: string;
   prefiereAudio: boolean;
   tamanoTextoLabel: string;
+  scopeId?: string;
   onEditarPerfil: () => void;
   onEditarPreferencias: () => void;
 }
@@ -12,19 +15,51 @@ const preferenceItems = [
   { id: "franja", label: "Franja", icon: UserRoundCog },
   { id: "audio", label: "Audio", icon: Headphones },
   { id: "texto", label: "Tamaño de texto", icon: Type },
+  { id: "tema", label: "Tema visual", icon: SunMoon },
+  { id: "contraste", label: "Alto contraste", icon: Eye },
 ] as const;
+
+const ETIQUETAS_TEMA: Record<string, string> = {
+  claro: "Claro",
+  oscuro: "Oscuro",
+  sistema: "Sistema",
+};
 
 export function SeccionPreferencias({
   grupoEdadLabel,
   prefiereAudio,
   tamanoTextoLabel,
+  scopeId,
   onEditarPerfil,
   onEditarPreferencias,
 }: SeccionPreferenciasProps) {
+  const [temaVisual, setTemaVisual] = useState(() =>
+    leerPreferenciaPerfil("semillas-pref-tema", scopeId, "claro") || "claro",
+  );
+  const [altoContraste, setAltoContraste] = useState(() =>
+    leerPreferenciaPerfil("semillas-pref-contraste", scopeId) === "alto",
+  );
+
+  useEffect(() => {
+    const actualizar = () => {
+      setTemaVisual(leerPreferenciaPerfil("semillas-pref-tema", scopeId, "claro") || "claro");
+      setAltoContraste(leerPreferenciaPerfil("semillas-pref-contraste", scopeId) === "alto");
+    };
+    actualizar();
+    window.addEventListener("semillas:preferences-changed", actualizar);
+    window.addEventListener("storage", actualizar);
+    return () => {
+      window.removeEventListener("semillas:preferences-changed", actualizar);
+      window.removeEventListener("storage", actualizar);
+    };
+  }, [scopeId]);
+
   const values = {
     franja: grupoEdadLabel,
     audio: prefiereAudio ? "Activado" : "Desactivado",
     texto: tamanoTextoLabel,
+    tema: ETIQUETAS_TEMA[temaVisual] || "Claro",
+    contraste: altoContraste ? "Activado" : "Normal",
   };
 
   return (

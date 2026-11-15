@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Boton } from "@/componentes/ui/boton";
+import { BotonTemaToggle } from "@/componentes/ui/boton-tema-toggle";
 import { AppAccountMenu } from "./app-account-menu";
 import { obtenerMiPerfil } from "../../features/perfil/profile.api";
 
@@ -42,6 +43,7 @@ export function AppTopbar({
   });
 
   const cuenta = obtenerDatosCuentaTopbar(meQuery.data?.perfil, meQuery.data?.usuario);
+  const scopeId = meQuery.data?.perfil?.id || meQuery.data?.usuario?.id;
 
   return (
     <header className="app-topbar">
@@ -68,12 +70,14 @@ export function AppTopbar({
         </div>
       </div>
 
-      <div className="app-topbar__account">
+      <div className="app-topbar__account flex items-center gap-3">
+        <BotonTemaToggle className="admin-theme-toggle" scopeId={scopeId} />
         <AppAccountMenu
           nombreVisible={cuenta.nombre}
           nivelTexto={cuenta.nivelTexto}
           avatarUrl={cuenta.avatarUrl}
           onLogout={onLogout}
+          rol={meQuery.data?.usuario?.rol}
         />
       </div>
     </header>

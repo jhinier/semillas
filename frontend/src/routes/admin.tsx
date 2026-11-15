@@ -1,11 +1,18 @@
 import { useEffect } from "react";
 import { Outlet, createFileRoute, isRedirect, redirect } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { AppSidebar } from "../shared/layout/app-sidebar";
 import { AppTopbar } from "../shared/layout/app-topbar";
 import { useAdminLayout } from "../features/admin/hooks/use-admin-layout";
 import { obtenerMiPerfil } from "../features/perfil/profile.api";
 import { sessionStorageApi } from "../shared/api/session";
 import { resolverAccesoAdmin } from "../shared/auth/admin-access";
+import {
+  aplicarPreferenciasDispositivo,
+  aplicarTemaVisual,
+  esTemaOscuroActivo,
+  leerPreferenciaPerfil,
+} from "../shared/accessibility/preferences";
 import { queryClient } from "../app/query-client";
 import "./app.css";
 import "./admin-content-studio.css";
@@ -38,53 +45,41 @@ export const Route = createFileRoute("/admin")({
 
 function AdminLayout() {
   const { sidebarOpen, closeSidebar, openSidebar, handleLogout, pageHeader, activePage } = useAdminLayout();
+  const meQuery = useQuery({
+    queryKey: ["me"],
+    queryFn: obtenerMiPerfil,
+    staleTime: 1000 * 60 * 5,
+  });
+  const scopeId = meQuery.data?.perfil?.id || meQuery.data?.usuario?.id;
 
   useEffect(() => {
     const aplicarTemaAdmin = () => {
-      const tema = window.localStorage.getItem("semillas-pref-tema") || "claro";
-      let esOscuro = false;
-      if (tema === "oscuro") {
-        esOscuro = true;
-      } else if (tema === "sistema") {
-        esOscuro = window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ?? false;
-      }
-
-      document.documentElement.setAttribute("data-theme", esOscuro ? "admin-dark" : "admin-light");
-      if (esOscuro) {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
+      aplicarPreferenciasDispositivo(scopeId);
     };
 
     aplicarTemaAdmin();
 
     const mediaQuery = window.matchMedia?.("(prefers-color-scheme: dark)");
-    const handleChange = () => {
-      const tema = window.localStorage.getItem("semillas-pref-tema") || "claro";
+    const handleMediaChange = () => {
+      const tema = leerPreferenciaPerfil("semillas-pref-tema", scopeId, "claro");
       if (tema === "sistema") {
-        aplicarTemaAdmin();
+        aplicarTemaVisual("sistema");
       }
     };
-    mediaQuery?.addEventListener?.("change", handleChange);
+
+    window.addEventListener("semillas:preferences-changed", aplicarTemaAdmin);
+    window.addEventListener("storage", aplicarTemaAdmin);
+    mediaQuery?.addEventListener?.("change", handleMediaChange);
 
     return () => {
-      mediaQuery?.removeEventListener?.("change", handleChange);
-      const appTema = window.localStorage.getItem("semillas-pref-tema") || "claro";
-      let appOscuro = false;
-      if (appTema === "oscuro") {
-        appOscuro = true;
-      } else if (appTema === "sistema") {
-        appOscuro = window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ?? false;
-      }
+      window.removeEventListener("semillas:preferences-changed", aplicarTemaAdmin);
+      window.removeEventListener("storage", aplicarTemaAdmin);
+      mediaQuery?.removeEventListener?.("change", handleMediaChange);
+      const appOscuro = esTemaOscuroActivo(scopeId);
       document.documentElement.setAttribute("data-theme", appOscuro ? "app-dark" : "app-light");
-      if (appOscuro) {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
+      document.documentElement.classList.toggle("dark", appOscuro);
     };
-  }, []);
+  }, [scopeId]);
 
   return (
     <div className="app-shell app-shell--admin">
