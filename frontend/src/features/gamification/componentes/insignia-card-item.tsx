@@ -2,6 +2,7 @@ import * as React from "react";
 import { CheckCircle2, Gift, LockKeyhole, Sparkles, Share2, Loader2 } from "lucide-react";
 import in1Img from "@/assets/images/Ilustraciones/in1.webp";
 import in2Img from "@/assets/images/Ilustraciones/in2.webp";
+import { useResolvedMediaUrl } from "@/features/media/use-resolved-media-url";
 
 export interface InsigniaCardItemProps {
   id: string;
@@ -37,11 +38,15 @@ export const InsigniaCardItem: React.FC<InsigniaCardItemProps> = ({
 }) => {
   const [compartiendo, setCompartiendo] = React.useState(false);
   const fallbackImg = codigo === "primera_leccion" || codigo === "insignia_1" ? in1Img : in2Img;
-  const [imgSrc, setImgSrc] = React.useState(imagen || fallbackImg);
+  const mediaResuelta = useResolvedMediaUrl({
+    rawUrl: imagen,
+    useFallbackOnError: false,
+  });
+  const [imgSrc, setImgSrc] = React.useState(mediaResuelta.src || imagen || fallbackImg);
 
   React.useEffect(() => {
-    setImgSrc(imagen || fallbackImg);
-  }, [imagen, fallbackImg]);
+    setImgSrc(mediaResuelta.src || imagen || fallbackImg);
+  }, [mediaResuelta.src, imagen, fallbackImg]);
 
   const handleReclamar = (e: React.MouseEvent) => {
     e.preventDefault();

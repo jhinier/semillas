@@ -26,6 +26,7 @@ import logoOriginalImg from "@/assets/images/logos/Logo_original.webp";
 import defaultTemaImg from "@/assets/images/temas/default-tema.webp";
 
 const UUID_EXTRACT_REGEX = /([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})/i;
+const MEDIA_ENDPOINT_URL_REGEX = /\/media\/([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/url$/i;
 
 const ILUSTRACIONES_POOL = [
   tema1Img,
@@ -83,6 +84,10 @@ export function extraerMediaId(resourceId?: string | null, rawUrl?: string | nul
     return resourceId.match(UUID_EXTRACT_REGEX)?.[1] ?? null;
   }
   if (!rawUrl) return null;
+  const endpointMatch = rawUrl.trim().match(MEDIA_ENDPOINT_URL_REGEX);
+  if (endpointMatch?.[1]) {
+    return endpointMatch[1];
+  }
   if (rawUrl.startsWith("/media/") || rawUrl.startsWith("/__offline_media/") || rawUrl.startsWith("privada://")) {
     const match = rawUrl.match(UUID_EXTRACT_REGEX);
     return match?.[1] ?? null;
@@ -96,6 +101,7 @@ export function esUrlDirectaValida(url?: string | null): boolean {
   if (!limpia) return false;
   if (limpia.startsWith("/src/assets/")) return false;
   if (limpia.startsWith("/media/")) return false;
+  if (MEDIA_ENDPOINT_URL_REGEX.test(limpia)) return false;
   if (limpia.startsWith("privada://")) return false;
   if (limpia.startsWith("/__offline_media/")) return false;
   return (

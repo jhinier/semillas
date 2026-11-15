@@ -1,12 +1,17 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from "react";
 import {
   Award,
   BookOpen,
   Check,
   CheckCircle2,
   Flame,
+  FolderOpen,
+  ImagePlus,
   Link2,
+  Loader2,
   Sparkles,
+  Trash2,
+  Upload,
   X,
 } from "lucide-react";
 import in1Img from "@/assets/images/Ilustraciones/in1.webp";
@@ -15,6 +20,15 @@ import recompensaImg from "@/assets/images/Ilustraciones/Recompensa.webp";
 import semillaImg from "@/assets/images/Ilustraciones/Semilla.webp";
 import exploradoresImg from "@/assets/images/Ilustraciones/Exploradores.webp";
 import versiculoImg from "@/assets/images/Ilustraciones/Versiculo del dia.webp";
+import { obtenerApiUrlPublica } from "@/shared/config/env";
+import {
+  obtenerRecursosMultimedia,
+  subirArchivo,
+  validarArchivoMultimediaCliente,
+  type RecursoMultimedia,
+} from "@/features/media/media.api";
+import { useResolvedMediaUrl } from "@/features/media/use-resolved-media-url";
+import { MediaGalleryDialog } from "../medios/media-gallery-dialog";
 import type { CodigoCriterioLogro, LogroAdminResumen } from "../../admin-logros.api";
 import {
   CRITERIOS_LOGRO,
@@ -45,6 +59,11 @@ type Props = {
   guardando: boolean;
   onCerrar: () => void;
   onGuardar: (valores: ValoresFormulario) => void;
+  onSubirImagen?: (
+    archivo: File,
+    metadata?: { titulo?: string; textoAlternativo?: string },
+  ) => Promise<RecursoMultimedia>;
+  recursosBiblioteca?: RecursoMultimedia[];
 };
 
 type InsigniaPreset = {
@@ -121,6 +140,20 @@ function normalizarUrlIconoParaEnvio(rawUrl: string): string {
   return "";
 }
 
+function resolverUrlGuardableDesdeRecurso(recurso: RecursoMultimedia): string {
+  const publica = recurso.url_publica?.trim() ?? "";
+  if (publica.includes("/media/archivo/")) {
+    return publica;
+  }
+  if (publica.startsWith("/src/assets/")) {
+    return publica;
+  }
+  if (recurso.id) {
+    return `${obtenerApiUrlPublica()}/media/${recurso.id}/url`;
+  }
+  return publica;
+}
+
 function esPresetActivo(preset: InsigniaPreset, urlActual: string): boolean {
   const limpia = urlActual.trim();
   if (!limpia) return preset.id === "default";
@@ -143,7 +176,12 @@ export function FormularioLogro({
   guardando,
   onCerrar,
   onGuardar,
+  onSubirImagen,
+  recursosBiblioteca: recursosIniciales,
 }: Props) {
+  const inputArchivoRef = useRef<HTMLInputElement>(null);
+  const objectUrlRef = useRef<string | null>(null);
+
   const [valores, setValores] = useState<ValoresFormulario>(
     modo === "editar" && logro ? valoresDesdeLogro(logro) : VALORES_INICIALES,
   );
@@ -154,9 +192,48 @@ export function FormularioLogro({
   const [errorImagen, setErrorImagen] = useState(false);
   const [mostrarUrlExterna, setMostrarUrlExterna] = useState(false);
 
+  const [subiendoImagen, setSubiendoImagen] = useState(false);
+  const [errorSubida, setErrorSubida] = useState<string | null>(null);
+  const [arrastrandoArchivo, setArrastrandoArchivo] = useState(false);
+  const [previewLocalSubida, setPreviewLocalSubida] = useState<string | null>(null);
+  const [nombreImagenPersonalizada, setNombreImagenPersonalizada] = useState<string | null>(null);
+
+  const [bibliotecaAbierta, setBibliotecaAbierta] = useState(false);
+  const [cargandoBiblioteca, setCargandoBiblioteca] = useState(false);
+  const [recursosBiblioteca, setRecursosBiblioteca] = useState<RecursoMultimedia[]>(
+    recursosIniciales ?? [],
+  );
+  const [recursoSeleccionadoId, setRecursoSeleccionadoId] = useState<string | null>(null);
+
+  function limpiarObjectUrlTemporal() {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      limpiarObjectUrlTemporal();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (recursosIniciales) {
+      setRecursosBiblioteca(recursosIniciales);
+    }
+  }, [recursosIniciales]);
+
   useEffect(() => {
     if (!abierto) return;
+    limpiarObjectUrlTemporal();
     setErrorImagen(false);
+    setErrorSubida(null);
+    setSubiendoImagen(false);
+    setArrastrandoArchivo(false);
+    setPreviewLocalSubida(null);
+    setNombreImagenPersonalizada(null);
+    setRecursoSeleccionadoId(null);
     setTocadoNombre(false);
     setTocadoCodigo(false);
     setIntentoEnviar(false);
@@ -167,6 +244,9 @@ export function FormularioLogro({
       const urlLimpia = iniciales.url_icono.trim();
       const coincidePreset = INSIGNIAS_PREDEFINIDAS.some((op) => esPresetActivo(op, urlLimpia));
       setMostrarUrlExterna(Boolean(urlLimpia) && !coincidePreset);
+      if (urlLimpia && !coincidePreset) {
+        setNombreImagenPersonalizada("Imagen personalizada actual");
+      }
     } else {
       setValores(VALORES_INICIALES);
       setCodigoManual(false);
@@ -175,6 +255,15 @@ export function FormularioLogro({
     // Solo reinicializar cuando cambia el estado de apertura, modo o el ID del logro
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [abierto, modo, logro?.id]);
+
+  const urlActualLimpia = valores.url_icono.trim();
+  const presetSeleccionado = INSIGNIAS_PREDEFINIDAS.find((preset) =>
+    esPresetActivo(preset, urlActualLimpia),
+  );
+  const imagenResuelta = useResolvedMediaUrl({
+    rawUrl: !presetSeleccionado && urlActualLimpia ? urlActualLimpia : null,
+    useFallbackOnError: false,
+  });
 
   if (!abierto) return null;
 
@@ -193,8 +282,8 @@ export function FormularioLogro({
       ? "La meta debe ser al menos 1."
       : null;
 
-  const mostrarErrorNombre = (tocadoNombre || intentoEnviar) ? errorNombreRaw : null;
-  const mostrarErrorCodigo = (tocadoCodigo || intentoEnviar) ? errorCodigoRaw : null;
+  const mostrarErrorNombre = tocadoNombre || intentoEnviar ? errorNombreRaw : null;
+  const mostrarErrorCodigo = tocadoCodigo || intentoEnviar ? errorCodigoRaw : null;
   const formularioValido = !errorNombreRaw && !errorCodigoRaw && !errorValorRaw;
 
   function actualizar<K extends keyof ValoresFormulario>(clave: K, valor: ValoresFormulario[K]) {
@@ -210,12 +299,99 @@ export function FormularioLogro({
     });
   }
 
+  async function subirImagenMedalla(
+    archivo: File,
+    metadata?: { titulo?: string; textoAlternativo?: string },
+  ): Promise<RecursoMultimedia | null> {
+    const errorArchivo = validarArchivoMultimediaCliente(archivo, "imagen");
+    if (errorArchivo) {
+      setErrorSubida(errorArchivo);
+      return null;
+    }
+
+    setErrorSubida(null);
+    setSubiendoImagen(true);
+
+    limpiarObjectUrlTemporal();
+    const previewTemporal = typeof URL !== "undefined" ? URL.createObjectURL(archivo) : null;
+    if (previewTemporal) {
+      objectUrlRef.current = previewTemporal;
+      setPreviewLocalSubida(previewTemporal);
+    }
+
+    const tituloArchivo = metadata?.titulo?.trim() || valores.nombre.trim() || archivo.name.replace(/\.[^.]+$/, "");
+    const altArchivo = metadata?.textoAlternativo?.trim() || `Insignia de logro ${tituloArchivo}`;
+
+    try {
+      const recurso = onSubirImagen
+        ? await onSubirImagen(archivo, { titulo: tituloArchivo, textoAlternativo: altArchivo })
+        : await subirArchivo(archivo, "imagen", altArchivo, tituloArchivo);
+
+      const urlParaGuardar = resolverUrlGuardableDesdeRecurso(recurso);
+      actualizar("url_icono", urlParaGuardar);
+      setPreviewLocalSubida(recurso.url_publica || previewTemporal);
+      setNombreImagenPersonalizada(recurso.titulo || archivo.name);
+      setRecursoSeleccionadoId(recurso.id);
+      setMostrarUrlExterna(false);
+      setRecursosBiblioteca((prev) => [recurso, ...prev.filter((item) => item.id !== recurso.id)]);
+      return recurso;
+    } catch (error) {
+      limpiarObjectUrlTemporal();
+      setPreviewLocalSubida(null);
+      setErrorSubida(
+        error instanceof Error
+          ? error.message
+          : "No pudimos subir la imagen en este momento. Intenta con otro archivo PNG, JPG o WebP.",
+      );
+      return null;
+    } finally {
+      setSubiendoImagen(false);
+    }
+  }
+
+  function manejarSeleccionArchivoInput(evento: ChangeEvent<HTMLInputElement>) {
+    const archivo = evento.target.files?.[0];
+    evento.target.value = "";
+    if (!archivo) return;
+    void subirImagenMedalla(archivo);
+  }
+
+  function manejarDropImagen(evento: DragEvent<HTMLDivElement>) {
+    evento.preventDefault();
+    evento.stopPropagation();
+    setArrastrandoArchivo(false);
+    const archivo = evento.dataTransfer.files?.[0];
+    if (!archivo) return;
+    void subirImagenMedalla(archivo);
+  }
+
+  async function abrirBibliotecaMedallas() {
+    setBibliotecaAbierta(true);
+    if (recursosBiblioteca.length > 0 || cargandoBiblioteca) return;
+    setCargandoBiblioteca(true);
+    try {
+      const lista = await obtenerRecursosMultimedia();
+      setRecursosBiblioteca(lista);
+    } finally {
+      setCargandoBiblioteca(false);
+    }
+  }
+
+  function quitarImagenPersonalizada() {
+    limpiarObjectUrlTemporal();
+    setPreviewLocalSubida(null);
+    setNombreImagenPersonalizada(null);
+    setRecursoSeleccionadoId(null);
+    setErrorSubida(null);
+    actualizar("url_icono", "");
+  }
+
   function enviar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
     setIntentoEnviar(true);
     setTocadoNombre(true);
     setTocadoCodigo(true);
-    if (!formularioValido) return;
+    if (!formularioValido || subiendoImagen) return;
     onGuardar({
       ...valores,
       codigo: codigoCalculado.trim().toLowerCase(),
@@ -229,9 +405,15 @@ export function FormularioLogro({
 
   const titulo = modo === "crear" ? "Nuevo logro" : `Editar ${logro?.nombre ?? "logro"}`;
   const fallbackIcono = codigoCalculado.includes("2") ? in2Img : in1Img;
-  const urlActualLimpia = valores.url_icono.trim();
-  const previewSrc =
-    !errorImagen && urlActualLimpia ? urlActualLimpia : fallbackIcono;
+  const tieneImagenPersonalizada = Boolean(urlActualLimpia) && !presetSeleccionado;
+  const previewSrc = errorImagen
+    ? fallbackIcono
+    : previewLocalSubida ||
+      (urlActualLimpia ? presetSeleccionado?.previewSrc : undefined) ||
+      imagenResuelta.src ||
+      urlActualLimpia ||
+      fallbackIcono;
+
   const reglaTexto = describirReglaLogro(valores.codigo_criterio, valores.valor_criterio);
   const criterioSeleccionado =
     CRITERIOS_LOGRO.find((c) => c.codigo === valores.codigo_criterio) ?? CRITERIOS_LOGRO[0]!;
@@ -424,33 +606,147 @@ export function FormularioLogro({
         <div className="admin-logros-step__head">
           <span className="admin-logros-step__num" aria-hidden="true">3</span>
           <div>
-            <h3 className="admin-logros-step__title">Elige la imagen de la medalla</h3>
+            <h3 className="admin-logros-step__title">Elige o sube la imagen de la medalla</h3>
             <p className="admin-logros-step__desc">
-              Escoge una ilustración lista para usar o pega un enlace si ya tienes una imagen subida.
+              Sube una imagen desde tu dispositivo, búscala en la biblioteca o selecciona un diseño listo.
             </p>
           </div>
         </div>
 
-        <div className="admin-logros-badge-grid" role="radiogroup" aria-label="Diseños de medalla">
-          {INSIGNIAS_PREDEFINIDAS.map((preset) => {
-            const activo = esPresetActivo(preset, valores.url_icono);
-            return (
+        <input
+          ref={inputArchivoRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          onChange={manejarSeleccionArchivoInput}
+          className="sr-only"
+          aria-label="Seleccionar archivo de imagen para la medalla"
+        />
+
+        {/* Tarjeta si ya hay una imagen subida/personalizada activa */}
+        {tieneImagenPersonalizada ? (
+          <div className="admin-logros-custom-preview">
+            <div className="admin-logros-custom-preview__info">
+              <img
+                src={previewSrc}
+                alt="Medalla personalizada"
+                className="admin-logros-custom-preview__img"
+              />
+              <div className="min-w-0">
+                <p className="admin-logros-label truncate">
+                  {nombreImagenPersonalizada || "Imagen personalizada activa"}
+                </p>
+                <p className="admin-logros-hint">
+                  Esta imagen aparecerá como medalla del logro.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
               <button
-                key={preset.id}
                 type="button"
-                role="radio"
-                aria-checked={activo}
-                onClick={() => {
-                  actualizar("url_icono", preset.valorUrl);
-                  setMostrarUrlExterna(false);
-                }}
-                className={`admin-logros-badge-option ${activo ? "is-selected" : ""}`}
+                disabled={subiendoImagen}
+                onClick={() => inputArchivoRef.current?.click()}
+                className="admin-logros-secondary-btn"
               >
-                <img src={preset.previewSrc} alt="" aria-hidden="true" />
-                <span>{preset.nombre}</span>
+                <Upload className="size-4" aria-hidden="true" />
+                Cambiar imagen
               </button>
-            );
-          })}
+              <button
+                type="button"
+                disabled={subiendoImagen}
+                onClick={quitarImagenPersonalizada}
+                className="admin-logros-secondary-btn"
+              >
+                <Trash2 className="size-4" aria-hidden="true" />
+                Quitar
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        {/* Zona de carga directa y biblioteca */}
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            setArrastrandoArchivo(true);
+          }}
+          onDragLeave={() => setArrastrandoArchivo(false)}
+          onDrop={manejarDropImagen}
+          className={`admin-logros-upload-box ${arrastrandoArchivo ? "is-dragging" : ""}`}
+        >
+          <div className="admin-logros-upload-box__icon" aria-hidden="true">
+            {subiendoImagen ? (
+              <Loader2 className="size-5 animate-spin" />
+            ) : (
+              <ImagePlus className="size-5" />
+            )}
+          </div>
+          <div>
+            <p className="admin-logros-label">
+              {subiendoImagen
+                ? "Subiendo imagen de medalla…"
+                : "Sube tu propia imagen de medalla"}
+            </p>
+            <p className="admin-logros-hint mt-0.5">
+              Arrastra una imagen aquí o haz clic para seleccionarla (PNG, JPG o WebP · Máx. 5 MB)
+            </p>
+          </div>
+          <div className="admin-logros-upload-actions">
+            <button
+              type="button"
+              disabled={subiendoImagen}
+              onClick={() => inputArchivoRef.current?.click()}
+              className="admin-logros-primary-btn"
+            >
+              <Upload className="size-4" aria-hidden="true" />
+              {subiendoImagen ? "Subiendo…" : "Subir imagen"}
+            </button>
+            <button
+              type="button"
+              disabled={subiendoImagen || cargandoBiblioteca}
+              onClick={() => void abrirBibliotecaMedallas()}
+              className="admin-logros-secondary-btn"
+            >
+              <FolderOpen className="size-4" aria-hidden="true" />
+              {cargandoBiblioteca ? "Cargando biblioteca…" : "Elegir de biblioteca"}
+            </button>
+          </div>
+          {errorSubida ? (
+            <p className="admin-logros-error mt-1" role="alert">
+              {errorSubida}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="admin-logros-field">
+          <span className="admin-logros-hint font-semibold">
+            O elige una medalla prediseñada de Semillas:
+          </span>
+          <div className="admin-logros-badge-grid" role="radiogroup" aria-label="Diseños de medalla">
+            {INSIGNIAS_PREDEFINIDAS.map((preset) => {
+              const activo = esPresetActivo(preset, valores.url_icono);
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={activo}
+                  onClick={() => {
+                    limpiarObjectUrlTemporal();
+                    setPreviewLocalSubida(null);
+                    setNombreImagenPersonalizada(null);
+                    setRecursoSeleccionadoId(null);
+                    setErrorSubida(null);
+                    actualizar("url_icono", preset.valorUrl);
+                    setMostrarUrlExterna(false);
+                  }}
+                  className={`admin-logros-badge-option ${activo ? "is-selected" : ""}`}
+                >
+                  <img src={preset.previewSrc} alt="" aria-hidden="true" />
+                  <span>{preset.nombre}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div>
@@ -471,7 +767,12 @@ export function FormularioLogro({
               <input
                 id="formulario-logro-icono"
                 value={valores.url_icono}
-                onChange={(e) => actualizar("url_icono", e.target.value)}
+                onChange={(e) => {
+                  limpiarObjectUrlTemporal();
+                  setPreviewLocalSubida(null);
+                  setNombreImagenPersonalizada(null);
+                  actualizar("url_icono", e.target.value);
+                }}
                 placeholder="https://cdn.semillas.org/medios/logros/amor.png"
                 className="admin-logros-input"
               />
@@ -539,6 +840,41 @@ export function FormularioLogro({
     </aside>
   );
 
+  const selectorBiblioteca = bibliotecaAbierta ? (
+    <MediaGalleryDialog
+      open={bibliotecaAbierta}
+      title="Imagen para medalla de logro"
+      acceptedTypes={["imagen"]}
+      resources={recursosBiblioteca}
+      selectedResourceId={recursoSeleccionadoId}
+      isUploading={subiendoImagen}
+      onClose={() => setBibliotecaAbierta(false)}
+      onRemove={() => {
+        quitarImagenPersonalizada();
+        setBibliotecaAbierta(false);
+      }}
+      onSelect={(resourceId) => {
+        const encontrado = recursosBiblioteca.find((r) => r.id === resourceId);
+        if (encontrado) {
+          limpiarObjectUrlTemporal();
+          const urlGuardable = resolverUrlGuardableDesdeRecurso(encontrado);
+          actualizar("url_icono", urlGuardable);
+          setPreviewLocalSubida(encontrado.url_publica);
+          setNombreImagenPersonalizada(encontrado.titulo || "Imagen de biblioteca");
+          setRecursoSeleccionadoId(encontrado.id);
+          setMostrarUrlExterna(false);
+        }
+        setBibliotecaAbierta(false);
+      }}
+      onUpload={async (file, metadata) => {
+        const recurso = await subirImagenMedalla(file, metadata);
+        if (recurso) {
+          setBibliotecaAbierta(false);
+        }
+      }}
+    />
+  ) : null;
+
   if (presentacion === "pagina") {
     return (
       <section aria-labelledby="formulario-logro-titulo">
@@ -552,14 +888,14 @@ export function FormularioLogro({
               <button
                 type="button"
                 onClick={onCerrar}
-                disabled={guardando}
+                disabled={guardando || subiendoImagen}
                 className="admin-logros-secondary-btn"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
-                disabled={guardando}
+                disabled={guardando || subiendoImagen}
                 className="admin-logros-primary-btn"
               >
                 {guardando ? "Guardando…" : modo === "crear" ? "Crear logro" : "Guardar cambios"}
@@ -568,6 +904,7 @@ export function FormularioLogro({
           </div>
           {tarjetaVistaPrevia}
         </form>
+        {selectorBiblioteca}
       </section>
     );
   }
@@ -611,20 +948,21 @@ export function FormularioLogro({
           <button
             type="button"
             onClick={onCerrar}
-            disabled={guardando}
+            disabled={guardando || subiendoImagen}
             className="admin-logros-secondary-btn"
           >
             Cancelar
           </button>
           <button
             type="submit"
-            disabled={guardando}
+            disabled={guardando || subiendoImagen}
             className="admin-logros-primary-btn"
           >
             {guardando ? "Guardando…" : modo === "crear" ? "Crear logro" : "Guardar cambios"}
           </button>
         </footer>
       </form>
+      {selectorBiblioteca}
     </div>
   );
 }

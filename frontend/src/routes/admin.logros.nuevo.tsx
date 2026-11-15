@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { crearLogroAdmin } from "@/features/admin/admin-logros.api";
 import { FormularioLogro } from "@/features/admin/componentes/logros-admin";
+import { subirArchivo } from "@/features/media/media.api";
 
 export const Route = createFileRoute("/admin/logros/nuevo")({ component: AdminLogrosNuevoPage });
 
@@ -55,6 +56,17 @@ function AdminLogrosNuevoPage() {
         presentacion="pagina"
         guardando={crear.isPending}
         onCerrar={() => navigate({ to: "/admin/logros" })}
+        onSubirImagen={async (archivo, metadata) => {
+          const recurso = await subirArchivo(
+            archivo,
+            "imagen",
+            metadata?.textoAlternativo,
+            metadata?.titulo,
+          );
+          await queryClient.invalidateQueries({ queryKey: ["admin", "media"] });
+          toast.success("Imagen de medalla subida correctamente");
+          return recurso;
+        }}
         onGuardar={(valores) => {
           crear.mutate({
             codigo: valores.codigo,

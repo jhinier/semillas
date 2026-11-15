@@ -1,8 +1,11 @@
 import { useDeferredValue, useEffect, useState } from "react";
 import { Archive, ArchiveRestore, Medal, Pencil, Plus, Search, ShieldAlert, WifiOff } from "lucide-react";
+import { toast } from "sonner";
 import in1Img from "@/assets/images/Ilustraciones/in1.webp";
 import in2Img from "@/assets/images/Ilustraciones/in2.webp";
 import { Paginacion } from "@/componentes/ui/paginacion";
+import { subirArchivo } from "@/features/media/media.api";
+import { useResolvedMediaUrl } from "@/features/media/use-resolved-media-url";
 import type {
   CodigoCriterioLogro,
   LogroAdminResumen,
@@ -290,6 +293,16 @@ export function AdminLogrosPanel({ onNuevoLogro }: AdminLogrosPanelProps = {}) {
         presentacion="modal"
         guardando={actualizar.isPending}
         onCerrar={() => setLogroEnEdicion(null)}
+        onSubirImagen={async (archivo, metadata) => {
+          const recurso = await subirArchivo(
+            archivo,
+            "imagen",
+            metadata?.textoAlternativo,
+            metadata?.titulo,
+          );
+          toast.success("Imagen de medalla subida correctamente");
+          return recurso;
+        }}
         onGuardar={(valores) => {
           if (!logroEnEdicion) return;
           void actualizar
@@ -321,13 +334,17 @@ export function AdminLogrosPanel({ onNuevoLogro }: AdminLogrosPanelProps = {}) {
 
 function IconoLogroAdmin({ url, codigo }: { url: string | null; codigo: string }) {
   const fallback = codigo === "primera_leccion" || codigo.includes("1") ? in1Img : in2Img;
-  const [src, setSrc] = useState(url || fallback);
+  const resolved = useResolvedMediaUrl({
+    rawUrl: url,
+    useFallbackOnError: false,
+  });
+  const [src, setSrc] = useState(resolved.src || url || fallback);
   const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
-    setSrc(url || fallback);
+    setSrc(resolved.src || url || fallback);
     setHasError(false);
-  }, [url, fallback]);
+  }, [resolved.src, url, fallback]);
 
   if (hasError) {
     return (

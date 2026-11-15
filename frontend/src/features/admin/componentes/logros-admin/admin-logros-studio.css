@@ -964,3 +964,107 @@
 .dark .admin-logros-table-card tbody {
   color: #e2e8f0;
 }
+
+/* Upload zone & custom image banner for Step 3 */
+.admin-logros-upload-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1.25rem 1rem;
+  border-radius: 1rem;
+  border: 2px dashed #cbd5e1;
+  background: #f8fafc;
+  text-align: center;
+  transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+}
+
+.admin-logros-upload-box:hover,
+.admin-logros-upload-box.is-dragging {
+  border-color: #7c3aed;
+  background: #faf5ff;
+  box-shadow: 0 8px 20px rgba(109, 40, 217, 0.08);
+}
+
+.admin-logros-upload-box__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.9rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #6d28d9;
+}
+
+.admin-logros-upload-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.55rem;
+}
+
+.admin-logros-custom-preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  border: 1.5px solid #a7f3d0;
+  background: #ecfdf5;
+}
+
+.admin-logros-custom-preview__info {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.admin-logros-custom-preview__img {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 0.9rem;
+  object-fit: cover;
+  border: 1px solid #a7f3d0;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+[data-theme="admin-dark"] .admin-logros-upload-box,
+.dark .admin-logros-upload-box {
+  background: #131c31;
+  border-color: rgba(148, 163, 184, 0.32);
+  color: #e2e8f0;
+}
+
+[data-theme="admin-dark"] .admin-logros-upload-box:hover,
+[data-theme="admin-dark"] .admin-logros-upload-box.is-dragging,
+.dark .admin-logros-upload-box:hover,
+.dark .admin-logros-upload-box.is-dragging {
+  border-color: #a78bfa;
+  background: rgba(124, 58, 237, 0.14);
+}
+
+[data-theme="admin-dark"] .admin-logros-upload-box__icon,
+.dark .admin-logros-upload-box__icon {
+  background: #1b2742;
+  border-color: rgba(148, 163, 184, 0.25);
+  color: #c4b5fd;
+}
+
+[data-theme="admin-dark"] .admin-logros-custom-preview,
+.dark .admin-logros-custom-preview {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(52, 211, 153, 0.38);
+  color: #f8fafc;
+}
+
+[data-theme="admin-dark"] .admin-logros-custom-preview__img,
+.dark .admin-logros-custom-preview__img {
+  background: #172136;
+  border-color: rgba(52, 211, 153, 0.38);
+}

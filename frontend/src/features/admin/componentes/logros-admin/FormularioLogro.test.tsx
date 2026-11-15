@@ -57,7 +57,10 @@ describe("FormularioLogro", () => {
     expect(html).toContain("Así lo verá el estudiante");
     expect(html).toContain("Nombre y mensaje para el niño");
     expect(html).toContain("¿Cómo se gana este logro?");
-    expect(html).toContain("Elige la imagen de la medalla");
+    expect(html).toContain("Elige o sube la imagen de la medalla");
+    expect(html).toContain("Subir imagen");
+    expect(html).toContain("Elegir de biblioteca");
+    expect(html).toContain('accept="image/jpeg,image/png,image/webp"');
     expect(html).not.toContain('aria-label="Cerrar"');
     expect(html).not.toContain('role="alert"');
     expect(html).not.toContain('aria-invalid="true"');

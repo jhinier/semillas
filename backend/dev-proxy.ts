@@ -1,10 +1,40 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const TARGET = "https://api-semillas.andresalexander14.workers.dev";
 const PORT = 8787;
 const DEV_STATE_FILE = join(tmpdir(), "semillas-dev-proxy-state-v2.json");
+const DEV_MEDIA_DIR = join(tmpdir(), "semillas-dev-media");
+const devMediaBlobs = new Map<string, { bytes: Uint8Array; mime: string }>();
+
+function guardarBlobDevMedia(id: string, bytes: Uint8Array, mime: string) {
+  devMediaBlobs.set(id, { bytes, mime });
+  try {
+    mkdirSync(DEV_MEDIA_DIR, { recursive: true });
+    writeFileSync(join(DEV_MEDIA_DIR, id), bytes);
+    writeFileSync(join(DEV_MEDIA_DIR, `${id}.mime`), mime, "utf8");
+  } catch {
+    // Mantener en memoria si no es posible persistir en temp
+  }
+}
+
+function leerBlobDevMedia(id: string): { bytes: Uint8Array; mime: string } | null {
+  const enMemoria = devMediaBlobs.get(id);
+  if (enMemoria) return enMemoria;
+  try {
+    const filePath = join(DEV_MEDIA_DIR, id);
+    if (!existsSync(filePath)) return null;
+    const bytes = new Uint8Array(readFileSync(filePath));
+    const mimePath = join(DEV_MEDIA_DIR, `${id}.mime`);
+    const mime = existsSync(mimePath) ? readFileSync(mimePath, "utf8").trim() || "image/png" : "image/png";
+    const registro = { bytes, mime };
+    devMediaBlobs.set(id, registro);
+    return registro;
+  } catch {
+    return null;
+  }
+}
 
 const SNAPSHOT_RESUMEN_DETALLADO = {
   exito: true,
@@ -971,8 +1001,35 @@ const SNAPSHOT_MEDIA = {
   ],
 };
 
-function resolverRespuestaDevMedia(req: Request, url: URL, origin: string): Response | null {
+async function resolverRespuestaDevMedia(
+  req: Request,
+  url: URL,
+  origin: string,
+  rawBody?: ArrayBuffer,
+): Promise<Response | null> {
   if (!url.pathname.startsWith("/media")) return null;
+
+  // 0. GET /media/archivo/:id (sirve bytes reales subidos en desarrollo)
+  if (req.method === "GET" && url.pathname.startsWith("/media/archivo/")) {
+    const id = url.pathname.replace("/media/archivo/", "").split("/")[0]?.trim() ?? "";
+    const blob = id ? leerBlobDevMedia(id) : null;
+    if (!blob) {
+      return new Response("Archivo multimedia no encontrado", {
+        status: 404,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+        },
+      });
+    }
+    return new Response(new Uint8Array(blob.bytes).buffer, {
+      status: 200,
+      headers: {
+        "Content-Type": blob.mime,
+        "Cache-Control": "public, max-age=3600",
+        "Access-Control-Allow-Origin": "*",
+      },
+    });
+  }
 
   // 1. GET /media
   if (req.method === "GET" && (url.pathname === "/media" || url.pathname === "/media/")) {
@@ -993,11 +1050,15 @@ function resolverRespuestaDevMedia(req: Request, url: URL, origin: string): Resp
     const parts = url.pathname.split("/");
     const id = parts[2];
     const item = SNAPSHOT_MEDIA.datos.find((m) => m.id === id) || SNAPSHOT_MEDIA.datos[0];
+    const blobExistente = id ? leerBlobDevMedia(id) : null;
+    const urlResuelta = blobExistente
+      ? `http://localhost:${PORT}/media/archivo/${id}`
+      : item?.url_publica || "/src/assets/images/Ilustraciones/Semilla.webp";
     return new Response(
       JSON.stringify({
         exito: true,
         datos: {
-          url: item?.url_publica || "/src/assets/images/Ilustraciones/Semilla.webp",
+          url: urlResuelta,
           expira_en_segundos: 3600,
         },
       }),
@@ -1059,18 +1120,54 @@ function resolverRespuestaDevMedia(req: Request, url: URL, origin: string): Resp
   // 4. POST /media/subir
   if (req.method === "POST" && url.pathname === "/media/subir") {
     const nuevoId = crypto.randomUUID();
+    let titulo = "Medalla subida";
+    let textoAlternativo = "Insignia personalizada";
+    let tipo: "imagen" | "audio" | "video" = "imagen";
+    let tipoMime = "image/png";
+    let tamanoBytes = 145000;
+    let urlPublica = "/src/assets/images/Ilustraciones/Semilla.webp";
+
+    try {
+      const formReq =
+        rawBody !== undefined
+          ? new Request(req.url, { method: req.method, headers: req.headers, body: rawBody })
+          : req;
+      const formData = await formReq.formData();
+      const archivo = formData.get("archivo");
+      const tipoForm = String(formData.get("tipo") || "imagen").trim();
+      const tituloForm = String(formData.get("titulo") || "").trim();
+      const altForm = String(formData.get("texto_alternativo") || "").trim();
+      if (tipoForm === "audio" || tipoForm === "video") tipo = tipoForm;
+      if (tituloForm) titulo = tituloForm;
+      if (altForm) textoAlternativo = altForm;
+
+      if (archivo instanceof File && archivo.size > 0) {
+        const bytes = new Uint8Array(await archivo.arrayBuffer());
+        tipoMime = archivo.type || (tipo === "imagen" ? "image/png" : "application/octet-stream");
+        tamanoBytes = bytes.byteLength;
+        if (!tituloForm) {
+          titulo = archivo.name.replace(/\.[^.]+$/, "") || "Medalla subida";
+        }
+        guardarBlobDevMedia(nuevoId, bytes, tipoMime);
+        urlPublica = `http://localhost:${PORT}/media/archivo/${nuevoId}`;
+      }
+    } catch (err) {
+      console.warn("[PROXY DEV MEDIA] No se pudo leer formData al subir archivo:", err);
+    }
+
+    const ext = tipoMime.split("/")[1]?.replace(/[^a-z0-9]/gi, "") || "png";
     const nuevoRecurso = {
       id: nuevoId,
-      tipo: "imagen",
+      tipo,
       bucket_almacenamiento: "semillas-media",
-      clave_almacenamiento: `subidas/${nuevoId}.webp`,
-      url_publica: "/src/assets/images/Ilustraciones/Semilla.webp",
-      texto_alternativo: "Recurso subido en desarrollo",
-      titulo: "Nuevo recurso multimedia",
-      tipo_mime: "image/webp",
-      tamano_bytes: 145000,
-      ancho_px: 800,
-      alto_px: 600,
+      clave_almacenamiento: `subidas/${nuevoId}.${ext}`,
+      url_publica: urlPublica,
+      texto_alternativo: textoAlternativo,
+      titulo,
+      tipo_mime: tipoMime,
+      tamano_bytes: tamanoBytes,
+      ancho_px: 512,
+      alto_px: 512,
       duracion_seg: null,
       creado_por: "Administrador",
       activo: true,
@@ -3126,6 +3223,11 @@ const server = Bun.serve({
       });
     }
 
+    if (req.method === "GET" && url.pathname.startsWith("/media/archivo/")) {
+      const localMedia = await resolverRespuestaDevMedia(req, url, origin);
+      if (localMedia) return localMedia;
+    }
+
     const targetUrl = new URL(url.pathname + url.search, TARGET);
     const headers = new Headers(req.headers);
     headers.set("host", targetUrl.host);
@@ -3365,7 +3467,7 @@ const server = Bun.serve({
         (res.status === 401 || res.status === 403 || res.status >= 500) &&
         url.pathname.startsWith("/media")
       ) {
-        const respuestaMedia = resolverRespuestaDevMedia(req, url, origin);
+        const respuestaMedia = await resolverRespuestaDevMedia(req, url, origin, body);
         if (respuestaMedia) {
           console.log(`[PROXY DEV RESILIENCE] Sirviendo snapshot media en desarrollo para ${url.pathname} (remote respondió ${res.status})`);
           return respuestaMedia;
@@ -3541,7 +3643,7 @@ const server = Bun.serve({
       console.error(`[PROXY FETCH FAILED]:`, err);
       // Fallback si la conexión a internet cae
       if (url.pathname.startsWith("/media")) {
-        const respuestaMedia = resolverRespuestaDevMedia(req, url, origin);
+        const respuestaMedia = await resolverRespuestaDevMedia(req, url, origin, body);
         if (respuestaMedia) {
           console.log(`[PROXY DEV RESILIENCE] Red caída, sirviendo media para ${url.pathname}`);
           return respuestaMedia;
