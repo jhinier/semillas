@@ -1,30 +1,36 @@
 .admin-users-page,
 .admin-user-detail-page {
   display: grid;
-  gap: 1.25rem;
+  gap: .85rem;
+  min-width: 0;
   color: #172033;
+}
+
+.admin-users-page > *,
+.admin-user-detail-page > * {
+  min-width: 0;
 }
 
 .admin-users-page-header,
 .admin-user-detail-header {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: .9rem;
   min-width: 0;
-  padding: 1.35rem 1.5rem;
+  padding: .95rem 1.25rem;
   border: 1px solid #e4e9f2;
-  border-radius: 1.25rem;
+  border-radius: 1.05rem;
   background: #fff;
   box-shadow: 0 12px 32px rgba(31, 45, 61, .05);
 }
 
 .admin-users-page-header__icon {
   display: grid;
-  width: 3rem;
-  height: 3rem;
+  width: 2.65rem;
+  height: 2.65rem;
   flex: 0 0 auto;
   place-items: center;
-  border-radius: .9rem;
+  border-radius: .8rem;
   background: #eefbf3;
   color: #159447;
 }
@@ -32,7 +38,7 @@
 .admin-users-page-header span,
 .admin-users-dialog__heading small {
   color: #6b4eff;
-  font-size: .7rem;
+  font-size: .68rem;
   font-weight: 800;
   letter-spacing: .08em;
   text-transform: uppercase;
@@ -40,17 +46,17 @@
 
 .admin-users-page-header h1,
 .admin-user-detail-header h1 {
-  margin: .15rem 0 0;
+  margin: .1rem 0 0;
   color: #152033;
-  font-size: clamp(1.55rem, 2vw, 2rem);
+  font-size: clamp(1.35rem, 1.75vw, 1.7rem);
   line-height: 1.05;
 }
 
 .admin-users-page-header p,
 .admin-user-detail-header p {
-  margin: .35rem 0 0;
+  margin: .22rem 0 0;
   color: #687894;
-  font-size: .9rem;
+  font-size: .82rem;
 }
 
 .admin-users-page-header__actions,
@@ -109,27 +115,27 @@
 .admin-users-metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: .8rem;
+  gap: .7rem;
 }
 
 .admin-users-metric {
   display: flex;
   min-width: 0;
-  align-items: flex-start;
-  gap: .85rem;
-  padding: 1rem 1.1rem;
+  align-items: center;
+  gap: .75rem;
+  padding: .72rem .95rem;
   border: 1px solid #e4e9f2;
-  border-radius: 1rem;
+  border-radius: .95rem;
   background: #fff;
 }
 
 .admin-users-metric__icon {
   display: grid;
-  width: 2.35rem;
-  height: 2.35rem;
+  width: 2.15rem;
+  height: 2.15rem;
   flex: 0 0 auto;
   place-items: center;
-  border-radius: .75rem;
+  border-radius: .7rem;
   background: #f1f4f9;
   color: #50617c;
 }
@@ -137,35 +143,36 @@
 .admin-users-metric p {
   margin: 0;
   color: #70809a;
-  font-size: .72rem;
+  font-size: .7rem;
   font-weight: 800;
 }
 
 .admin-users-metric strong {
   display: block;
-  margin-top: .18rem;
+  margin-top: .14rem;
   color: #152033;
-  font-size: 1.45rem;
+  font-size: 1.25rem;
   line-height: 1;
 }
 
 .admin-users-metric small {
   display: block;
-  margin-top: .35rem;
+  margin-top: .22rem;
   overflow: hidden;
   color: #91a0b5;
-  font-size: .68rem;
+  font-size: .66rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .admin-users-filters {
   display: grid;
-  grid-template-columns: minmax(16rem, 1.7fr) repeat(4, minmax(9.5rem, .75fr)) auto;
-  gap: .65rem;
-  padding: .9rem;
+  grid-template-columns: minmax(12rem, 1.4fr) repeat(4, minmax(7.5rem, .85fr)) auto;
+  align-items: center;
+  gap: .55rem;
+  padding: .65rem .8rem;
   border: 1px solid #e4e9f2;
-  border-radius: 1rem;
+  border-radius: .95rem;
   background: #fff;
 }
 
@@ -173,10 +180,10 @@
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: .55rem;
-  padding: 0 .8rem;
+  gap: .5rem;
+  padding: 0 .7rem;
   border: 1px solid #dfe5ef;
-  border-radius: .75rem;
+  border-radius: .7rem;
   background: #fafbfd;
   color: #8795aa;
 }
@@ -188,13 +195,13 @@
 .admin-user-form-panel input:not([type="checkbox"]):not([type="radio"]),
 .admin-user-form-panel select {
   width: 100%;
-  min-height: 2.65rem;
+  min-height: 2.4rem;
   border: 1px solid #dfe5ef;
-  border-radius: .75rem;
+  border-radius: .7rem;
   background: #fff;
   color: #26334a;
   font: inherit;
-  font-size: .82rem;
+  font-size: .8rem;
   outline: none;
 }
 
@@ -220,7 +227,7 @@
 .admin-users-filters select,
 .admin-users-dialog select,
 .admin-user-form-panel select {
-  padding: .55rem .75rem;
+  padding: .45rem .65rem;
 }
 
 .admin-users-filter-clear {
@@ -269,7 +276,7 @@
 .admin-users-table-card {
   overflow: hidden;
   border: 1px solid #e2e8f1;
-  border-radius: 1.1rem;
+  border-radius: 1rem;
   background: #fff;
   box-shadow: 0 10px 28px rgba(31, 45, 61, .04);
 }
@@ -278,7 +285,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: .95rem 1.1rem;
+  flex-wrap: wrap;
+  gap: .5rem 1rem;
+  padding: .7rem 1.05rem;
   border-bottom: 1px solid #edf0f5;
 }
 
@@ -308,19 +317,20 @@
 
 .admin-users-table-wrap {
   width: 100%;
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .admin-users-table {
   width: 100%;
-  min-width: 1120px;
+  min-width: 860px;
   border-collapse: collapse;
   table-layout: auto;
   text-align: left;
 }
 
 .admin-users-table th {
-  padding: .78rem .7rem;
+  padding: .62rem .6rem;
   border-bottom: 1px solid #e8edf4;
   background: #fbfcfe;
   color: #8795aa;
@@ -332,7 +342,7 @@
 }
 
 .admin-users-table td {
-  padding: .75rem .7rem;
+  padding: .65rem .6rem;
   border-bottom: 1px solid #eef1f5;
   color: #445269;
   font-size: .75rem;
@@ -372,9 +382,9 @@
 
 .admin-users-person {
   display: flex;
-  min-width: 12rem;
+  min-width: 10.5rem;
   align-items: center;
-  gap: .65rem;
+  gap: .6rem;
   padding: 0;
   border: 0;
   background: transparent;
@@ -862,16 +872,28 @@
   font-weight: 800;
 }
 
-@media (max-width: 1450px) {
+@media (max-width: 1120px) {
   .admin-users-filters {
-    grid-template-columns: minmax(15rem, 1.5fr) repeat(2, minmax(9rem, .8fr));
+    grid-template-columns: minmax(12rem, 1.4fr) repeat(2, minmax(8.5rem, .8fr));
   }
-  .admin-users-filter-clear { min-height: 2.65rem; }
+  .admin-users-filter-clear { min-height: 2.4rem; }
 }
 
 @media (max-width: 1180px) {
   .admin-users-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .admin-user-detail-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 720px) {
+  .admin-users-filters {
+    grid-template-columns: 1fr;
+  }
+  .admin-users-page-header {
+    flex-wrap: wrap;
+  }
+  .admin-users-page-header__actions {
+    margin-left: 0;
+  }
 }
 
 

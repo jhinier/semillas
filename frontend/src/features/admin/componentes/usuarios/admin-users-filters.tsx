@@ -56,6 +56,7 @@ export function AdminUsersFilters({
           <option value="">Todos los roles</option>
           <option value="administrador">Administradores</option>
           <option value="usuario">Estudiantes</option>
+          <option value="padre">Padres o tutores</option>
           <option value="invitado">Invitados</option>
         </select>
       </label>

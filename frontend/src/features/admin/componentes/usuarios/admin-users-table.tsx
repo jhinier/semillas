@@ -68,7 +68,11 @@ export function AdminUsersTable({
           <span>Directorio</span>
           <strong>{totalResultados.toLocaleString("es-EC")} usuarios</strong>
         </div>
-        {isFetching && !isLoading ? <small>Actualizando…</small> : null}
+        {isFetching && !isLoading ? (
+          <small>Actualizando…</small>
+        ) : (
+          <small>Selecciona un usuario para gestionar su perfil, rol, clubes y actividad.</small>
+        )}
       </header>
 
       <div className="admin-users-table-wrap">

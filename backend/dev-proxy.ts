@@ -400,21 +400,21 @@ const SNAPSHOT_USUARIOS = {
           apodo: "Administrador",
           avatar_url: null,
           clave_avatar: null,
-          grupo_edad_id: "e1000000-0000-0000-0000-000000000001",
+          grupo_edad_id: "b7bb9917-0a56-4adf-8b7d-bd8ad1a3a6a2",
           prefiere_audio: true,
           tamano_texto_preferido: "mediano",
         },
         grupo_edad: {
-          id: "e1000000-0000-0000-0000-000000000001",
+          id: "b7bb9917-0a56-4adf-8b7d-bd8ad1a3a6a2",
           codigo: "semillas",
           nombre: "Semillas",
-          edad_minima: 6,
+          edad_minima: 5,
           edad_maxima: 8,
         },
         clubes: [
           {
             id: "c1000000-0000-0000-0000-000000000001",
-            nombre: "Semillas Quito Norte",
+            nombre: "Club Semillas de Esperanza",
             rol_miembro: "lider",
             unido_en: "2026-09-01T10:00:00Z",
           },
@@ -443,21 +443,21 @@ const SNAPSHOT_USUARIOS = {
           apodo: "Mateo",
           avatar_url: null,
           clave_avatar: null,
-          grupo_edad_id: "e1000000-0000-0000-0000-000000000002",
+          grupo_edad_id: "4afa01e2-96c1-4055-b88a-adc4f0303165",
           prefiere_audio: false,
           tamano_texto_preferido: "mediano",
         },
         grupo_edad: {
-          id: "e1000000-0000-0000-0000-000000000002",
-          codigo: "brotes",
-          nombre: "Brotes",
+          id: "4afa01e2-96c1-4055-b88a-adc4f0303165",
+          codigo: "exploradores",
+          nombre: "Exploradores",
           edad_minima: 9,
-          edad_maxima: 11,
+          edad_maxima: 12,
         },
         clubes: [
           {
             id: "c1000000-0000-0000-0000-000000000001",
-            nombre: "Semillas Quito Norte",
+            nombre: "Club Semillas de Esperanza",
             rol_miembro: "miembro",
             unido_en: "2026-09-05T10:00:00Z",
           },
@@ -468,29 +468,154 @@ const SNAPSHOT_USUARIOS = {
           eventos: 12,
         },
       },
+      {
+        id: "u1000000-0000-0000-0000-000000000003",
+        nombre_visible: "Sofía Guerrero",
+        correo: "sofia@semillas.ec",
+        rol: "usuario",
+        apodo: "Sofi",
+        proveedor: "correo",
+        activo: true,
+        estado: "activo",
+        creado_en: "2026-08-22T14:20:00Z",
+        actualizado_en: "2026-10-28T11:30:00Z",
+        ultimo_acceso: "2026-10-28T11:30:00Z",
+        ultimo_login_en: "2026-10-28T11:30:00Z",
+        perfil: {
+          id: "perfil-user-3",
+          apodo: "Sofi",
+          avatar_url: null,
+          clave_avatar: null,
+          grupo_edad_id: "b7bb9917-0a56-4adf-8b7d-bd8ad1a3a6a2",
+          prefiere_audio: true,
+          tamano_texto_preferido: "grande",
+        },
+        grupo_edad: {
+          id: "b7bb9917-0a56-4adf-8b7d-bd8ad1a3a6a2",
+          codigo: "semillas",
+          nombre: "Semillas",
+          edad_minima: 5,
+          edad_maxima: 8,
+        },
+        clubes: [
+          {
+            id: "c1000000-0000-0000-0000-000000000002",
+            nombre: "Exploradores de la Fe",
+            rol_miembro: "miembro",
+            unido_en: "2026-09-10T10:00:00Z",
+          },
+        ],
+        vinculos_familiares: 1,
+        progreso: {
+          xp_total: 360,
+          eventos: 15,
+        },
+      },
+      {
+        id: "u1000000-0000-0000-0000-000000000004",
+        nombre_visible: "Lucía Torres",
+        correo: "lucia.torres@semillas.ec",
+        rol: "padre",
+        apodo: "Lucía",
+        proveedor: "correo",
+        activo: true,
+        estado: "activo",
+        creado_en: "2026-09-01T09:15:00Z",
+        actualizado_en: "2026-10-27T18:10:00Z",
+        ultimo_acceso: "2026-10-27T18:10:00Z",
+        ultimo_login_en: "2026-10-27T18:10:00Z",
+        perfil: {
+          id: "perfil-user-4",
+          apodo: "Lucía",
+          avatar_url: null,
+          clave_avatar: null,
+          grupo_edad_id: null,
+          prefiere_audio: false,
+          tamano_texto_preferido: "mediano",
+        },
+        grupo_edad: null,
+        clubes: [
+          {
+            id: "c1000000-0000-0000-0000-000000000001",
+            nombre: "Club Semillas de Esperanza",
+            rol_miembro: "tutor",
+            unido_en: "2026-09-02T10:00:00Z",
+          },
+        ],
+        vinculos_familiares: 2,
+        progreso: {
+          xp_total: 150,
+          eventos: 6,
+        },
+      },
+      {
+        id: "u1000000-0000-0000-0000-000000000005",
+        nombre_visible: "Daniel Morales",
+        correo: "daniel@semillas.ec",
+        rol: "usuario",
+        apodo: "Dani",
+        proveedor: "correo",
+        activo: true,
+        estado: "pendiente",
+        creado_en: "2026-10-25T16:40:00Z",
+        actualizado_en: "2026-10-25T16:40:00Z",
+        ultimo_acceso: null,
+        ultimo_login_en: null,
+        perfil: {
+          id: "perfil-user-5",
+          apodo: "Dani",
+          avatar_url: null,
+          clave_avatar: null,
+          grupo_edad_id: "4a69e67c-4fd3-4263-8f30-58416f323870",
+          prefiere_audio: true,
+          tamano_texto_preferido: "mediano",
+        },
+        grupo_edad: {
+          id: "4a69e67c-4fd3-4263-8f30-58416f323870",
+          codigo: "embajadores",
+          nombre: "Embajadores",
+          edad_minima: 13,
+          edad_maxima: 17,
+        },
+        clubes: [
+          {
+            id: "c1000000-0000-0000-0000-000000000002",
+            nombre: "Exploradores de la Fe",
+            rol_miembro: "miembro",
+            unido_en: "2026-10-25T16:40:00Z",
+          },
+        ],
+        vinculos_familiares: 0,
+        progreso: {
+          xp_total: 40,
+          eventos: 2,
+        },
+      },
     ],
-    total: 2,
+    total: 5,
     limit: 20,
     offset: 0,
     resumen: {
-      total: 2,
-      activos: 2,
-      pendientes: 0,
+      total: 5,
+      activos: 4,
+      pendientes: 1,
       bloqueados: 0,
       administradores: 1,
-      padres: 0,
+      padres: 1,
     },
     catalogos: {
       grupos_edad: [
-        { id: "e1000000-0000-0000-0000-000000000001", codigo: "semillas", nombre: "Semillas", edad_minima: 6, edad_maxima: 8 },
-        { id: "e1000000-0000-0000-0000-000000000002", codigo: "brotes", nombre: "Brotes", edad_minima: 9, edad_maxima: 11 },
-        { id: "e1000000-0000-0000-0000-000000000003", codigo: "raices", nombre: "Raíces", edad_minima: 12, edad_maxima: 14 },
+        { id: "b7bb9917-0a56-4adf-8b7d-bd8ad1a3a6a2", codigo: "semillas", nombre: "Semillas", edad_minima: 5, edad_maxima: 8 },
+        { id: "4afa01e2-96c1-4055-b88a-adc4f0303165", codigo: "exploradores", nombre: "Exploradores", edad_minima: 9, edad_maxima: 12 },
+        { id: "4a69e67c-4fd3-4263-8f30-58416f323870", codigo: "embajadores", nombre: "Embajadores", edad_minima: 13, edad_maxima: 17 },
       ],
       clubes: [
-        { id: "c1000000-0000-0000-0000-000000000001", nombre: "Semillas Quito Norte", activo: true },
+        { id: "c1000000-0000-0000-0000-000000000001", nombre: "Club Semillas de Esperanza", activo: true },
+        { id: "c1000000-0000-0000-0000-000000000002", nombre: "Exploradores de la Fe", activo: true },
       ],
       tutores: [
         { id: "aff4c70c-086c-43f3-8501-b55bb13807b2", nombre_visible: "Administrador", correo: "admin@correo.com" },
+        { id: "u1000000-0000-0000-0000-000000000004", nombre_visible: "Lucía Torres", correo: "lucia.torres@semillas.ec" },
       ],
     },
   },
@@ -1618,6 +1743,61 @@ for (const t of devStore.temas) {
   recalcularCompletitudTemaDev(t);
 }
 enriquecerActividadesOpciones(devStore.actividades);
+
+function normalizarGrupoEdadUsuarioProxy(valor?: string | null) {
+  if (!valor) return null;
+  const legacyMap: Record<string, string> = {
+    "e1000000-0000-0000-0000-000000000001": "semillas",
+    "e1000000-0000-0000-0000-000000000002": "exploradores",
+    "e1000000-0000-0000-0000-000000000003": "embajadores",
+    semillas: "semillas",
+    brotes: "exploradores",
+    exploradores: "exploradores",
+    raices: "embajadores",
+    embajadores: "embajadores",
+  };
+  const key = String(valor).toLowerCase();
+  const mappedCode = legacyMap[key] ?? key;
+  const found = CATALOGO_GRUPOS_EDAD_PROXY.find((g) => g.id === valor || g.codigo === mappedCode);
+  return found
+    ? {
+        id: found.id,
+        codigo: found.codigo,
+        nombre: found.nombre,
+        edad_minima: found.edad_minima,
+        edad_maxima: found.edad_maxima,
+      }
+    : null;
+}
+
+function enriquecerUsuariosDev(usuarios: any[], clubes: any[]) {
+  const existentesIds = new Set(usuarios.map((u: any) => u?.id).filter(Boolean));
+  for (const seedUser of SNAPSHOT_USUARIOS.datos.usuarios) {
+    if (!existentesIds.has(seedUser.id)) {
+      usuarios.push(JSON.parse(JSON.stringify(seedUser)));
+      existentesIds.add(seedUser.id);
+    }
+  }
+  for (const u of usuarios) {
+    if (!u || typeof u !== "object") continue;
+    const rawGroupKey = u.grupo_edad?.id || u.grupo_edad?.codigo || u.perfil?.grupo_edad_id || null;
+    const grupoNormalizado = normalizarGrupoEdadUsuarioProxy(rawGroupKey);
+    if (grupoNormalizado) {
+      u.grupo_edad = grupoNormalizado;
+      if (u.perfil && typeof u.perfil === "object") {
+        u.perfil.grupo_edad_id = grupoNormalizado.id;
+      }
+    }
+    if (Array.isArray(u.clubes)) {
+      u.clubes = u.clubes.map((c: any) => {
+        const clubActual = clubes.find((item: any) => item.id === c.id);
+        return clubActual ? { ...c, nombre: clubActual.nombre } : c;
+      });
+    }
+  }
+}
+
+enriquecerUsuariosDev(devStore.usuarios, devStore.clubes);
 guardarDevStoreEnDisco();
 
 function buscarTemaDev(temaId: string): Record<string, any> | undefined {
@@ -1697,6 +1877,9 @@ function construirResumenDetalladoDev() {
     }));
 
   const revisionesPendientes = devStore.revisiones.filter((r) => r.estado === "pendiente" || r.estado === "revision");
+  const usuariosActivos = devStore.usuarios.filter(
+    (u) => u.activo !== false && String(u.estado || "activo").toLowerCase() === "activo",
+  ).length;
   return {
     exito: true,
     datos: {
@@ -1704,7 +1887,7 @@ function construirResumenDetalladoDev() {
         ...SNAPSHOT_RESUMEN_DETALLADO.datos.metricas,
         temas: devStore.temas.length,
         publicados: estados.publicado,
-        usuarios_activos: Math.max(SNAPSHOT_RESUMEN_DETALLADO.datos.metricas.usuarios_activos, devStore.usuarios.length),
+        usuarios_activos: usuariosActivos,
         actividades: devStore.actividades.length,
         clubes_activos: devStore.clubes.filter((c) => c.activo !== false).length,
         pendientes_revision: revisionesPendientes.length,
@@ -1887,9 +2070,24 @@ function filtrarYResponderGetDev(url: URL): Record<string, any> | null {
       padres: devStore.usuarios.filter((u: any) => u.rol === "padre").length,
     };
 
+    const tutores = devStore.usuarios
+      .filter((u: any) => u.rol === "padre" || u.rol === "administrador")
+      .map((u: any) => ({
+        id: u.id,
+        nombre_visible: u.nombre_visible,
+        correo: u.correo ?? null,
+      }));
+
     const catalogos = {
-      ...SNAPSHOT_USUARIOS.datos.catalogos,
+      grupos_edad: CATALOGO_GRUPOS_EDAD_PROXY.map((g) => ({
+        id: g.id,
+        codigo: g.codigo,
+        nombre: g.nombre,
+        edad_minima: g.edad_minima,
+        edad_maxima: g.edad_maxima,
+      })),
       clubes: devStore.clubes.map((c: any) => ({ id: c.id, nombre: c.nombre, activo: c.activo !== false })),
+      tutores,
     };
 
     return {
@@ -1909,6 +2107,34 @@ function filtrarYResponderGetDev(url: URL): Record<string, any> | null {
     const userId = path.split("/")[3];
     const baseUser = devStore.usuarios.find((u: any) => u.id === userId);
     if (!baseUser) return null;
+    const actividadReciente =
+      Array.isArray(baseUser.actividad_reciente) && baseUser.actividad_reciente.length > 0
+        ? baseUser.actividad_reciente
+        : [
+            {
+              id: `ev-${baseUser.id}-1`,
+              tipo: "actividad_completada",
+              tema_id: "47a2e22f-86da-466f-92ff-1847d85de609",
+              actividad_id: "act-1",
+              puntaje: 100,
+              correcta: true,
+              xp_otorgada: 20,
+              ocurrido_en: baseUser.ultimo_login_en || baseUser.actualizado_en || "2026-10-30T16:30:00Z",
+            },
+          ];
+    const auditoria =
+      Array.isArray(baseUser.auditoria) && baseUser.auditoria.length > 0
+        ? baseUser.auditoria
+        : [
+            {
+              id: `aud-${baseUser.id}-1`,
+              accion: "inicio_sesion",
+              datos_antes: null,
+              datos_despues: null,
+              actor_usuario_id: baseUser.id,
+              creado_en: baseUser.ultimo_login_en || baseUser.creado_en || "2026-10-30T17:00:00Z",
+            },
+          ];
     return {
       exito: true,
       datos: {
@@ -1916,14 +2142,14 @@ function filtrarYResponderGetDev(url: URL): Record<string, any> | null {
         vinculos: Array.isArray(baseUser.vinculos) ? baseUser.vinculos : [],
         estadisticas: baseUser.estadisticas ?? {
           temas_total: 4,
-          temas_completados: 2,
+          temas_completados: Math.min(4, Math.floor((baseUser.progreso?.xp_total ?? 0) / 150)),
           actividades_total: 12,
-          actividades_completadas: 8,
-          intentos: 10,
-          xp_total: baseUser.progreso?.xp_total ?? 420,
+          actividades_completadas: Math.min(12, Math.floor((baseUser.progreso?.eventos ?? 0) / 2)),
+          intentos: baseUser.progreso?.eventos ?? 4,
+          xp_total: baseUser.progreso?.xp_total ?? 0,
         },
-        actividad_reciente: Array.isArray(baseUser.actividad_reciente) ? baseUser.actividad_reciente : [],
-        auditoria: Array.isArray(baseUser.auditoria) ? baseUser.auditoria : [],
+        actividad_reciente: actividadReciente,
+        auditoria,
       },
     };
   }
@@ -2690,7 +2916,7 @@ function aplicarMutacionDev(method: string, pathname: string, body: Record<strin
   if (method === "POST" && (pathname === "/administracion/usuarios/invitar" || pathname === "/administracion/usuarios/cuenta" || pathname === "/administracion/usuarios/menores" || pathname === "/administracion/usuarios")) {
     const id = crypto.randomUUID();
     const esMenor = pathname === "/administracion/usuarios/menores";
-    const grupoObj = SNAPSHOT_USUARIOS.datos.catalogos.grupos_edad.find((g) => g.id === payload.grupo_edad_id) ?? null;
+    const grupoObj = normalizarGrupoEdadUsuarioProxy(payload.grupo_edad_id);
     const clubObj = devStore.clubes.find((c) => c.id === payload.club_id) ?? null;
     const nuevoUsuario = {
       id,
@@ -2708,11 +2934,11 @@ function aplicarMutacionDev(method: string, pathname: string, body: Record<strin
       perfil: {
         id: `perfil-${id.slice(0, 8)}`,
         apodo: String(payload.apodo || payload.nombre_visible || "Nuevo").trim(),
-        avatar_url: null,
+        avatar_url: payload.avatar_url ?? null,
         clave_avatar: null,
         grupo_edad_id: grupoObj?.id ?? null,
-        prefiere_audio: true,
-        tamano_texto_preferido: "mediano",
+        prefiere_audio: payload.prefiere_audio ?? true,
+        tamano_texto_preferido: payload.tamano_texto_preferido ?? "mediano",
       },
       grupo_edad: grupoObj,
       clubes: clubObj ? [{ id: clubObj.id, nombre: clubObj.nombre, rol_miembro: "miembro", unido_en: ahora }] : [],
@@ -2757,10 +2983,65 @@ function aplicarMutacionDev(method: string, pathname: string, body: Record<strin
     const usuario = devStore.usuarios.find((u) => u.id === userId);
     if (usuario) {
       if (method === "PATCH") {
-        Object.assign(usuario, { ...payload, id: usuario.id, actualizado_en: ahora });
-        if ("activo" in payload) {
-          usuario.estado = payload.activo ? "activo" : "bloqueado";
+        if (typeof payload.nombre_visible === "string" && payload.nombre_visible.trim()) {
+          usuario.nombre_visible = payload.nombre_visible.trim();
         }
+        if (typeof payload.rol === "string") {
+          usuario.rol = payload.rol;
+        }
+        if ("activo" in payload) {
+          usuario.activo = Boolean(payload.activo);
+          usuario.estado = usuario.activo ? "activo" : "bloqueado";
+        }
+        if (!usuario.perfil || typeof usuario.perfil !== "object") {
+          usuario.perfil = {
+            id: `perfil-${usuario.id.slice(0, 8)}`,
+            apodo: usuario.apodo || usuario.nombre_visible,
+            avatar_url: null,
+            clave_avatar: null,
+            grupo_edad_id: usuario.grupo_edad?.id ?? null,
+            prefiere_audio: false,
+            tamano_texto_preferido: "mediano",
+          };
+        }
+        if (typeof payload.apodo === "string") {
+          const cleanApodo = payload.apodo.trim() || usuario.nombre_visible;
+          usuario.apodo = cleanApodo;
+          usuario.perfil.apodo = cleanApodo;
+        }
+        if ("grupo_edad_id" in payload) {
+          const grupoObj = normalizarGrupoEdadUsuarioProxy(payload.grupo_edad_id);
+          usuario.grupo_edad = grupoObj;
+          usuario.perfil.grupo_edad_id = grupoObj?.id ?? null;
+        }
+        if (typeof payload.prefiere_audio === "boolean") {
+          usuario.perfil.prefiere_audio = payload.prefiere_audio;
+        }
+        if (typeof payload.tamano_texto_preferido === "string") {
+          usuario.perfil.tamano_texto_preferido = payload.tamano_texto_preferido;
+        }
+        if ("avatar_url" in payload) {
+          usuario.perfil.avatar_url = payload.avatar_url ?? null;
+        }
+        if (Array.isArray(payload.club_ids)) {
+          const existentes = new Map(
+            (Array.isArray(usuario.clubes) ? usuario.clubes : []).map((c: any) => [c.id, c]),
+          );
+          usuario.clubes = payload.club_ids
+            .map((clubId: string) => {
+              const clubObj = devStore.clubes.find((c) => c.id === clubId);
+              if (!clubObj) return null;
+              const prev = existentes.get(clubId) as Record<string, any> | undefined;
+              return {
+                id: clubObj.id,
+                nombre: clubObj.nombre,
+                rol_miembro: prev?.rol_miembro ?? "miembro",
+                unido_en: prev?.unido_en ?? ahora,
+              };
+            })
+            .filter(Boolean);
+        }
+        usuario.actualizado_en = ahora;
         guardarDevStoreEnDisco();
         return { status: 200, payload: { exito: true, datos: usuario } };
       }
