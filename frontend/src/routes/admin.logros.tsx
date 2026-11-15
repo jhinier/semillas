@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, useLocation } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { AdminLogrosPanel } from "@/features/admin/componentes/logros-admin";
 
 export const Route = createFileRoute("/admin/logros")({
@@ -7,7 +7,12 @@ export const Route = createFileRoute("/admin/logros")({
 
 function AdminLogrosPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const esListado = location.pathname === "/admin/logros" || location.pathname === "/admin/logros/";
 
-  return esListado ? <AdminLogrosPanel /> : <Outlet />;
+  return esListado ? (
+    <AdminLogrosPanel onNuevoLogro={() => void navigate({ to: "/admin/logros/nuevo" })} />
+  ) : (
+    <Outlet />
+  );
 }

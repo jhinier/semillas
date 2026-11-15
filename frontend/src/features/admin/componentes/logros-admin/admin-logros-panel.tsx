@@ -8,12 +8,28 @@ import type {
   LogroAdminResumen,
 } from "../../admin-logros.api";
 import { useAdminLogros } from "../../hooks/use-admin-logros";
-import { CRITERIOS_LOGRO, formatearFechaCorta } from "./logros-admin-utils";
+import {
+  CRITERIOS_LOGRO,
+  describirReglaLogro,
+  formatearFechaCorta,
+} from "./logros-admin-utils";
 import { DialogoConfirmacionLogro, type ConfirmacionLogroAccion } from "./DialogoConfirmacionLogro";
 import { FormularioLogro } from "./FormularioLogro";
+import "./admin-logros-studio.css";
 
 type EstadoFiltro = "activo" | "archivado" | "todos";
-export function AdminLogrosPanel() {
+
+type AdminLogrosPanelProps = {
+  onNuevoLogro?: () => void;
+};
+
+const TABS_ESTADO: Array<{ valor: EstadoFiltro; etiqueta: string }> = [
+  { valor: "activo", etiqueta: "Activos" },
+  { valor: "archivado", etiqueta: "Archivados" },
+  { valor: "todos", etiqueta: "Todos" },
+];
+
+export function AdminLogrosPanel({ onNuevoLogro }: AdminLogrosPanelProps = {}) {
   const [busqueda, setBusqueda] = useState("");
   const busquedaDiferida = useDeferredValue(busqueda.trim());
   const [estadoFiltro, setEstadoFiltro] = useState<EstadoFiltro>("activo");
@@ -45,6 +61,10 @@ export function AdminLogrosPanel() {
   }
 
   function navegarNuevoLogro() {
+    if (onNuevoLogro) {
+      onNuevoLogro();
+      return;
+    }
     if (typeof window !== "undefined") {
       window.location.assign("/admin/logros/nuevo");
     }
@@ -52,108 +72,112 @@ export function AdminLogrosPanel() {
 
   async function manejarConfirmar() {
     if (!confirmacion) return;
-    try {
-      if (confirmacion.tipo === "archivar") {
-        await archivar.mutateAsync(confirmacion.logroId);
-      } else {
-        await reactivar.mutateAsync(confirmacion.logroId);
-      }
-      setConfirmacion(null);
-    } catch {
-      setConfirmacion(null);
+    if (confirmacion.tipo === "archivar") {
+      await archivar.mutateAsync(confirmacion.logroId);
+    } else {
+      await reactivar.mutateAsync(confirmacion.logroId);
     }
+    setConfirmacion(null);
   }
 
   return (
-    <section aria-labelledby="admin-logros-title" className="space-y-5">
-      <header className="flex items-end justify-between gap-6">
-        <div>
-          <p className="text-xs font-black uppercase tracking-[0.14em] text-emerald-700">Gamificación</p>
-          <h1 id="admin-logros-title" className="mt-1 text-3xl font-black tracking-tight text-slate-950">
-            Logros
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Crea, edita y archiva los reconocimientos disponibles en la plataforma.
-          </p>
+    <section aria-labelledby="admin-logros-title" className="admin-logros-page">
+      <header className="admin-logros-hero">
+        <div className="admin-logros-hero__left">
+          <div className="admin-logros-hero__icon" aria-hidden="true">
+            <Medal className="size-6" />
+          </div>
+          <div>
+            <p className="admin-logros-eyebrow">Gamificación</p>
+            <h1 id="admin-logros-title" className="admin-logros-title">
+              Logros
+            </h1>
+            <p className="admin-logros-subtitle">
+              Crea medallas, define en qué momento se entregan y motiva el avance de cada niño.
+            </p>
+          </div>
         </div>
         <button
           type="button"
           onClick={navegarNuevoLogro}
           disabled={!estaConectado || mutando}
-          className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="admin-logros-primary-btn"
         >
           <Plus className="size-4" aria-hidden="true" /> Nuevo logro
         </button>
       </header>
 
       {!estaConectado ? (
-        <div role="alert" className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
+        <div role="status" className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           <WifiOff className="size-5 shrink-0" aria-hidden="true" />
-          <p className="text-sm font-semibold">
-            La administración de logros requiere conexión a internet.
-          </p>
+          <span>Sin conexión. La gestión de logros requiere conexión activa.</span>
         </div>
       ) : null}
 
-      <div className="grid grid-cols-[minmax(0,1fr)_12rem_14rem] gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-        <label className="relative min-w-0">
-          <span className="sr-only">Buscar logros</span>
-          <Search
-            className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"
-            aria-hidden="true"
-          />
-          <input
-            aria-label="Buscar logros"
-            type="search"
-            value={busqueda}
-            onChange={(e) => {
-              setBusqueda(e.target.value);
-              setPaginaActual(1);
-            }}
-            disabled={!estaConectado}
-            placeholder="Buscar por nombre o código"
-            className="w-full rounded-lg border border-slate-200 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 disabled:bg-slate-100"
-          />
-        </label>
+      <div className="admin-logros-toolbar">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="admin-logros-tabs" role="tablist" aria-label="Filtrar por estado">
+            {TABS_ESTADO.map((tab) => {
+              const activo = estadoFiltro === tab.valor;
+              return (
+                <button
+                  key={tab.valor}
+                  type="button"
+                  role="tab"
+                  aria-selected={activo}
+                  onClick={() => {
+                    setEstadoFiltro(tab.valor);
+                    setPaginaActual(1);
+                  }}
+                  disabled={!estaConectado}
+                  className={`admin-logros-tab ${activo ? "is-active" : ""}`}
+                >
+                  {tab.etiqueta}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-        <label>
-          <span className="sr-only">Filtrar por estado</span>
-          <select
-            aria-label="Filtrar por estado"
-            value={estadoFiltro}
-            onChange={(e) => {
-              setEstadoFiltro(e.target.value as EstadoFiltro);
-              setPaginaActual(1);
-            }}
-            disabled={!estaConectado}
-            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-600 disabled:bg-slate-100"
-          >
-            <option value="activo">Activos</option>
-            <option value="archivado">Archivados</option>
-            <option value="todos">Todos</option>
-          </select>
-        </label>
+        <div className="admin-logros-filters-row">
+          <label className="admin-logros-search-wrap">
+            <span className="sr-only">Buscar logros</span>
+            <Search className="admin-logros-search-icon size-4" aria-hidden="true" />
+            <input
+              aria-label="Buscar logros"
+              type="search"
+              value={busqueda}
+              onChange={(e) => {
+                setBusqueda(e.target.value);
+                setPaginaActual(1);
+              }}
+              disabled={!estaConectado}
+              placeholder="Buscar por nombre o descripción"
+              className="admin-logros-input admin-logros-input--with-icon"
+            />
+          </label>
 
-        <label>
-          <span className="sr-only">Filtrar por criterio</span>
-          <select
-            aria-label="Filtrar por criterio"
-            value={criterioFiltro}
-            onChange={(e) => {
-              setCriterioFiltro(e.target.value as CodigoCriterioLogro | "todos");
-              setPaginaActual(1);
-            }}
-            disabled={!estaConectado}
-            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-600 disabled:bg-slate-100"
-          >
-            <option value="todos">Todos los criterios</option>
-            {CRITERIOS_LOGRO.map((c) => (
-              <option key={c.codigo} value={c.codigo}>
-                {c.etiqueta}
-              </option>
-            ))}
-          </select>
-        </label>
+          <label>
+            <span className="sr-only">Filtrar por criterio</span>
+            <select
+              aria-label="Filtrar por criterio"
+              value={criterioFiltro}
+              onChange={(e) => {
+                setCriterioFiltro(e.target.value as CodigoCriterioLogro | "todos");
+                setPaginaActual(1);
+              }}
+              disabled={!estaConectado}
+              className="admin-logros-select font-semibold"
+            >
+              <option value="todos">Todos los criterios</option>
+              {CRITERIOS_LOGRO.map((c) => (
+                <option key={c.codigo} value={c.codigo}>
+                  {c.etiqueta}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
       </div>
 
       {listado.isError ? (
@@ -172,24 +196,28 @@ export function AdminLogrosPanel() {
           </button>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-            <div className="flex items-center gap-2 text-sm text-slate-600">
-              <Medal className="size-4" aria-hidden="true" />
+        <div className="admin-logros-table-card">
+          <div className="admin-logros-table-header">
+            <div className="flex items-center gap-2">
+              <Medal className="size-4 text-violet-500" aria-hidden="true" />
               <span>
-                <b className="text-slate-900">{totalItems}</b> logros encontrados
+                <strong className="admin-logros-count">{totalItems}</strong>{" "}
+                {totalItems === 1 ? "logro encontrado" : "logros encontrados"}
               </span>
             </div>
+            <span className="text-xs opacity-75">
+              Edita cualquier medalla para ajustar su mensaje, meta o diseño.
+            </span>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-left text-sm">
+            <table className="w-full min-w-[780px] text-left text-sm">
               <thead className="bg-slate-50 text-[11px] font-black uppercase tracking-wide text-slate-500">
                 <tr>
-                  <th className="px-4 py-3">Logro</th>
-                  <th className="px-4 py-3">Criterio</th>
-                  <th className="px-4 py-3 text-center">XP</th>
-                  <th className="px-4 py-3 text-center">Otorgados</th>
+                  <th className="px-4 py-3">Insignia</th>
+                  <th className="px-4 py-3">Cómo se gana</th>
+                  <th className="px-4 py-3 text-center">Premio</th>
+                  <th className="px-4 py-3 text-center">Ganado por</th>
                   <th className="px-4 py-3">Estado</th>
                   <th className="px-4 py-3 text-right">Acciones</th>
                 </tr>
@@ -210,14 +238,14 @@ export function AdminLogrosPanel() {
                     <td colSpan={6} className="px-6 py-14 text-center">
                       <p className="font-bold text-slate-700">No hay logros para estos filtros.</p>
                       <p className="mt-1 text-sm text-slate-500">
-                        Cambia la búsqueda o crea el primer logro.
+                        Prueba cambiando el filtro superior o crea un nuevo logro.
                       </p>
                       <button
                         type="button"
                         onClick={navegarNuevoLogro}
-                        className="mt-4 text-sm font-bold text-emerald-700 hover:text-emerald-800"
+                        className="mt-4 text-sm font-bold text-violet-600 hover:text-violet-700"
                       >
-                        Crear logro
+                        + Crear nuevo logro
                       </button>
                     </td>
                   </tr>
@@ -301,10 +329,10 @@ function IconoLogroAdmin({ url, codigo }: { url: string | null; codigo: string }
     setHasError(false);
   }, [url, fallback]);
 
-  if (hasError || !src) {
+  if (hasError) {
     return (
-      <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-emerald-50 text-emerald-600">
-        <Medal className="size-4" aria-hidden="true" />
+      <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-700">
+        <Medal className="size-5" aria-hidden="true" />
       </div>
     );
   }
@@ -313,7 +341,6 @@ function IconoLogroAdmin({ url, codigo }: { url: string | null; codigo: string }
     <img
       src={src}
       alt=""
-      loading="lazy"
       onError={() => {
         if (src !== fallback) {
           setSrc(fallback);
@@ -321,7 +348,7 @@ function IconoLogroAdmin({ url, codigo }: { url: string | null; codigo: string }
           setHasError(true);
         }
       }}
-      className="size-9 shrink-0 rounded-lg object-cover"
+      className="size-11 shrink-0 rounded-xl border border-slate-200/70 object-cover"
     />
   );
 }
@@ -337,10 +364,11 @@ function FilaLogro({
   onConfirmarAccion: (tipo: "archivar" | "reactivar") => void;
   deshabilitado: boolean;
 }) {
-  const criterio = CRITERIOS_LOGRO.find((item) => item.codigo === logro.codigo_criterio) ?? CRITERIOS_LOGRO[0]!;
   const nombreVisible = logro.nombre || (logro as { titulo?: string }).titulo || logro.codigo;
   const bonoXp = logro.bono_xp ?? (logro as { xp_recompensa?: number }).xp_recompensa ?? 0;
   const otorgados = logro.otorgados ?? (logro as { otorgados_count?: number }).otorgados_count ?? 0;
+  const reglaAmigable = describirReglaLogro(logro.codigo_criterio, logro.valor_criterio ?? 1);
+
   return (
     <tr className="group hover:bg-slate-50/80">
       <td className="px-4 py-3.5">
@@ -348,24 +376,30 @@ function FilaLogro({
           <IconoLogroAdmin url={logro.url_icono ?? (logro as { icono_url?: string }).icono_url ?? null} codigo={logro.codigo} />
           <div className="min-w-0">
             <span className="block truncate font-bold text-slate-900">{nombreVisible}</span>
-            <span className="mt-0.5 block truncate text-xs text-slate-500">
-              <code className="rounded bg-slate-100 px-1 py-0.5 text-[10px]">{logro.codigo}</code>
-              {logro.descripcion ? <span className="ml-2">{logro.descripcion}</span> : null}
-            </span>
+            {logro.descripcion ? (
+              <span className="mt-0.5 block truncate text-xs text-slate-500">
+                {logro.descripcion}
+              </span>
+            ) : (
+              <span className="mt-0.5 block truncate font-mono text-[11px] text-slate-400">
+                {logro.codigo}
+              </span>
+            )}
           </div>
         </div>
       </td>
       <td className="px-4 py-3.5 text-slate-700">
-        <span className="font-semibold">{criterio.etiqueta}</span>
-        <span className="ml-2 text-xs text-slate-500">
-          {logro.valor_criterio ?? 1} {criterio.unidad}
+        <span className="admin-logros-rule-pill">{reglaAmigable}</span>
+      </td>
+      <td className="whitespace-nowrap px-4 py-3.5 text-center">
+        <span className="admin-logros-xp-pill">
+          {bonoXp > 0 ? `+${bonoXp} XP` : "Sin XP"}
         </span>
       </td>
-      <td className="px-4 py-3.5 text-center font-bold text-violet-700">+{bonoXp}</td>
-      <td className="px-4 py-3.5 text-center font-semibold text-slate-700">
-        {otorgados.toLocaleString("es-EC")}
+      <td className="whitespace-nowrap px-4 py-3.5 text-center font-semibold text-slate-700">
+        {otorgados.toLocaleString("es-EC")} {otorgados === 1 ? "niño" : "niños"}
       </td>
-      <td className="px-4 py-3.5">
+      <td className="whitespace-nowrap px-4 py-3.5">
         <span
           className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${
             logro.activo ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"
@@ -373,7 +407,7 @@ function FilaLogro({
         >
           {logro.activo ? "Activo" : "Archivado"}
         </span>
-        <span className="mt-0.5 block text-[10px] text-slate-400">
+        <span className="mt-1 block text-[11px] text-slate-400">
           {formatearFechaCorta(logro.creado_en)}
         </span>
       </td>

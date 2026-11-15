@@ -2857,18 +2857,28 @@ function aplicarMutacionDev(method: string, pathname: string, body: Record<strin
   // 8. Logros CRUD & archivar/reactivar
   if (method === "POST" && pathname === "/administracion/logros") {
     const id = crypto.randomUUID();
+    const bonoXp = Number.isFinite(Number(payload.bono_xp)) ? Math.max(0, Math.round(Number(payload.bono_xp))) : 25;
+    const valorCriterio = Math.max(1, Math.round(Number(payload.valor_criterio) || 1));
+    const codigoCriterio = String(payload.codigo_criterio || "temas_completados");
+    const criterioTexto =
+      codigoCriterio === "actividades_completadas"
+        ? `Requisito: Completa ${valorCriterio} ${valorCriterio === 1 ? "actividad" : "actividades"}`
+        : codigoCriterio === "dias_racha"
+          ? `Requisito: Practica ${valorCriterio} ${valorCriterio === 1 ? "día seguido" : "días seguidos"}`
+          : `Requisito: Completa ${valorCriterio} ${valorCriterio === 1 ? "tema bíblico" : "temas bíblicos"}`;
     const nuevoLogro = {
       id,
       codigo: String(payload.codigo || `logro_${id.slice(0, 6)}`).trim(),
       nombre: String(payload.nombre || "Nuevo logro").trim(),
       titulo: String(payload.nombre || "Nuevo logro").trim(),
       descripcion: payload.descripcion ?? null,
+      criterio: criterioTexto,
       url_icono: payload.url_icono ?? null,
       icono_url: payload.url_icono ?? null,
-      bono_xp: Number(payload.bono_xp) || 25,
-      xp_recompensa: Number(payload.bono_xp) || 25,
-      codigo_criterio: String(payload.codigo_criterio || "temas_completados"),
-      valor_criterio: Number(payload.valor_criterio) || 1,
+      bono_xp: bonoXp,
+      xp_recompensa: bonoXp,
+      codigo_criterio: codigoCriterio,
+      valor_criterio: valorCriterio,
       activo: true,
       creado_en: ahora,
       actualizado_en: ahora,
@@ -2887,9 +2897,18 @@ function aplicarMutacionDev(method: string, pathname: string, body: Record<strin
     const logro = devStore.logros.find((l) => l.id === logroId);
     if (logro) {
       if (method === "PATCH" && !action) {
+        const codigoCriterio = String(payload.codigo_criterio || logro.codigo_criterio || "temas_completados");
+        const valorCriterio = Math.max(1, Math.round(Number(payload.valor_criterio ?? logro.valor_criterio) || 1));
+        const criterioTexto =
+          codigoCriterio === "actividades_completadas"
+            ? `Requisito: Completa ${valorCriterio} ${valorCriterio === 1 ? "actividad" : "actividades"}`
+            : codigoCriterio === "dias_racha"
+              ? `Requisito: Practica ${valorCriterio} ${valorCriterio === 1 ? "día seguido" : "días seguidos"}`
+              : `Requisito: Completa ${valorCriterio} ${valorCriterio === 1 ? "tema bíblico" : "temas bíblicos"}`;
         Object.assign(logro, {
           ...payload,
           titulo: payload.nombre ?? logro.nombre,
+          criterio: criterioTexto,
           icono_url: "url_icono" in payload ? payload.url_icono : logro.icono_url,
           xp_recompensa: payload.bono_xp ?? logro.xp_recompensa,
           actualizado_en: ahora,

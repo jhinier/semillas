@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Medal } from "lucide-react";
 import { toast } from "sonner";
 
 import { crearLogroAdmin } from "@/features/admin/admin-logros.api";
@@ -16,32 +16,37 @@ function AdminLogrosNuevoPage() {
     mutationFn: crearLogroAdmin,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["admin", "logros"] });
-      toast.success("Logro creado");
+      toast.success("Logro creado y listo para usarse");
       navigate({ to: "/admin/logros" });
     },
     onError: (error) => toast.error(error instanceof Error ? error.message : "No se pudo crear el logro"),
   });
 
   return (
-    <section className="space-y-5">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-start gap-4">
-          <button
-            type="button"
-            onClick={() => navigate({ to: "/admin/logros" })}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-50"
-            aria-label="Volver a logros"
-          >
-            <ArrowLeft className="size-4" aria-hidden="true" />
-          </button>
+    <section className="admin-logros-page" aria-labelledby="nuevo-logro-pagina-titulo">
+      <header className="admin-logros-hero">
+        <div className="admin-logros-hero__left">
+          <div className="admin-logros-hero__icon" aria-hidden="true">
+            <Medal className="size-6" />
+          </div>
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.14em] text-emerald-700">Gamificación</p>
-            <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-950">Nuevo logro</h1>
-            <p className="mt-1 text-sm text-slate-500">
-              Crea un reconocimiento desde una página dedicada y vuelve al listado al guardar.
+            <p className="admin-logros-eyebrow">Gamificación</p>
+            <h1 id="nuevo-logro-pagina-titulo" className="admin-logros-title">
+              Nuevo logro
+            </h1>
+            <p className="admin-logros-subtitle">
+              Crea una insignia en 3 pasos simples y comprueba al instante cómo la verá el niño.
             </p>
           </div>
         </div>
+        <button
+          type="button"
+          onClick={() => navigate({ to: "/admin/logros" })}
+          className="admin-logros-back-btn"
+        >
+          <ArrowLeft className="size-4" aria-hidden="true" />
+          Volver a logros
+        </button>
       </header>
 
       <FormularioLogro

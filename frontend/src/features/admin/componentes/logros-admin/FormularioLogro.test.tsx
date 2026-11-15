@@ -41,4 +41,26 @@ describe("FormularioLogro", () => {
     expect(html).toContain("Código");
     expect(html).toContain("Guardar cambios");
   });
+
+  it("en presentación página muestra la vista previa en vivo sin errores prematuros ni botón de cierre de modal", () => {
+    const html = renderToStaticMarkup(
+      <FormularioLogro
+        abierto
+        modo="crear"
+        presentacion="pagina"
+        guardando={false}
+        onCerrar={() => undefined}
+        onGuardar={() => undefined}
+      />,
+    );
+
+    expect(html).toContain("Así lo verá el estudiante");
+    expect(html).toContain("Nombre y mensaje para el niño");
+    expect(html).toContain("¿Cómo se gana este logro?");
+    expect(html).toContain("Elige la imagen de la medalla");
+    expect(html).not.toContain('aria-label="Cerrar"');
+    expect(html).not.toContain('role="alert"');
+    expect(html).not.toContain('aria-invalid="true"');
+    expect(html).not.toContain("El código debe tener al menos 3 caracteres.");
+  });
 });
