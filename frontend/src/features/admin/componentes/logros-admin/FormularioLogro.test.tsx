@@ -66,4 +66,21 @@ describe("FormularioLogro", () => {
     expect(html).not.toContain('aria-invalid="true"');
     expect(html).not.toContain("El código debe tener al menos 3 caracteres.");
   });
+
+  it("muestra una alerta visible junto al botón de guardado cuando ocurre un error del servidor", () => {
+    const html = renderToStaticMarkup(
+      <FormularioLogro
+        abierto
+        modo="crear"
+        presentacion="pagina"
+        guardando={false}
+        errorEnvio="Ya existe un logro con ese código"
+        onCerrar={() => undefined}
+        onGuardar={() => undefined}
+      />,
+    );
+
+    expect(html).toContain('role="alert"');
+    expect(html).toContain("Ya existe un logro con ese código");
+  });
 });

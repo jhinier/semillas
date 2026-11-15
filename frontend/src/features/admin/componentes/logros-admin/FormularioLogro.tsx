@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent } from "react";
 import {
+  AlertCircle,
   Award,
   BookOpen,
   Check,
@@ -57,6 +58,7 @@ type Props = {
   logro?: LogroAdminResumen | null;
   presentacion?: "modal" | "pagina";
   guardando: boolean;
+  errorEnvio?: string | null;
   onCerrar: () => void;
   onGuardar: (valores: ValoresFormulario) => void;
   onSubirImagen?: (
@@ -126,6 +128,18 @@ function valoresDesdeLogro(logro: LogroAdminResumen): ValoresFormulario {
   };
 }
 
+function esUrlImagenAceptada(rawUrl: string): boolean {
+  const limpia = rawUrl.trim();
+  if (!limpia) return true;
+  if (limpia.startsWith("/")) return true;
+  try {
+    const parsed = new URL(limpia);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 function normalizarUrlIconoParaEnvio(rawUrl: string): string {
   const limpia = rawUrl.trim();
   if (!limpia) return "";
@@ -174,18 +188,27 @@ export function FormularioLogro({
   logro,
   presentacion = "modal",
   guardando,
+  errorEnvio,
   onCerrar,
   onGuardar,
   onSubirImagen,
   recursosBiblioteca: recursosIniciales,
 }: Props) {
   const inputArchivoRef = useRef<HTMLInputElement>(null);
+  const inputNombreRef = useRef<HTMLInputElement>(null);
+  const inputDescripcionRef = useRef<HTMLTextAreaElement>(null);
+  const inputCodigoRef = useRef<HTMLInputElement>(null);
+  const inputMetaRef = useRef<HTMLInputElement>(null);
+  const inputXpRef = useRef<HTMLInputElement>(null);
+  const inputUrlExternaRef = useRef<HTMLInputElement>(null);
   const objectUrlRef = useRef<string | null>(null);
 
-  const [valores, setValores] = useState<ValoresFormulario>(
-    modo === "editar" && logro ? valoresDesdeLogro(logro) : VALORES_INICIALES,
-  );
+  const valoresInicialesBase = modo === "editar" && logro ? valoresDesdeLogro(logro) : VALORES_INICIALES;
+  const [valores, setValores] = useState<ValoresFormulario>(valoresInicialesBase);
+  const [metaTexto, setMetaTexto] = useState(String(valoresInicialesBase.valor_criterio));
+  const [xpTexto, setXpTexto] = useState(String(valoresInicialesBase.bono_xp));
   const [codigoManual, setCodigoManual] = useState(modo === "editar");
+  const [detallesCodigoAbiertos, setDetallesCodigoAbiertos] = useState(false);
   const [tocadoNombre, setTocadoNombre] = useState(false);
   const [tocadoCodigo, setTocadoCodigo] = useState(false);
   const [intentoEnviar, setIntentoEnviar] = useState(false);
@@ -200,6 +223,7 @@ export function FormularioLogro({
 
   const [bibliotecaAbierta, setBibliotecaAbierta] = useState(false);
   const [cargandoBiblioteca, setCargandoBiblioteca] = useState(false);
+  const [errorBiblioteca, setErrorBiblioteca] = useState<string | null>(null);
   const [recursosBiblioteca, setRecursosBiblioteca] = useState<RecursoMultimedia[]>(
     recursosIniciales ?? [],
   );
@@ -229,17 +253,21 @@ export function FormularioLogro({
     limpiarObjectUrlTemporal();
     setErrorImagen(false);
     setErrorSubida(null);
+    setErrorBiblioteca(null);
     setSubiendoImagen(false);
     setArrastrandoArchivo(false);
     setPreviewLocalSubida(null);
     setNombreImagenPersonalizada(null);
     setRecursoSeleccionadoId(null);
+    setDetallesCodigoAbiertos(false);
     setTocadoNombre(false);
     setTocadoCodigo(false);
     setIntentoEnviar(false);
     if (modo === "editar" && logro) {
       const iniciales = valoresDesdeLogro(logro);
       setValores(iniciales);
+      setMetaTexto(String(iniciales.valor_criterio));
+      setXpTexto(String(iniciales.bono_xp));
       setCodigoManual(true);
       const urlLimpia = iniciales.url_icono.trim();
       const coincidePreset = INSIGNIAS_PREDEFINIDAS.some((op) => esPresetActivo(op, urlLimpia));
@@ -249,6 +277,8 @@ export function FormularioLogro({
       }
     } else {
       setValores(VALORES_INICIALES);
+      setMetaTexto(String(VALORES_INICIALES.valor_criterio));
+      setXpTexto(String(VALORES_INICIALES.bono_xp));
       setCodigoManual(false);
       setMostrarUrlExterna(false);
     }
@@ -272,19 +302,112 @@ export function FormularioLogro({
       ? generarCodigoLogroDesdeNombre(valores.nombre)
       : valores.codigo;
 
+  const nombreTrim = valores.nombre.trim();
   const errorNombreRaw =
-    valores.nombre.trim().length < 3
+    nombreTrim.length < 3
       ? "Escribe un nombre de al menos 3 letras (ej. Primer paso)."
+      : nombreTrim.length > 100
+        ? "El nombre del logro no puede superar los 100 caracteres."
+        : null;
+  const errorDescripcionRaw =
+    valores.descripcion.trim().length > 300
+      ? "El mensaje de felicitación no puede superar los 300 caracteres."
       : null;
   const errorCodigoRaw = modo === "crear" ? validarCodigoLogro(codigoCalculado) : null;
+
+  const metaLimpio = metaTexto.trim();
+  const metaNumero = metaLimpio === "" ? Number.NaN : Number(metaLimpio);
   const errorValorRaw =
-    !Number.isFinite(valores.valor_criterio) || valores.valor_criterio < 1
-      ? "La meta debe ser al menos 1."
+    !metaLimpio || !Number.isInteger(metaNumero) || metaNumero < 1 || metaNumero > 10000
+      ? "Escribe una cantidad entera entre 1 y 10,000."
+      : null;
+
+  const xpLimpio = xpTexto.trim();
+  const xpNumero = xpLimpio === "" ? 0 : Number(xpLimpio);
+  const errorXpRaw =
+    !Number.isInteger(xpNumero) || xpNumero < 0 || xpNumero > 10000
+      ? "El bono de XP debe ser un número entero entre 0 y 10,000."
+      : null;
+
+  const urlNormalizadaPreview = normalizarUrlIconoParaEnvio(urlActualLimpia);
+  const errorUrlExternaRaw =
+    mostrarUrlExterna && urlActualLimpia
+      ? !esUrlImagenAceptada(urlActualLimpia)
+        ? "Ingresa un enlace válido que empiece con https:// o http://."
+        : urlNormalizadaPreview.length > 500
+          ? "El enlace de imagen no puede superar los 500 caracteres."
+          : null
       : null;
 
   const mostrarErrorNombre = tocadoNombre || intentoEnviar ? errorNombreRaw : null;
+  const mostrarErrorDescripcion = intentoEnviar || errorDescripcionRaw !== null ? errorDescripcionRaw : null;
   const mostrarErrorCodigo = tocadoCodigo || intentoEnviar ? errorCodigoRaw : null;
-  const formularioValido = !errorNombreRaw && !errorCodigoRaw && !errorValorRaw;
+  const mostrarErrorValor = intentoEnviar ? errorValorRaw : null;
+  const mostrarErrorXp = intentoEnviar ? errorXpRaw : null;
+  const mostrarErrorUrlExterna = intentoEnviar ? errorUrlExternaRaw : null;
+
+  const primerError = errorNombreRaw
+    ? {
+        campo: "nombre" as const,
+        mensaje: errorNombreRaw,
+        enfocar: () => {
+          inputNombreRef.current?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+          inputNombreRef.current?.focus({ preventScroll: true });
+        },
+      }
+    : errorDescripcionRaw
+      ? {
+          campo: "descripcion" as const,
+          mensaje: errorDescripcionRaw,
+          enfocar: () => {
+            inputDescripcionRef.current?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+            inputDescripcionRef.current?.focus({ preventScroll: true });
+          },
+        }
+      : errorCodigoRaw
+        ? {
+            campo: "codigo" as const,
+            mensaje: errorCodigoRaw,
+            enfocar: () => {
+              setDetallesCodigoAbiertos(true);
+              if (typeof window !== "undefined") {
+                window.requestAnimationFrame(() => {
+                  inputCodigoRef.current?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+                  inputCodigoRef.current?.focus({ preventScroll: true });
+                });
+              }
+            },
+          }
+        : errorValorRaw
+          ? {
+              campo: "meta" as const,
+              mensaje: errorValorRaw,
+              enfocar: () => {
+                inputMetaRef.current?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+                inputMetaRef.current?.focus({ preventScroll: true });
+              },
+            }
+          : errorXpRaw
+            ? {
+                campo: "xp" as const,
+                mensaje: errorXpRaw,
+                enfocar: () => {
+                  inputXpRef.current?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+                  inputXpRef.current?.focus({ preventScroll: true });
+                },
+              }
+            : errorUrlExternaRaw
+              ? {
+                  campo: "url" as const,
+                  mensaje: errorUrlExternaRaw,
+                  enfocar: () => {
+                    inputUrlExternaRef.current?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+                    inputUrlExternaRef.current?.focus({ preventScroll: true });
+                  },
+                }
+              : null;
+
+  const formularioValido = !primerError;
 
   function actualizar<K extends keyof ValoresFormulario>(clave: K, valor: ValoresFormulario[K]) {
     if (clave === "url_icono") {
@@ -366,12 +489,19 @@ export function FormularioLogro({
   }
 
   async function abrirBibliotecaMedallas() {
+    setErrorBiblioteca(null);
     setBibliotecaAbierta(true);
     if (recursosBiblioteca.length > 0 || cargandoBiblioteca) return;
     setCargandoBiblioteca(true);
     try {
       const lista = await obtenerRecursosMultimedia();
       setRecursosBiblioteca(lista);
+    } catch (error) {
+      setErrorBiblioteca(
+        error instanceof Error
+          ? error.message
+          : "No pudimos cargar la biblioteca multimedia en este momento.",
+      );
     } finally {
       setCargandoBiblioteca(false);
     }
@@ -391,15 +521,19 @@ export function FormularioLogro({
     setIntentoEnviar(true);
     setTocadoNombre(true);
     setTocadoCodigo(true);
-    if (!formularioValido || subiendoImagen) return;
+    if (subiendoImagen) return;
+    if (primerError) {
+      primerError.enfocar();
+      return;
+    }
     onGuardar({
       ...valores,
       codigo: codigoCalculado.trim().toLowerCase(),
-      nombre: valores.nombre.trim(),
+      nombre: nombreTrim,
       descripcion: valores.descripcion.trim(),
       url_icono: normalizarUrlIconoParaEnvio(valores.url_icono),
-      bono_xp: Math.max(0, Math.round(Number(valores.bono_xp) || 0)),
-      valor_criterio: Math.max(1, Math.round(Number(valores.valor_criterio) || 1)),
+      bono_xp: Math.max(0, Math.min(10000, Math.round(xpNumero))),
+      valor_criterio: Math.max(1, Math.min(10000, Math.round(metaNumero))),
     });
   }
 
@@ -435,7 +569,9 @@ export function FormularioLogro({
         <label className="admin-logros-field">
           <span className="admin-logros-label">Nombre del logro</span>
           <input
+            ref={inputNombreRef}
             value={valores.nombre}
+            maxLength={100}
             onChange={(e) => actualizar("nombre", e.target.value)}
             onBlur={() => setTocadoNombre(true)}
             placeholder="Ej. Explorador del Amor de Dios"
@@ -454,15 +590,25 @@ export function FormularioLogro({
         <label className="admin-logros-field">
           <span className="admin-logros-label">Mensaje de felicitación (opcional)</span>
           <textarea
+            ref={inputDescripcionRef}
             value={valores.descripcion}
+            maxLength={300}
             onChange={(e) => actualizar("descripcion", e.target.value)}
             rows={2}
             placeholder="Ej. ¡Completaste tu primer tema y aprendiste cuánto te ama Dios!"
             className="admin-logros-textarea"
+            aria-invalid={mostrarErrorDescripcion ? true : undefined}
           />
+          {mostrarErrorDescripcion ? (
+            <span className="admin-logros-error" role="alert">{mostrarErrorDescripcion}</span>
+          ) : null}
         </label>
 
-        <details className="admin-logros-details" open={Boolean(mostrarErrorCodigo)}>
+        <details
+          className="admin-logros-details"
+          open={detallesCodigoAbiertos || Boolean(mostrarErrorCodigo)}
+          onToggle={(e) => setDetallesCodigoAbiertos(e.currentTarget.open)}
+        >
           <summary>Configuración técnica opcional (identificador interno)</summary>
           <div className="admin-logros-details__body">
             <label className="admin-logros-field">
@@ -475,7 +621,9 @@ export function FormularioLogro({
                 />
               ) : (
                 <input
+                  ref={inputCodigoRef}
                   value={codigoCalculado}
+                  maxLength={50}
                   onChange={(e) => {
                     setCodigoManual(true);
                     actualizar("codigo", e.target.value);
@@ -487,7 +635,7 @@ export function FormularioLogro({
                 />
               )}
               {mostrarErrorCodigo ? (
-                <span className="admin-logros-error">{mostrarErrorCodigo}</span>
+                <span className="admin-logros-error" role="alert">{mostrarErrorCodigo}</span>
               ) : (
                 <span className="admin-logros-hint">
                   Se genera automáticamente a partir del nombre. Solo minúsculas, números y guiones.
@@ -545,23 +693,43 @@ export function FormularioLogro({
                 <button
                   key={cantidad}
                   type="button"
-                  onClick={() => actualizar("valor_criterio", cantidad)}
-                  className={`admin-logros-chip ${valores.valor_criterio === cantidad ? "is-selected" : ""}`}
+                  onClick={() => {
+                    setMetaTexto(String(cantidad));
+                    actualizar("valor_criterio", cantidad);
+                  }}
+                  className={`admin-logros-chip ${valores.valor_criterio === cantidad && metaTexto.trim() !== "" ? "is-selected" : ""}`}
                 >
                   {formatearMetaCriterio(valores.codigo_criterio, cantidad)}
                 </button>
               ))}
             </div>
             <input
+              ref={inputMetaRef}
               id="logro-meta-input"
               type="number"
               min={1}
               max={10000}
-              value={valores.valor_criterio}
-              onChange={(e) => actualizar("valor_criterio", Math.max(1, Number(e.target.value) || 1))}
+              step={1}
+              value={metaTexto}
+              onChange={(e) => {
+                const raw = e.target.value;
+                setMetaTexto(raw);
+                const parsed = Number(raw);
+                if (raw.trim() !== "" && Number.isFinite(parsed) && parsed >= 1) {
+                  actualizar("valor_criterio", Math.min(10000, Math.round(parsed)));
+                }
+              }}
+              onBlur={() => {
+                if (metaTexto.trim() === "" || Number(metaTexto) < 1) {
+                  setMetaTexto(String(valores.valor_criterio || 1));
+                }
+              }}
               className="admin-logros-input"
-              aria-invalid={errorValorRaw ? true : undefined}
+              aria-invalid={mostrarErrorValor ? true : undefined}
             />
+            {mostrarErrorValor ? (
+              <span className="admin-logros-error" role="alert">{mostrarErrorValor}</span>
+            ) : null}
           </div>
 
           <div className="admin-logros-field">
@@ -573,7 +741,10 @@ export function FormularioLogro({
                 <button
                   key={xp}
                   type="button"
-                  onClick={() => actualizar("bono_xp", xp)}
+                  onClick={() => {
+                    setXpTexto(String(xp));
+                    actualizar("bono_xp", xp);
+                  }}
                   className={`admin-logros-chip ${valores.bono_xp === xp ? "is-selected" : ""}`}
                 >
                   {xp === 0 ? "Sin XP" : `+${xp} XP`}
@@ -581,14 +752,37 @@ export function FormularioLogro({
               ))}
             </div>
             <input
+              ref={inputXpRef}
               id="logro-xp-input"
               type="number"
               min={0}
               max={10000}
-              value={valores.bono_xp}
-              onChange={(e) => actualizar("bono_xp", Math.max(0, Number(e.target.value) || 0))}
+              step={1}
+              value={xpTexto}
+              onChange={(e) => {
+                const raw = e.target.value;
+                setXpTexto(raw);
+                if (raw.trim() === "") {
+                  actualizar("bono_xp", 0);
+                  return;
+                }
+                const parsed = Number(raw);
+                if (Number.isFinite(parsed) && parsed >= 0) {
+                  actualizar("bono_xp", Math.min(10000, Math.round(parsed)));
+                }
+              }}
+              onBlur={() => {
+                if (xpTexto.trim() === "") {
+                  setXpTexto("0");
+                  actualizar("bono_xp", 0);
+                }
+              }}
               className="admin-logros-input"
+              aria-invalid={mostrarErrorXp ? true : undefined}
             />
+            {mostrarErrorXp ? (
+              <span className="admin-logros-error" role="alert">{mostrarErrorXp}</span>
+            ) : null}
           </div>
         </div>
 
@@ -710,9 +904,9 @@ export function FormularioLogro({
               {cargandoBiblioteca ? "Cargando biblioteca…" : "Elegir de biblioteca"}
             </button>
           </div>
-          {errorSubida ? (
+          {errorSubida || errorBiblioteca ? (
             <p className="admin-logros-error mt-1" role="alert">
-              {errorSubida}
+              {errorSubida || errorBiblioteca}
             </p>
           ) : null}
         </div>
@@ -765,8 +959,10 @@ export function FormularioLogro({
                 URL del ícono
               </label>
               <input
+                ref={inputUrlExternaRef}
                 id="formulario-logro-icono"
                 value={valores.url_icono}
+                maxLength={500}
                 onChange={(e) => {
                   limpiarObjectUrlTemporal();
                   setPreviewLocalSubida(null);
@@ -775,16 +971,57 @@ export function FormularioLogro({
                 }}
                 placeholder="https://cdn.semillas.org/medios/logros/amor.png"
                 className="admin-logros-input"
+                aria-invalid={mostrarErrorUrlExterna ? true : undefined}
               />
-              <span className="admin-logros-hint">
-                Opcional. Si el enlace falla o se deja vacío, se usará la medalla dorada predeterminada.
-              </span>
+              {mostrarErrorUrlExterna ? (
+                <span className="admin-logros-error" role="alert">{mostrarErrorUrlExterna}</span>
+              ) : (
+                <span className="admin-logros-hint">
+                  Opcional. Si el enlace falla o se deja vacío, se usará la medalla dorada predeterminada.
+                </span>
+              )}
             </div>
           ) : null}
         </div>
       </section>
     </>
   );
+
+  const pasoIdentidadListo = !errorNombreRaw && !errorCodigoRaw && !errorDescripcionRaw;
+  const pasoReglaListo = !errorValorRaw && !errorXpRaw;
+
+  const alertaPieContenido =
+    intentoEnviar && primerError
+      ? { mensaje: primerError.mensaje, alCampo: primerError.enfocar }
+      : errorEnvio
+        ? { mensaje: errorEnvio, alCampo: null }
+        : null;
+
+  const alertaPieFormulario = alertaPieContenido ? (
+    <div className="admin-logros-submit-alert" role="alert">
+      <div className="admin-logros-submit-alert__content">
+        <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
+        <span>{alertaPieContenido.mensaje}</span>
+      </div>
+      {alertaPieContenido.alCampo ? (
+        <button
+          type="button"
+          onClick={alertaPieContenido.alCampo}
+          className="admin-logros-submit-alert__action"
+        >
+          Ir al campo
+        </button>
+      ) : null}
+    </div>
+  ) : null;
+
+  const textoBotonGuardar = subiendoImagen
+    ? "Subiendo imagen…"
+    : guardando
+      ? "Guardando…"
+      : modo === "crear"
+        ? "Crear logro"
+        : "Guardar cambios";
 
   const tarjetaVistaPrevia = (
     <aside className="admin-logros-preview-panel" aria-label="Vista previa para el estudiante">
@@ -822,18 +1059,46 @@ export function FormularioLogro({
       </article>
 
       <div className="admin-logros-checklist">
-        <div className={`admin-logros-check-item ${!errorNombreRaw ? "is-ready" : ""}`}>
-          <Check className="size-4 shrink-0" aria-hidden="true" />
-          <span>{errorNombreRaw ? "Paso 1: Elige un nombre (mín. 3 letras)" : "Nombre listo para mostrar"}</span>
-        </div>
-        <div className="admin-logros-check-item is-ready">
-          <Check className="size-4 shrink-0" aria-hidden="true" />
-          <span>Regla clara: {formatearMetaCriterio(valores.codigo_criterio, valores.valor_criterio)}</span>
-        </div>
-        <div className="admin-logros-check-item is-ready">
-          <Check className="size-4 shrink-0" aria-hidden="true" />
+        <div className={`admin-logros-check-item ${pasoIdentidadListo ? "is-ready" : "is-pending"}`}>
+          {pasoIdentidadListo ? (
+            <Check className="size-4 shrink-0" aria-hidden="true" />
+          ) : (
+            <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
+          )}
           <span>
-            {valores.bono_xp > 0 ? `Entrega +${valores.bono_xp} XP al reclamarse` : "Medalla conmemorativa (0 XP)"}
+            {errorNombreRaw
+              ? "Paso 1: Elige un nombre (mín. 3 letras)"
+              : errorCodigoRaw
+                ? `Paso 1: ${errorCodigoRaw}`
+                : errorDescripcionRaw
+                  ? `Paso 1: ${errorDescripcionRaw}`
+                  : "Nombre listo para mostrar"}
+          </span>
+        </div>
+        <div className={`admin-logros-check-item ${pasoReglaListo ? "is-ready" : "is-pending"}`}>
+          {pasoReglaListo ? (
+            <Check className="size-4 shrink-0" aria-hidden="true" />
+          ) : (
+            <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
+          )}
+          <span>
+            {errorValorRaw
+              ? `Paso 2: ${errorValorRaw}`
+              : `Regla clara: ${formatearMetaCriterio(valores.codigo_criterio, valores.valor_criterio)}`}
+          </span>
+        </div>
+        <div className={`admin-logros-check-item ${!errorXpRaw ? "is-ready" : "is-pending"}`}>
+          {!errorXpRaw ? (
+            <Check className="size-4 shrink-0" aria-hidden="true" />
+          ) : (
+            <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
+          )}
+          <span>
+            {errorXpRaw
+              ? `Paso 2: ${errorXpRaw}`
+              : valores.bono_xp > 0
+                ? `Entrega +${valores.bono_xp} XP al reclamarse`
+                : "Medalla conmemorativa (0 XP)"}
           </span>
         </div>
       </div>
@@ -885,6 +1150,7 @@ export function FormularioLogro({
           <div className="admin-logros-steps">
             {pasosContenido}
             <footer className="admin-logros-actions-bar">
+              {alertaPieFormulario}
               <button
                 type="button"
                 onClick={onCerrar}
@@ -898,7 +1164,7 @@ export function FormularioLogro({
                 disabled={guardando || subiendoImagen}
                 className="admin-logros-primary-btn"
               >
-                {guardando ? "Guardando…" : modo === "crear" ? "Crear logro" : "Guardar cambios"}
+                {textoBotonGuardar}
               </button>
             </footer>
           </div>
@@ -945,6 +1211,7 @@ export function FormularioLogro({
         <div className="admin-logros-modal-body">{pasosContenido}</div>
 
         <footer className="admin-logros-modal-foot">
+          {alertaPieFormulario}
           <button
             type="button"
             onClick={onCerrar}
@@ -958,7 +1225,7 @@ export function FormularioLogro({
             disabled={guardando || subiendoImagen}
             className="admin-logros-primary-btn"
           >
-            {guardando ? "Guardando…" : modo === "crear" ? "Crear logro" : "Guardar cambios"}
+            {textoBotonGuardar}
           </button>
         </footer>
       </form>

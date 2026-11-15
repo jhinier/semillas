@@ -2954,8 +2954,41 @@ function aplicarMutacionDev(method: string, pathname: string, body: Record<strin
   // 8. Logros CRUD & archivar/reactivar
   if (method === "POST" && pathname === "/administracion/logros") {
     const id = crypto.randomUUID();
-    const bonoXp = Number.isFinite(Number(payload.bono_xp)) ? Math.max(0, Math.round(Number(payload.bono_xp))) : 25;
-    const valorCriterio = Math.max(1, Math.round(Number(payload.valor_criterio) || 1));
+    const codigo = String(payload.codigo ?? "").trim().toLowerCase();
+    const nombre = String(payload.nombre ?? "").trim();
+    if (nombre.length < 3 || nombre.length > 100) {
+      return {
+        status: 400,
+        payload: {
+          exito: false,
+          codigo: "VALIDATION_ERROR",
+          error: "El nombre del logro debe tener entre 3 y 100 caracteres.",
+        },
+      };
+    }
+    if (!/^[a-z0-9_-]{3,50}$/.test(codigo)) {
+      return {
+        status: 400,
+        payload: {
+          exito: false,
+          codigo: "VALIDATION_ERROR",
+          error: "El código debe tener entre 3 y 50 caracteres (solo minúsculas, números, guion o guion bajo).",
+        },
+      };
+    }
+    const duplicado = devStore.logros.some((l: any) => String(l.codigo || "").toLowerCase() === codigo);
+    if (duplicado) {
+      return {
+        status: 409,
+        payload: {
+          exito: false,
+          codigo: "CODIGO_DUPLICADO",
+          error: `Ya existe un logro con el código "${codigo}". Cambia el nombre o ajusta el código en configuración técnica.`,
+        },
+      };
+    }
+    const bonoXp = Number.isFinite(Number(payload.bono_xp)) ? Math.max(0, Math.min(10000, Math.round(Number(payload.bono_xp)))) : 25;
+    const valorCriterio = Math.max(1, Math.min(10000, Math.round(Number(payload.valor_criterio) || 1)));
     const codigoCriterio = String(payload.codigo_criterio || "temas_completados");
     const criterioTexto =
       codigoCriterio === "actividades_completadas"
@@ -2965,10 +2998,10 @@ function aplicarMutacionDev(method: string, pathname: string, body: Record<strin
           : `Requisito: Completa ${valorCriterio} ${valorCriterio === 1 ? "tema bíblico" : "temas bíblicos"}`;
     const nuevoLogro = {
       id,
-      codigo: String(payload.codigo || `logro_${id.slice(0, 6)}`).trim(),
-      nombre: String(payload.nombre || "Nuevo logro").trim(),
-      titulo: String(payload.nombre || "Nuevo logro").trim(),
-      descripcion: payload.descripcion ?? null,
+      codigo,
+      nombre,
+      titulo: nombre,
+      descripcion: typeof payload.descripcion === "string" && payload.descripcion.trim() ? payload.descripcion.trim() : null,
       criterio: criterioTexto,
       url_icono: payload.url_icono ?? null,
       icono_url: payload.url_icono ?? null,

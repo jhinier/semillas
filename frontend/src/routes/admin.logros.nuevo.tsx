@@ -55,6 +55,13 @@ function AdminLogrosNuevoPage() {
         modo="crear"
         presentacion="pagina"
         guardando={crear.isPending}
+        errorEnvio={
+          crear.isError
+            ? crear.error instanceof Error
+              ? crear.error.message
+              : "No se pudo crear el logro"
+            : null
+        }
         onCerrar={() => navigate({ to: "/admin/logros" })}
         onSubirImagen={async (archivo, metadata) => {
           const recurso = await subirArchivo(

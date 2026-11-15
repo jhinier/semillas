@@ -60,6 +60,7 @@ export function AdminLogrosPanel({ onNuevoLogro }: AdminLogrosPanelProps = {}) {
   }, [totalItems, paginaActual, porPagina]);
 
   function abrirEditar(logro: LogroAdminResumen) {
+    actualizar.reset();
     setLogroEnEdicion(logro);
   }
 
@@ -75,12 +76,18 @@ export function AdminLogrosPanel({ onNuevoLogro }: AdminLogrosPanelProps = {}) {
 
   async function manejarConfirmar() {
     if (!confirmacion) return;
-    if (confirmacion.tipo === "archivar") {
-      await archivar.mutateAsync(confirmacion.logroId);
-    } else {
-      await reactivar.mutateAsync(confirmacion.logroId);
+    try {
+      if (confirmacion.tipo === "archivar") {
+        await archivar.mutateAsync(confirmacion.logroId);
+        toast.success(`Logro "${confirmacion.nombre}" archivado`);
+      } else {
+        await reactivar.mutateAsync(confirmacion.logroId);
+        toast.success(`Logro "${confirmacion.nombre}" reactivado`);
+      }
+      setConfirmacion(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo completar la acción sobre el logro");
     }
-    setConfirmacion(null);
   }
 
   return (
@@ -292,7 +299,17 @@ export function AdminLogrosPanel({ onNuevoLogro }: AdminLogrosPanelProps = {}) {
         logro={logroEnEdicion}
         presentacion="modal"
         guardando={actualizar.isPending}
-        onCerrar={() => setLogroEnEdicion(null)}
+        errorEnvio={
+          actualizar.isError
+            ? actualizar.error instanceof Error
+              ? actualizar.error.message
+              : "No se pudieron guardar los cambios del logro"
+            : null
+        }
+        onCerrar={() => {
+          actualizar.reset();
+          setLogroEnEdicion(null);
+        }}
         onSubirImagen={async (archivo, metadata) => {
           const recurso = await subirArchivo(
             archivo,
@@ -317,8 +334,13 @@ export function AdminLogrosPanel({ onNuevoLogro }: AdminLogrosPanelProps = {}) {
                 valor_criterio: valores.valor_criterio,
               },
             })
-            .then(() => setLogroEnEdicion(null))
-            .catch(() => undefined);
+            .then(() => {
+              toast.success("Cambios del logro guardados");
+              setLogroEnEdicion(null);
+            })
+            .catch((error) => {
+              toast.error(error instanceof Error ? error.message : "No se pudieron guardar los cambios");
+            });
         }}
       />
 
@@ -333,7 +355,10 @@ export function AdminLogrosPanel({ onNuevoLogro }: AdminLogrosPanelProps = {}) {
 }
 
 function IconoLogroAdmin({ url, codigo }: { url: string | null; codigo: string }) {
-  const fallback = codigo === "primera_leccion" || codigo.includes("1") ? in1Img : in2Img;
+  const fallback =
+    codigo === "amor_de_dios" || codigo === "explorador_palabra" || codigo.includes("2")
+      ? in2Img
+      : in1Img;
   const resolved = useResolvedMediaUrl({
     rawUrl: url,
     useFallbackOnError: false,

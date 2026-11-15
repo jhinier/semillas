@@ -37,7 +37,10 @@ export const InsigniaCardItem: React.FC<InsigniaCardItemProps> = ({
   onCompartir,
 }) => {
   const [compartiendo, setCompartiendo] = React.useState(false);
-  const fallbackImg = codigo === "primera_leccion" || codigo === "insignia_1" ? in1Img : in2Img;
+  const fallbackImg =
+    codigo === "amor_de_dios" || codigo === "explorador_palabra" || codigo.includes("2")
+      ? in2Img
+      : in1Img;
   const mediaResuelta = useResolvedMediaUrl({
     rawUrl: imagen,
     useFallbackOnError: false,

@@ -669,6 +669,7 @@
 
 .admin-logros-modal-foot {
   display: flex;
+  flex-wrap: wrap;
   flex-shrink: 0;
   justify-content: flex-end;
   gap: 0.75rem;
@@ -1067,4 +1068,70 @@
 .dark .admin-logros-custom-preview__img {
   background: #172136;
   border-color: rgba(52, 211, 153, 0.38);
+}
+
+/* Validation checklist & submit alert */
+.admin-logros-check-item.is-pending {
+  color: #b45309;
+}
+
+[data-theme="admin-dark"] .admin-logros-check-item.is-pending,
+.dark .admin-logros-check-item.is-pending {
+  color: #fbbf24;
+}
+
+.admin-logros-submit-alert {
+  flex: 1 0 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 0.72rem 0.95rem;
+  border-radius: 0.85rem;
+  border: 1px solid #fecdd3;
+  background: #fff1f2;
+  color: #be123c;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.admin-logros-submit-alert__content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.admin-logros-submit-alert__action {
+  border-radius: 0.65rem;
+  border: 1px solid #fda4af;
+  background: #ffffff;
+  color: #9f1239;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.admin-logros-submit-alert__action:hover {
+  background: #ffe4e6;
+}
+
+[data-theme="admin-dark"] .admin-logros-submit-alert,
+.dark .admin-logros-submit-alert {
+  border-color: rgba(251, 113, 133, 0.4);
+  background: rgba(190, 18, 60, 0.16);
+  color: #fecdd3;
+}
+
+[data-theme="admin-dark"] .admin-logros-submit-alert__action,
+.dark .admin-logros-submit-alert__action {
+  border-color: rgba(251, 113, 133, 0.45);
+  background: rgba(15, 23, 42, 0.7);
+  color: #ffe4e6;
+}
+
+[data-theme="admin-dark"] .admin-logros-submit-alert__action:hover,
+.dark .admin-logros-submit-alert__action:hover {
+  background: rgba(244, 63, 94, 0.28);
 }
