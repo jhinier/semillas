@@ -102,7 +102,7 @@ export function AdminMediaFilters({
                 onUsageFilterChange(event.target.value as MediaUsageFilter)
               }
               aria-label="Filtrar por uso y accesibilidad"
-              className="h-10 flex-1 cursor-pointer bg-transparent text-sm font-bold text-slate-700 outline-none"
+              className="h-10 flex-1 cursor-pointer bg-transparent py-2 text-sm font-bold text-slate-700 outline-none"
             >
               <option value="todos">Todos ({countsByUsage.todos})</option>
               <option value="usados">En uso ({countsByUsage.usados})</option>
@@ -119,7 +119,7 @@ export function AdminMediaFilters({
               value={selectedSort}
               onChange={(event) => onSortChange(event.target.value)}
               aria-label="Ordenar recursos"
-              className="h-10 flex-1 cursor-pointer bg-transparent text-sm font-bold text-slate-700 outline-none"
+              className="h-10 flex-1 cursor-pointer bg-transparent py-2 text-sm font-bold text-slate-700 outline-none"
             >
               <option value="recientes">Más recientes</option>
               <option value="antiguos">Más antiguos</option>

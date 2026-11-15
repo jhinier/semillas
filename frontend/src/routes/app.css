@@ -3056,6 +3056,7 @@ html[data-semillas-text-size="grande"] {
 }
 
 /* ── Mapeo de Colores Slate de Tailwind para Modo Oscuro ── */
+.dark .text-slate-950,
 .dark .text-slate-900,
 .dark .text-slate-800,
 .dark .text-slate-700,
@@ -3696,5 +3697,36 @@ html[data-semillas-text-size="grande"] {
 [data-theme="app-dark"] .crecer-focus button.bg-white:hover {
   background-color: #1e293b !important;
   border-color: #7c3aed !important;
+}
+
+.dark section[aria-label="Versículo general del tema"],
+[data-theme="app-dark"] section[aria-label="Versículo general del tema"] {
+  background-image: none !important;
+  background-color: rgba(16, 185, 129, 0.12) !important;
+  border-color: rgba(52, 211, 153, 0.3) !important;
+}
+
+.dark section[aria-label="Versículo general del tema"] .bg-white,
+[data-theme="app-dark"] section[aria-label="Versículo general del tema"] .bg-white {
+  background-color: #131b2e !important;
+  color: #e2e8f0 !important;
+}
+
+.dark .bg-emerald-100,
+[data-theme="app-dark"] .bg-emerald-100 {
+  background-color: rgba(16, 185, 129, 0.24) !important;
+  color: #6ee7b7 !important;
+}
+
+.dark .text-emerald-700,
+.dark .text-emerald-800,
+[data-theme="app-dark"] .text-emerald-700,
+[data-theme="app-dark"] .text-emerald-800 {
+  color: #6ee7b7 !important;
+}
+
+.dark .border-emerald-200,
+[data-theme="app-dark"] .border-emerald-200 {
+  border-color: rgba(52, 211, 153, 0.32) !important;
 }
 

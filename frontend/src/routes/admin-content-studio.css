@@ -2874,21 +2874,190 @@
 
 .dark .app-shell--admin .bg-slate-50,
 .dark .app-shell--admin .bg-slate-100,
+.dark .app-shell--admin .bg-slate-50\/70,
+.dark .app-shell--admin .bg-slate-50\/80,
+.dark .app-shell--admin .bg-slate-100\/80,
 [data-theme="admin-dark"] .bg-slate-50,
-[data-theme="admin-dark"] .bg-slate-100 {
+[data-theme="admin-dark"] .bg-slate-100,
+[data-theme="admin-dark"] .bg-slate-50\/70,
+[data-theme="admin-dark"] .bg-slate-50\/80,
+[data-theme="admin-dark"] .bg-slate-100\/80 {
   background-color: var(--admin-bg-muted) !important;
   color: var(--admin-text-body) !important;
 }
 
+.dark .app-shell--admin .bg-slate-200:not(button),
+[data-theme="admin-dark"] .bg-slate-200:not(button) {
+  background-color: #1e293b !important;
+  color: #e2e8f0 !important;
+}
+
+.dark .app-shell--admin button.bg-slate-200,
+[data-theme="admin-dark"] button.bg-slate-200 {
+  background-color: #24324f !important;
+  color: #f1f5f9 !important;
+}
+
+.dark .app-shell--admin .border-slate-100,
 .dark .app-shell--admin .border-slate-200,
+.dark .app-shell--admin .border-slate-200\/80,
 .dark .app-shell--admin .border-slate-300,
+[data-theme="admin-dark"] .border-slate-100,
 [data-theme="admin-dark"] .border-slate-200,
+[data-theme="admin-dark"] .border-slate-200\/80,
 [data-theme="admin-dark"] .border-slate-300 {
   border-color: var(--admin-border-default) !important;
 }
 
+.dark .app-shell--admin .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+.dark .app-shell--admin .divide-slate-200 > :not([hidden]) ~ :not([hidden]),
+[data-theme="admin-dark"] .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+[data-theme="admin-dark"] .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--admin-border-default) !important;
+}
+
+.dark .app-shell--admin tr.hover\:bg-slate-50:hover,
+.dark .app-shell--admin tr.hover\:bg-slate-50\/70:hover,
+.dark .app-shell--admin tr.hover\:bg-slate-50\/80:hover,
+.dark .app-shell--admin div.hover\:bg-slate-50:hover,
+.dark .app-shell--admin button.hover\:bg-slate-50:hover,
+.dark .app-shell--admin button.hover\:bg-slate-100:hover,
+[data-theme="admin-dark"] tr.hover\:bg-slate-50:hover,
+[data-theme="admin-dark"] tr.hover\:bg-slate-50\/70:hover,
+[data-theme="admin-dark"] tr.hover\:bg-slate-50\/80:hover,
+[data-theme="admin-dark"] div.hover\:bg-slate-50:hover,
+[data-theme="admin-dark"] button.hover\:bg-slate-50:hover,
+[data-theme="admin-dark"] button.hover\:bg-slate-100:hover {
+  background-color: rgba(30, 41, 59, 0.78) !important;
+}
+
+.dark .app-shell--admin a.hover\:bg-violet-50:hover,
+.dark .app-shell--admin button.hover\:bg-violet-50:hover,
+[data-theme="admin-dark"] a.hover\:bg-violet-50:hover,
+[data-theme="admin-dark"] button.hover\:bg-violet-50:hover {
+  background-color: rgba(124, 58, 237, 0.22) !important;
+  color: #ddd6fe !important;
+}
+
+.dark .app-shell--admin .bg-violet-50,
+.dark .app-shell--admin .bg-violet-50\/70,
+[data-theme="admin-dark"] .bg-violet-50,
+[data-theme="admin-dark"] .bg-violet-50\/70 {
+  background-color: rgba(124, 58, 237, 0.16) !important;
+}
+
+.dark .app-shell--admin .border-violet-100,
+.dark .app-shell--admin .border-violet-200,
+[data-theme="admin-dark"] .border-violet-100,
+[data-theme="admin-dark"] .border-violet-200 {
+  border-color: rgba(167, 139, 250, 0.32) !important;
+}
+
+.dark .app-shell--admin .text-violet-700,
+.dark .app-shell--admin .text-violet-800,
+.dark .app-shell--admin .text-violet-900,
+[data-theme="admin-dark"] .text-violet-700,
+[data-theme="admin-dark"] .text-violet-800,
+[data-theme="admin-dark"] .text-violet-900 {
+  color: #ddd6fe !important;
+}
+
+.dark .app-shell--admin .bg-emerald-50,
+.dark .app-shell--admin .bg-emerald-50\/50,
+.dark .app-shell--admin .bg-emerald-100,
+[data-theme="admin-dark"] .bg-emerald-50,
+[data-theme="admin-dark"] .bg-emerald-50\/50,
+[data-theme="admin-dark"] .bg-emerald-100 {
+  background-color: rgba(16, 185, 129, 0.16) !important;
+}
+
+.dark .app-shell--admin .border-emerald-200,
+[data-theme="admin-dark"] .border-emerald-200 {
+  border-color: rgba(52, 211, 153, 0.32) !important;
+}
+
+.dark .app-shell--admin .text-emerald-700,
+.dark .app-shell--admin .text-emerald-800,
+.dark .app-shell--admin .text-emerald-900,
+[data-theme="admin-dark"] .text-emerald-700,
+[data-theme="admin-dark"] .text-emerald-800,
+[data-theme="admin-dark"] .text-emerald-900 {
+  color: #6ee7b7 !important;
+}
+
+.dark .app-shell--admin button.hover\:bg-emerald-50:hover,
+[data-theme="admin-dark"] button.hover\:bg-emerald-50:hover {
+  background-color: rgba(16, 185, 129, 0.24) !important;
+}
+
+.dark .app-shell--admin .bg-amber-50,
+.dark .app-shell--admin .bg-amber-100,
+[data-theme="admin-dark"] .bg-amber-50,
+[data-theme="admin-dark"] .bg-amber-100 {
+  background-color: rgba(245, 158, 11, 0.16) !important;
+}
+
+.dark .app-shell--admin .border-amber-200,
+[data-theme="admin-dark"] .border-amber-200 {
+  border-color: rgba(251, 191, 36, 0.35) !important;
+}
+
+.dark .app-shell--admin .text-amber-700,
+.dark .app-shell--admin .text-amber-800,
+.dark .app-shell--admin .text-amber-900,
+[data-theme="admin-dark"] .text-amber-700,
+[data-theme="admin-dark"] .text-amber-800,
+[data-theme="admin-dark"] .text-amber-900 {
+  color: #fde68a !important;
+}
+
+.dark .app-shell--admin .bg-red-50,
+.dark .app-shell--admin .bg-rose-50,
+.dark .app-shell--admin .bg-rose-100,
+[data-theme="admin-dark"] .bg-red-50,
+[data-theme="admin-dark"] .bg-rose-50,
+[data-theme="admin-dark"] .bg-rose-100 {
+  background-color: rgba(244, 63, 94, 0.16) !important;
+}
+
+.dark .app-shell--admin .border-red-200,
+.dark .app-shell--admin .border-rose-200,
+[data-theme="admin-dark"] .border-red-200,
+[data-theme="admin-dark"] .border-rose-200 {
+  border-color: rgba(251, 113, 133, 0.35) !important;
+}
+
+.dark .app-shell--admin .text-red-700,
+.dark .app-shell--admin .text-red-800,
+.dark .app-shell--admin .text-red-900,
+.dark .app-shell--admin .text-rose-700,
+.dark .app-shell--admin .text-rose-800,
+.dark .app-shell--admin .text-rose-900,
+[data-theme="admin-dark"] .text-red-700,
+[data-theme="admin-dark"] .text-red-800,
+[data-theme="admin-dark"] .text-red-900,
+[data-theme="admin-dark"] .text-rose-700,
+[data-theme="admin-dark"] .text-rose-800,
+[data-theme="admin-dark"] .text-rose-900 {
+  color: #fecdd3 !important;
+}
+
+.dark .app-shell--admin .bg-blue-50,
+[data-theme="admin-dark"] .bg-blue-50 {
+  background-color: rgba(59, 130, 246, 0.16) !important;
+}
+
+.dark .app-shell--admin .text-blue-700,
+.dark .app-shell--admin .text-blue-800,
+[data-theme="admin-dark"] .text-blue-700,
+[data-theme="admin-dark"] .text-blue-800 {
+  color: #93c5fd !important;
+}
+
+.dark .app-shell--admin .text-slate-950,
 .dark .app-shell--admin .text-slate-900,
 .dark .app-shell--admin .text-slate-800,
+[data-theme="admin-dark"] .text-slate-950,
 [data-theme="admin-dark"] .text-slate-900,
 [data-theme="admin-dark"] .text-slate-800 {
   color: var(--admin-text-heading) !important;
@@ -2992,7 +3161,15 @@
 
 .dark .media-library-search input,
 [data-theme="admin-dark"] .media-library-search input {
+  background-color: transparent !important;
+  border-color: transparent !important;
   color: #f8fafc !important;
+}
+
+.dark .app-shell--admin select.bg-transparent,
+[data-theme="admin-dark"] select.bg-transparent {
+  background-color: transparent !important;
+  border-color: transparent !important;
 }
 
 .dark .media-library-upload-shortcut,
@@ -3675,4 +3852,23 @@
 .dark .admin-student-lesson__activity-note button,
 [data-theme="admin-dark"] .admin-student-lesson__activity-note button {
   color: #c4b5fd;
+}
+
+.dark .app-shell--admin section[aria-label="Versículo general del tema"],
+[data-theme="admin-dark"] section[aria-label="Versículo general del tema"] {
+  background-image: none !important;
+  background-color: rgba(124, 58, 237, 0.14) !important;
+  border-color: rgba(167, 139, 250, 0.32) !important;
+}
+
+.dark .app-shell--admin .bg-violet-100,
+[data-theme="admin-dark"] .bg-violet-100 {
+  background-color: rgba(124, 58, 237, 0.28) !important;
+  color: #ddd6fe !important;
+}
+
+.dark .app-shell--admin .from-\[\#fdfbf4\],
+[data-theme="admin-dark"] .from-\[\#fdfbf4\] {
+  background-image: none !important;
+  background-color: var(--admin-bg-surface) !important;
 }

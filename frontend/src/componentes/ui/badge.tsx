@@ -24,7 +24,7 @@ export const Badge = React.forwardRef<HTMLSpanElement, PropiedadesBadge>(
     return (
       <span
         ref={referencia}
-        className={unirClases(variantesBadge(), className, clase)}
+        className={unirClases(variantesBadge(), `chip--${color}`, className, clase)}
         style={{
           backgroundColor: configColor.bg,
           color: configColor.text,
@@ -42,7 +42,7 @@ export const Badge = React.forwardRef<HTMLSpanElement, PropiedadesBadge>(
             })}
           </span>
         )}
-        {children}
+        <span>{children}</span>
       </span>
     );
   }
