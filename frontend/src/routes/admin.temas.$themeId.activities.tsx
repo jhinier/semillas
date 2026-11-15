@@ -76,6 +76,7 @@ function AdminThemeActivitiesPage() {
   const [isDirty, setIsDirty] = useState(false);
   const newFormInitialized = useRef(false);
   const editFormInitializedId = useRef<string | null>(null);
+  const ageSelectedByUser = useRef(false);
 
   const themeQuery = useQuery({
     queryKey: ["admin", "theme", themeId],
@@ -118,10 +119,32 @@ function AdminThemeActivitiesPage() {
     enabled: search.form === "editar" && Boolean(search.actividadId),
   });
 
+  const allowedGroups = useMemo(() => {
+    const ids = new Set(themeQuery.data?.grupos_edad?.map((group) => group.id) ?? []);
+    return ids.size ? (groupsQuery.data ?? []).filter((group) => ids.has(group.id)) : groupsQuery.data ?? [];
+  }, [groupsQuery.data, themeQuery.data?.grupos_edad]);
+
+  const activityCountsByAge = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const act of estudioQuery.data?.actividades ?? []) {
+      if (act.grupo_edad_id) {
+        counts[act.grupo_edad_id] = (counts[act.grupo_edad_id] ?? 0) + 1;
+      }
+    }
+    return counts;
+  }, [estudioQuery.data?.actividades]);
+
   useEffect(() => {
-    if (selectedAge || !groupsQuery.data?.length) return;
-    setSelectedAge(themeQuery.data?.grupos_edad?.[0]?.id ?? groupsQuery.data[0]?.id ?? "");
-  }, [groupsQuery.data, selectedAge, themeQuery.data?.grupos_edad]);
+    if (ageSelectedByUser.current || search.form === "editar" || !allowedGroups.length) return;
+    const groupWithActivities = allowedGroups.find((group) => (activityCountsByAge[group.id] ?? 0) > 0);
+    if (!selectedAge) {
+      setSelectedAge((groupWithActivities ?? allowedGroups[0])?.id ?? "");
+      return;
+    }
+    if ((activityCountsByAge[selectedAge] ?? 0) === 0 && groupWithActivities) {
+      setSelectedAge(groupWithActivities.id);
+    }
+  }, [activityCountsByAge, allowedGroups, search.form, selectedAge]);
 
   useEffect(() => {
     if (search.form !== "nueva") {
@@ -197,6 +220,7 @@ function AdminThemeActivitiesPage() {
     };
 
     editFormInitializedId.current = activity.id;
+    ageSelectedByUser.current = true;
     setSelectedAge(activity.grupo_edad_id);
     setDraft(nextDraft);
     setConfigText(JSON.stringify(nextDraft.configuracion, null, 2));
@@ -219,10 +243,6 @@ function AdminThemeActivitiesPage() {
     () => [...(activitiesQuery.data?.actividades ?? [])].sort((a, b) => a.orden - b.orden),
     [activitiesQuery.data],
   );
-  const allowedGroups = useMemo(() => {
-    const ids = new Set(themeQuery.data?.grupos_edad?.map((group) => group.id) ?? []);
-    return ids.size ? (groupsQuery.data ?? []).filter((group) => ids.has(group.id)) : groupsQuery.data ?? [];
-  }, [groupsQuery.data, themeQuery.data?.grupos_edad]);
 
   const invalidate = async () => {
     await Promise.all([
@@ -265,6 +285,7 @@ function AdminThemeActivitiesPage() {
       !window.confirm("El borrador conservará su contenido y cambiará de franja. ¿Continuar?")
     ) return;
 
+    ageSelectedByUser.current = true;
     setSelectedAge(groupId);
     if (search.form === "nueva") {
       setDraft((current) => actualizarGrupoEdadDelBorrador(current, groupId));
@@ -439,12 +460,15 @@ function AdminThemeActivitiesPage() {
           <section className="admin-age-switcher" aria-label="Franja de edad">
             <div><span className="admin-eyebrow">Franja activa</span><strong>Contenido independiente por audiencia</strong></div>
             <div className="admin-age-switcher__options">
-              {allowedGroups.map((group) => (
-                <button key={group.id} type="button" onClick={() => changeAgeContext(group.id)} className={selectedAge === group.id ? "admin-age-switcher__option--active" : ""}>
-                  <span>{group.nombre}</span>
-                  <small>{selectedAge === group.id ? "Editando" : "Ver secuencia"}</small>
-                </button>
-              ))}
+              {allowedGroups.map((group) => {
+                const count = activityCountsByAge[group.id] ?? 0;
+                return (
+                  <button key={group.id} type="button" onClick={() => changeAgeContext(group.id)} className={selectedAge === group.id ? "admin-age-switcher__option--active" : ""}>
+                    <span>{group.nombre}</span>
+                    <small>{count} {count === 1 ? "actividad" : "actividades"} · {selectedAge === group.id ? "Editando" : "Ver secuencia"}</small>
+                  </button>
+                );
+              })}
             </div>
           </section>
 

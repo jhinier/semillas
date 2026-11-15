@@ -14,7 +14,7 @@ import {
   Search,
   Send,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import {
@@ -43,6 +43,20 @@ const estados = [
   { id: "archivado", label: "Archivados" },
 ];
 
+function resolveEstadoSearch(search: unknown): string {
+  const obj = search as Record<string, unknown> | string | undefined;
+  let raw: string | null = null;
+  if (typeof obj === "string") {
+    raw = new URLSearchParams(obj).get("estado");
+  } else if (obj && typeof obj.estado === "string") {
+    raw = obj.estado;
+  } else if (typeof window !== "undefined") {
+    raw = new URLSearchParams(window.location.search).get("estado");
+  }
+  const normalized = typeof raw === "string" ? raw.trim().toLowerCase() : "";
+  return estados.some((item) => item.id === normalized) ? normalized : "todos";
+}
+
 function AdminThemesPage() {
   const location = useLocation();
   const isExact = location.pathname === "/admin/temas" || location.pathname === "/admin/temas/";
@@ -50,14 +64,21 @@ function AdminThemesPage() {
 }
 
 function AdminThemeLibrary() {
+  const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const estadoSearch = resolveEstadoSearch(location.search);
   const [query, setQuery] = useState("");
-  const [estado, setEstado] = useState("todos");
+  const [estado, setEstado] = useState(estadoSearch);
   const [sendaId, setSendaId] = useState("");
   const [grupoEdadId, setGrupoEdadId] = useState("");
   const [page, setPage] = useState(1);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+
+  useEffect(() => {
+    setEstado(estadoSearch);
+    setPage(1);
+  }, [estadoSearch]);
 
   const filtros = useMemo(
     () => ({
@@ -85,6 +106,7 @@ function AdminThemeLibrary() {
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ["admin", "themes"] });
+    void queryClient.invalidateQueries({ queryKey: ["admin", "activities"] });
     void queryClient.invalidateQueries({ queryKey: ["admin", "dashboard"] });
     void queryClient.invalidateQueries({ queryKey: ["temas"] });
     void queryClient.invalidateQueries({ queryKey: ["theme"] });
@@ -203,6 +225,7 @@ function AdminThemeLibrary() {
               setGrupoEdadId("");
               setEstado("todos");
               setPage(1);
+              navigate({ to: "/admin/temas", search: {} as any, replace: true });
             }}
           >
             Limpiar filtros
@@ -221,6 +244,11 @@ function AdminThemeLibrary() {
               onClick={() => {
                 setEstado(item.id);
                 setPage(1);
+                navigate({
+                  to: "/admin/temas",
+                  search: (item.id === "todos" ? {} : { estado: item.id }) as any,
+                  replace: true,
+                });
               }}
             >
               <span>{item.label}</span>

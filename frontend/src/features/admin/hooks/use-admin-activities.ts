@@ -51,33 +51,26 @@ export function useAdminActivities() {
   const ageGroupsBase = ageGroupsQuery.data ?? [];
   const activityTypesBase = activityTypesQuery.data ?? [];
 
-  const filteredActivities = useMemo(() => {
-    const query = searchValue.trim().toLocaleLowerCase("es");
-    return allActivities.filter((activity) => {
-      if (activeStatus !== "todas" && activity.estado !== activeStatus) return false;
-      if (selectedTemaId && activity.tema_id !== selectedTemaId) return false;
-      if (selectedSendaId && activity.tema?.senda?.id !== selectedSendaId) return false;
-      if (selectedAgeGroupId && activity.grupo_edad_id !== selectedAgeGroupId) return false;
-      if (selectedTypeCode && activity.tipo_actividad?.codigo !== selectedTypeCode) return false;
-      if (!query) return true;
-
-      return [
-        activity.titulo,
-        activity.consigna,
-        activity.tema?.titulo,
-        activity.tipo_actividad?.nombre,
-        activity.grupo_edad?.nombre,
-      ].some((value) => value?.toLocaleLowerCase("es").includes(query));
-    });
-  }, [
-    activeStatus,
-    allActivities,
-    searchValue,
-    selectedAgeGroupId,
-    selectedSendaId,
-    selectedTemaId,
-    selectedTypeCode,
-  ]);
+  const filteredActivities = useMemo(
+    () =>
+      filterActivityLibrary(allActivities, {
+        activeStatus,
+        selectedTemaId,
+        selectedSendaId,
+        selectedAgeGroupId,
+        selectedTypeCode,
+        searchValue,
+      }),
+    [
+      activeStatus,
+      allActivities,
+      searchValue,
+      selectedAgeGroupId,
+      selectedSendaId,
+      selectedTemaId,
+      selectedTypeCode,
+    ],
+  );
 
   useEffect(() => {
     setPaginaActual(1);
@@ -88,18 +81,7 @@ export function useAdminActivities() {
     return filteredActivities.slice(start, start + porPagina);
   }, [filteredActivities, paginaActual, porPagina]);
 
-  const statusCounts = useMemo(() => {
-    return allActivities.reduce(
-      (counts, activity) => {
-        counts.todas += 1;
-        if (activity.estado === "publicada") counts.publicada += 1;
-        else if (activity.estado === "revision") counts.revision += 1;
-        else counts.borrador += 1;
-        return counts;
-      },
-      { todas: 0, publicada: 0, revision: 0, borrador: 0 },
-    );
-  }, [allActivities]);
+  const statusCounts = useMemo(() => countActivityLibraryStatuses(allActivities), [allActivities]);
 
   const typeCounts = useMemo(() => {
     return allActivities.reduce<Record<string, number>>((counts, activity) => {
@@ -166,6 +148,65 @@ export function useAdminActivities() {
   };
 }
 
-export function getActivityLibraryStatus(activity: ActividadAdmin) {
-  return activity.estado === "publicada" || activity.estado === "revision" ? activity.estado : "borrador";
+/** Deriva el estado editorial normalizado para la biblioteca de actividades. */
+export function getActivityLibraryStatus(
+  activity: Pick<ActividadAdmin, "estado" | "tema">,
+): Exclude<ActivityLibraryStatus, "todas"> {
+  const temaEstado = activity.tema?.estado;
+  if (activity.estado === "publicada" || temaEstado === "publicado") return "publicada";
+  if (activity.estado === "revision" || temaEstado === "revision") return "revision";
+  return "borrador";
+}
+
+/** Cuenta actividades por pestaña usando la misma clasificación que el filtro para evitar desfase con el listado. */
+export function countActivityLibraryStatuses(
+  activities: Array<Pick<ActividadAdmin, "estado" | "tema">>,
+): Record<ActivityLibraryStatus, number> {
+  return activities.reduce(
+    (counts, activity) => {
+      const status = getActivityLibraryStatus(activity);
+      counts.todas += 1;
+      counts[status] += 1;
+      return counts;
+    },
+    { todas: 0, publicada: 0, revision: 0, borrador: 0 },
+  );
+}
+
+/** Filtra las actividades de la biblioteca editorial según estado normalizado, facetas y búsqueda textual. */
+export function filterActivityLibrary<T extends ActividadAdmin>(
+  activities: T[],
+  {
+    activeStatus,
+    selectedTemaId = "",
+    selectedSendaId = "",
+    selectedAgeGroupId = "",
+    selectedTypeCode = "",
+    searchValue = "",
+  }: {
+    activeStatus: ActivityLibraryStatus;
+    selectedTemaId?: string;
+    selectedSendaId?: string;
+    selectedAgeGroupId?: string;
+    selectedTypeCode?: string;
+    searchValue?: string;
+  },
+): T[] {
+  const query = searchValue.trim().toLocaleLowerCase("es");
+  return activities.filter((activity) => {
+    if (activeStatus !== "todas" && getActivityLibraryStatus(activity) !== activeStatus) return false;
+    if (selectedTemaId && activity.tema_id !== selectedTemaId) return false;
+    if (selectedSendaId && activity.tema?.senda?.id !== selectedSendaId) return false;
+    if (selectedAgeGroupId && activity.grupo_edad_id !== selectedAgeGroupId) return false;
+    if (selectedTypeCode && activity.tipo_actividad?.codigo !== selectedTypeCode) return false;
+    if (!query) return true;
+
+    return [
+      activity.titulo,
+      activity.consigna,
+      activity.tema?.titulo,
+      activity.tipo_actividad?.nombre,
+      activity.grupo_edad?.nombre,
+    ].some((value) => value?.toLocaleLowerCase("es").includes(query));
+  });
 }

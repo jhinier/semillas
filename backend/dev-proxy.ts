@@ -514,7 +514,7 @@ const SNAPSHOT_ACTIVIDADES = {
         limite_tiempo_seg: null,
         orden: 1,
         obligatorio: true,
-        estado: "activo",
+        estado: "publicada",
         creado_en: "2026-10-14T05:09:38.663+00:00",
         actualizado_en: "2026-10-14T05:09:38.663+00:00",
         configuracion: {
@@ -1219,6 +1219,34 @@ function enriquecerActividadesOpciones(actividades: any[]) {
   if (!Array.isArray(actividades)) return;
   for (const act of actividades) {
     if (!act || typeof act !== "object") continue;
+
+    // Sincronizar estado y metadata de tema con el tema actual en devStore
+    const temaActual = act.tema_id ? devStore.temas.find((t: any) => t?.id === act.tema_id) : undefined;
+    if (temaActual) {
+      recalcularCompletitudTemaDev(temaActual);
+      act.tema = {
+        ...(act.tema ?? {}),
+        id: temaActual.id,
+        titulo: temaActual.titulo,
+        slug: temaActual.slug,
+        estado: temaActual.estado,
+        senda: temaActual.senda ?? act.tema?.senda,
+      };
+      act.estado =
+        temaActual.estado === "publicado"
+          ? "publicada"
+          : temaActual.estado === "revision"
+            ? "revision"
+            : "borrador";
+    } else if (act.estado !== "publicada" && act.estado !== "revision") {
+      act.estado =
+        act.tema?.estado === "publicado"
+          ? "publicada"
+          : act.tema?.estado === "revision"
+            ? "revision"
+            : "borrador";
+    }
+
     const config = act.configuracion && typeof act.configuracion === "object" ? act.configuracion : {};
     const opcionesDirectas = Array.isArray(act.opciones) ? act.opciones : [];
     const opcionesConfig = Array.isArray(config.opciones) ? config.opciones : [];
@@ -1589,6 +1617,7 @@ for (const t of devStore.temas) {
   }
   recalcularCompletitudTemaDev(t);
 }
+enriquecerActividadesOpciones(devStore.actividades);
 guardarDevStoreEnDisco();
 
 function buscarTemaDev(temaId: string): Record<string, any> | undefined {
@@ -1649,6 +1678,7 @@ function construirResumenDetalladoDev() {
     archivado: 0,
   };
   for (const t of devStore.temas) {
+    recalcularCompletitudTemaDev(t);
     const e = String(t.estado || "borrador");
     if (e in estados) {
       estados[e as keyof typeof estados] += 1;
@@ -1767,6 +1797,7 @@ function filtrarYResponderGetDev(url: URL): Record<string, any> | null {
     const limit = Math.max(1, Number(params.get("limit")) || 50);
     const offset = Math.max(0, Number(params.get("offset")) || 0);
 
+    enriquecerActividadesOpciones(devStore.actividades);
     const filtered = devStore.actividades.filter((a) => {
       if (temaId && a.tema_id !== temaId) return false;
       if (grupoEdadId && a.grupo_edad_id !== grupoEdadId && a.grupo_edad?.id !== grupoEdadId) return false;
@@ -1778,7 +1809,6 @@ function filtrarYResponderGetDev(url: URL): Record<string, any> | null {
       }
       return true;
     });
-    enriquecerActividadesOpciones(filtered);
     return {
       exito: true,
       datos: {
@@ -2106,6 +2136,7 @@ function aplicarMutacionDev(method: string, pathname: string, body: Record<strin
     }
     tema.actualizado_en = ahora;
     recalcularCompletitudTemaDev(tema);
+    enriquecerActividadesOpciones(devStore.actividades.filter((a) => a.tema_id === temaId));
     guardarDevStoreEnDisco();
     return { status: 200, payload: { exito: true, datos: tema } };
   }
@@ -2172,6 +2203,7 @@ function aplicarMutacionDev(method: string, pathname: string, body: Record<strin
 
     tema.actualizado_en = ahora;
     recalcularCompletitudTemaDev(tema);
+    enriquecerActividadesOpciones(devStore.actividades.filter((a) => a.tema_id === temaId));
     guardarDevStoreEnDisco();
     return { status: 200, payload: { exito: true, datos: paso } };
   }
@@ -2192,6 +2224,7 @@ function aplicarMutacionDev(method: string, pathname: string, body: Record<strin
       tema.publicado_en = ahora;
       tema.actualizado_en = ahora;
       recalcularCompletitudTemaDev(tema);
+      enriquecerActividadesOpciones(devStore.actividades.filter((a) => a.tema_id === temaId));
       guardarDevStoreEnDisco();
       return { status: 200, payload: { exito: true, datos: tema } };
     }
@@ -2201,6 +2234,7 @@ function aplicarMutacionDev(method: string, pathname: string, body: Record<strin
       tema.publicado_en = null;
       tema.actualizado_en = ahora;
       recalcularCompletitudTemaDev(tema);
+      enriquecerActividadesOpciones(devStore.actividades.filter((a) => a.tema_id === temaId));
       guardarDevStoreEnDisco();
       return { status: 200, payload: { exito: true, datos: tema } };
     }
@@ -2208,6 +2242,7 @@ function aplicarMutacionDev(method: string, pathname: string, body: Record<strin
       estadosPorTema.set(temaId, { estado: "archivado", publicado_en: tema.publicado_en ?? null });
       tema.estado = "archivado";
       tema.actualizado_en = ahora;
+      enriquecerActividadesOpciones(devStore.actividades.filter((a) => a.tema_id === temaId));
       guardarDevStoreEnDisco();
       return { status: 200, payload: { exito: true, datos: tema } };
     }
@@ -2226,6 +2261,7 @@ function aplicarMutacionDev(method: string, pathname: string, body: Record<strin
         tema: { id: tema.id, titulo: tema.titulo, slug: tema.slug, estado: tema.estado },
         solicitante: { id: "aff4c70c-086c-43f3-8501-b55bb13807b2", nombre_visible: "Administrador" },
       });
+      enriquecerActividadesOpciones(devStore.actividades.filter((a) => a.tema_id === temaId));
       guardarDevStoreEnDisco();
       return { status: 200, payload: { exito: true, datos: { ...tema, revision_id: revId } } };
     }
@@ -2241,6 +2277,7 @@ function aplicarMutacionDev(method: string, pathname: string, body: Record<strin
           r.actualizado_en = ahora;
         }
       }
+      enriquecerActividadesOpciones(devStore.actividades.filter((a) => a.tema_id === temaId));
       guardarDevStoreEnDisco();
       return { status: 200, payload: { exito: true, datos: tema } };
     }
@@ -2312,7 +2349,12 @@ function aplicarMutacionDev(method: string, pathname: string, body: Record<strin
       limite_tiempo_seg: payload.limite_tiempo_seg ?? null,
       orden: Number(payload.orden) || ordenExistente + 1,
       obligatorio: payload.obligatorio ?? true,
-      estado: payload.estado || "activo",
+      estado:
+        tema?.estado === "publicado"
+          ? "publicada"
+          : tema?.estado === "revision"
+            ? "revision"
+            : "borrador",
       creado_en: ahora,
       actualizado_en: ahora,
       configuracion: payload.configuracion ?? {},
@@ -2398,6 +2440,7 @@ function aplicarMutacionDev(method: string, pathname: string, body: Record<strin
         tema.estado = decision === "aprobar" ? "aprobado" : "borrador";
         tema.actualizado_en = ahora;
         recalcularCompletitudTemaDev(tema);
+        enriquecerActividadesOpciones(devStore.actividades.filter((a) => a.tema_id === tema.id));
       }
       guardarDevStoreEnDisco();
       return { status: 200, payload: { exito: true, datos: rev } };
