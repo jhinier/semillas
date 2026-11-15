@@ -165,7 +165,7 @@ function AdminThemeCrecerPage() {
       <section className="admin-crecer-workflow" aria-label="Selección de edad y momento">
         <div className="admin-crecer-workflow__intro">
           <span>¿Cómo completar este paso?</span>
-          <p>1️⃣ Elige la edad · 2️⃣ Elige un momento del 1 al 6 · 3️⃣ Escribe el título y el texto abajo y pulsa «Guardar este momento».</p>
+          <p>Paso 1: elige la edad · Paso 2: elige un momento (del 1 al 6) · Paso 3: escribe el título y el texto abajo y pulsa «Guardar este momento».</p>
         </div>
 
         <div className="admin-crecer-workflow__controls">

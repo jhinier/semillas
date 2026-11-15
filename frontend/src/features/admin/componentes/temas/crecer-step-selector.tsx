@@ -100,11 +100,11 @@ export function CrecerStepSelector({
                 <strong>{guia ? `${guia.orden}. ${step.nombre}` : step.nombre}</strong>
                 <small>
                   {hasLocalDraft
-                    ? "✏️ Borrador sin guardar"
+                    ? "Borrador sin guardar"
                     : completed
-                      ? "✓ Listo y guardado"
+                      ? "Listo y guardado"
                       : isActive
-                        ? `👉 Editando: ${guia?.explicacion ?? "Completa abajo"}`
+                        ? `Editando · ${guia?.explicacion ?? "Completa abajo"}`
                         : (guia?.explicacion ?? "Pendiente")}
                 </small>
               </span>

@@ -3,6 +3,7 @@ import {
   Check,
   FileAudio,
   Image,
+  Lightbulb,
   Loader,
   Plus,
   Save,
@@ -74,7 +75,7 @@ export function CrecerContentEditor(props: CrecerContentEditorProps) {
           </span>
         ) : tieneContenidoValido && props.isSuccess ? (
           <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700" role="status">
-            <Check size={15} /> ¡Listo y guardado!
+            <Check size={15} /> Listo y guardado
           </span>
         ) : !tieneContenidoValido ? (
           <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2 text-xs font-bold text-slate-600" role="status">
@@ -84,8 +85,11 @@ export function CrecerContentEditor(props: CrecerContentEditorProps) {
       </div>
 
       {tipMomento ? (
-        <div className="mb-4 rounded-xl border border-violet-200 bg-violet-50/70 px-3.5 py-2.5 text-xs leading-relaxed text-violet-900">
-          <strong>💡 Qué escribir aquí:</strong> {tipMomento}
+        <div className="mb-4 flex items-start gap-2 rounded-xl border border-violet-200 bg-violet-50/70 px-3.5 py-2.5 text-xs leading-relaxed text-violet-900">
+          <Lightbulb size={15} className="mt-0.5 shrink-0 text-violet-600" aria-hidden="true" />
+          <p>
+            <strong>Guía para este momento:</strong> {tipMomento}
+          </p>
         </div>
       ) : null}
 
@@ -131,7 +135,7 @@ export function CrecerContentEditor(props: CrecerContentEditorProps) {
                 ? props.unsavedDraftCount <= 1
                   ? "Ya puedes guardar este momento haciendo clic en el botón morado."
                   : `Tienes este momento y otros ${props.unsavedDraftCount - 1} con cambios sin guardar.`
-                : "✓ ¡Listo! Este momento ya está guardado."}
+                : "Este momento ya está guardado."}
         </p>
         <button
           type="button"
