@@ -53,6 +53,8 @@ function AdminLayout() {
   const scopeId = meQuery.data?.perfil?.id || meQuery.data?.usuario?.id;
 
   useEffect(() => {
+    if (!scopeId && meQuery.isLoading) return;
+
     const aplicarTemaAdmin = () => {
       aplicarPreferenciasDispositivo(scopeId);
     };
@@ -79,7 +81,7 @@ function AdminLayout() {
       document.documentElement.setAttribute("data-theme", appOscuro ? "app-dark" : "app-light");
       document.documentElement.classList.toggle("dark", appOscuro);
     };
-  }, [scopeId]);
+  }, [meQuery.isLoading, scopeId]);
 
   return (
     <div className="app-shell app-shell--admin">

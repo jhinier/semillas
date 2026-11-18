@@ -13,6 +13,7 @@ interface AgeGroupSelectorProps {
   selectedAgeGroupId: string;
   onSelect: (id: string) => void;
   hasDraft?: (id: string) => boolean;
+  getAgeGroupMeta?: (id: string) => { subtitle?: string; badge?: string } | undefined;
 }
 
 export function AgeGroupSelector({
@@ -20,6 +21,7 @@ export function AgeGroupSelector({
   selectedAgeGroupId,
   onSelect,
   hasDraft,
+  getAgeGroupMeta,
 }: AgeGroupSelectorProps) {
   return (
     <section className="admin-crecer-control admin-crecer-control--age">
@@ -37,6 +39,7 @@ export function AgeGroupSelector({
         {ageGroups.map((ageGroup) => {
           const isActive = ageGroup.id === selectedAgeGroupId;
           const hasLocalDraft = hasDraft?.(ageGroup.id) ?? false;
+          const meta = getAgeGroupMeta?.(ageGroup.id);
           const ageRange =
             ageGroup.edad_minima != null && ageGroup.edad_maxima != null
               ? `${ageGroup.edad_minima}–${ageGroup.edad_maxima} años`
@@ -61,7 +64,8 @@ export function AgeGroupSelector({
 
               <span className="admin-crecer-age-option__copy">
                 <strong>{ageGroup.nombre ?? "Franja sin nombre"}</strong>
-                <small>{ageRange}</small>
+                <small>{meta?.subtitle ?? ageRange}</small>
+                {meta?.badge ? <span>{meta.badge}</span> : null}
               </span>
             </button>
           );

@@ -19,6 +19,13 @@ export function useTemaDetalle(themeId: string) {
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
 
   const meQuery = useQuery({ queryKey: ["me"], queryFn: obtenerMiPerfil, staleTime: 1000 * 60 * 5 });
+  const franjaOverride =
+    typeof localStorage !== "undefined" ? localStorage.getItem("semillas_franja_prueba_id") : null;
+  const grupoEdadActivoId =
+    franjaOverride ||
+    meQuery.data?.perfil?.grupo_edad_id ||
+    (typeof localStorage !== "undefined" ? localStorage.getItem("onboarding_grupo_edad_id") : null) ||
+    undefined;
   const themeQuery = useQuery({ queryKey: ["theme", themeId], queryFn: () => obtenerTema(themeId) });
   const portadaQuery = useQuery({
     queryKey: ["theme-portada", themeId],
@@ -27,13 +34,13 @@ export function useTemaDetalle(themeId: string) {
     staleTime: 10 * 60 * 1000,
   });
   const stepsQuery = useQuery({
-    queryKey: ["theme", themeId, "steps", meQuery.data?.perfil?.grupo_edad_id],
-    queryFn: () => obtenerPasos(themeId, meQuery.data?.perfil?.grupo_edad_id ?? undefined),
+    queryKey: ["theme", themeId, "steps", grupoEdadActivoId],
+    queryFn: () => obtenerPasos(themeId, grupoEdadActivoId),
     enabled: Boolean(themeId),
   });
   const activitiesQuery = useQuery({
-    queryKey: ["theme", themeId, "activities", meQuery.data?.perfil?.grupo_edad_id],
-    queryFn: () => obtenerActividades(themeId, meQuery.data?.perfil?.grupo_edad_id ?? undefined),
+    queryKey: ["theme", themeId, "activities", grupoEdadActivoId],
+    queryFn: () => obtenerActividades(themeId, grupoEdadActivoId),
     enabled: Boolean(themeId),
   });
   const progressQuery = useQuery({ queryKey: ["progress", themeId], queryFn: obtenerMiProgreso, staleTime: 1000 * 60 * 3 });

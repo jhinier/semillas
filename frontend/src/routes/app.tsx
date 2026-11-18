@@ -65,21 +65,29 @@ function AppLayout() {
   const logrosBadge = (gamificacionQuery.data?.pendientes_reclamar ?? 0) > 0;
 
   useEffect(() => {
+    const scopeId = meQuery.data?.perfil?.id || meQuery.data?.usuario?.id;
     const rawSize =
       meQuery.data?.perfil?.tamano_texto_preferido ||
-      window.localStorage.getItem("semillas-pref-text-size");
+      leerPreferenciaPerfil("semillas-pref-text-size", scopeId);
     aplicarTamanoTexto(rawSize);
 
     const prefersAudio = meQuery.data?.perfil?.prefiere_audio;
     if (typeof prefersAudio === "boolean") {
       window.localStorage.setItem("semillas-prefiere-audio", String(prefersAudio));
     }
-  }, [meQuery.data?.perfil?.prefiere_audio, meQuery.data?.perfil?.tamano_texto_preferido]);
+  }, [
+    meQuery.data?.perfil?.id,
+    meQuery.data?.perfil?.prefiere_audio,
+    meQuery.data?.perfil?.tamano_texto_preferido,
+    meQuery.data?.usuario?.id,
+  ]);
 
   const [mensajeConflicto, setMensajeConflicto] = useState<string | null>(null);
 
   useEffect(() => {
     const scopeId = meQuery.data?.perfil?.id || meQuery.data?.usuario?.id;
+    if (!scopeId && meQuery.isLoading) return;
+
     const aplicar = () => aplicarPreferenciasDispositivo(scopeId);
     aplicar();
 
@@ -100,7 +108,7 @@ function AppLayout() {
       window.removeEventListener("storage", aplicar);
       mediaQuery?.removeEventListener?.("change", handleMediaChange);
     };
-  }, [meQuery.data?.perfil?.id, meQuery.data?.usuario?.id]);
+  }, [meQuery.data?.perfil?.id, meQuery.data?.usuario?.id, meQuery.isLoading]);
 
   useEffect(() => {
     const inicial = consumirConflictoVinculacion();

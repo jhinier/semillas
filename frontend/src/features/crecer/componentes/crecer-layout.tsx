@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { StateView } from "@/componentes/ui/state-view";
+import { ContenidoMarkdown, limpiarMarkdownATextoPlano } from "@/componentes/ui/contenido-markdown";
 import { FASES_CRECER, type FaseCrecerConfig } from "../crecer-fases";
 import type { DetalleSendaEdad } from "../hooks/use-crecer-fase";
 import { NarradorPaso } from "./narrador-paso";
@@ -151,7 +152,7 @@ export function CrecerLayout({
     const partes = [
       paso.titulo,
       paso.instruccion_corta,
-      paso.cuerpo,
+      limpiarMarkdownATextoPlano(paso.cuerpo),
       ...(versiculoClave && (fase.codigo === "relatar" || fase.codigo === "ensenar")
         ? [`Versículo clave: ${versiculoClave}`]
         : []),
@@ -319,8 +320,10 @@ export function CrecerLayout({
                 habilitado={audioEnabled}
               />
 
-              {paso?.cuerpo ? (
-                <div className="crecer-focus__reading">{paso.cuerpo}</div>
+              {paso?.cuerpo?.trim() ? (
+                <div className="crecer-focus__reading">
+                  <ContenidoMarkdown texto={paso.cuerpo} />
+                </div>
               ) : null}
 
               {versiculoClave && (fase.codigo === "relatar" || fase.codigo === "ensenar") ? (

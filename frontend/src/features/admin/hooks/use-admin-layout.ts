@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { sessionStorageApi } from "@/shared/api/session";
 import { cerrarSesionAutenticada } from "@/shared/auth/supabase";
+import { limpiarPreferenciasSesion } from "@/shared/accessibility/preferences";
 
 type AdminHeaderInfo = {
   titulo: string;
@@ -119,6 +120,7 @@ export function useAdminLayout() {
   }, [sidebarOpen]);
 
   const handleLogout = async () => {
+    limpiarPreferenciasSesion();
     sessionStorageApi.clearAllSession();
     try {
       await Promise.race([

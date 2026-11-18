@@ -2,7 +2,7 @@ import { Video } from "lucide-react";
 import {
   type ConfiguracionActividad,
   campoActualizar,
-  obtenerListaTexto,
+  esRegistro,
 } from "../activity-config-utils";
 import { CampoConfiguracion } from "../activity-config-primitives";
 import { ListaOpcionesTexto } from "../activity-config-list-editors";
@@ -23,7 +23,15 @@ export function VideoBuilder({
   uploading: boolean;
 }) {
   const actualizar = campoActualizar(configuracion, onChange);
-  const opciones = obtenerListaTexto(configuracion.opciones);
+  const opciones = Array.isArray(configuracion.opciones)
+    ? configuracion.opciones
+        .map((item) => {
+          if (typeof item === "string") return item;
+          if (esRegistro(item) && typeof item.texto === "string") return item.texto;
+          return null;
+        })
+        .filter((item): item is string => item !== null)
+    : [];
 
   return (
     <div className="admin-config-builder__columns">

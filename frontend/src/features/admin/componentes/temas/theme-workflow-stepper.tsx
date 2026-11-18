@@ -39,10 +39,21 @@ export function ThemeWorkflowStepper({
   const esLibrePorEstado =
     themeEstado === "publicado" || themeEstado === "aprobado" || themeEstado === "revision";
 
-  const tieneBase = Boolean(themeId);
+  const erroresCodigos = new Set(
+    (completitud?.errores_publicacion ?? []).map((err) => err.codigo),
+  );
+  const tieneBase =
+    Boolean(themeId) &&
+    !erroresCodigos.has("VERSICULO_REQUERIDO") &&
+    !erroresCodigos.has("REFERENCIA_BIBLICA_REQUERIDA") &&
+    !erroresCodigos.has("TITULO_REQUERIDO") &&
+    !erroresCodigos.has("OBJETIVO_REQUERIDO");
   const tienePortada = criterioCompleto(completitud, "portada");
   const contenidosCreados = completitud?.estadisticas?.contenidos_creados ?? 0;
-  const tieneCrecerIniciado = contenidosCreados > 0 || criterioCompleto(completitud, "contenido_crecer");
+  const crecerCompleto =
+    criterioCompleto(completitud, "crecer") ||
+    criterioCompleto(completitud, "contenido_crecer");
+  const tieneCrecerIniciado = contenidosCreados > 0 || crecerCompleto;
   const tieneActividades =
     (completitud?.estadisticas?.actividades ?? 0) > 0 || criterioCompleto(completitud, "actividades");
 
@@ -54,7 +65,7 @@ export function ThemeWorkflowStepper({
       case 2:
         return tienePortada;
       case 3:
-        return criterioCompleto(completitud, "contenido_crecer");
+        return crecerCompleto;
       case 4:
         return tieneActividades;
       case 5:

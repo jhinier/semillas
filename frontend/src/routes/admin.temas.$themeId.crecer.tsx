@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
   ArrowRight,
+  Copy,
   Eye,
   Image as ImageIcon,
   Layers3,
@@ -11,7 +13,15 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { AgeGroupSelector, CrecerContentEditor, CrecerMatrixStatus, CrecerStepSelector } from "@/features/admin/componentes/temas";
+import {
+  AgeGroupSelector,
+  CrecerContentEditor,
+  CrecerMatrixStatus,
+  CrecerReuseDialog,
+  CrecerStepSelector,
+} from "@/features/admin/componentes/temas";
+import { ContenidoMarkdown } from "@/componentes/ui/contenido-markdown";
+import { ResolvedMediaImage } from "@/features/media/resolved-media-image";
 import { obtenerEstudioTemaAdmin } from "../features/admin/admin.api";
 import { ThemeWorkflowStepper } from "../features/admin/componentes/temas/theme-workflow-stepper";
 import { useThemeCrecerPage } from "../features/admin/hooks/use-theme-crecer-page";
@@ -23,6 +33,7 @@ export const Route = createFileRoute("/admin/temas/$themeId/crecer")({
 function AdminThemeCrecerPage() {
   const { themeId } = Route.useParams();
   const navigate = useNavigate();
+  const [reuseDialogOpen, setReuseDialogOpen] = useState(false);
   const editor = useThemeCrecerPage({ themeId });
   const estudioQuery = useQuery({
     queryKey: ["admin", "theme", themeId, "studio"],
@@ -49,11 +60,34 @@ function AdminThemeCrecerPage() {
     );
   }
 
-  const availableAgeGroups = editor.ageGroupsQuery.data?.filter(
-    (group) =>
-      !editor.theme?.grupos_edad?.length ||
-      editor.theme.grupos_edad.some((available) => available.id === group.id),
-  );
+  const availableAgeGroups = editor.ageGroupsQuery.data ?? [];
+  const includedAgeIds = new Set(editor.theme?.grupos_edad?.map((g) => g.id) ?? []);
+
+  const getAgeGroupMeta = (ageGroupId: string) => {
+    const completosGrupo = editor.pasos.filter((step) =>
+      editor.stepsQuery.data?.some(
+        (record) =>
+          record.tipo_paso?.codigo === step.codigo &&
+          record.contenidos?.some(
+            (c) =>
+              c.grupo_edad_id === ageGroupId &&
+              Boolean(c.titulo?.trim()) &&
+              Boolean(c.cuerpo?.trim()) &&
+              c.cuerpo !== "Contenido pendiente...",
+          ),
+      ),
+    ).length;
+    const total = editor.totalPasos;
+    const incluida = includedAgeIds.has(ageGroupId);
+    return {
+      badge:
+        completosGrupo >= total
+          ? `${completosGrupo}/${total} listos`
+          : incluida
+            ? `${completosGrupo}/${total} momentos`
+            : `${completosGrupo}/${total} · Clic para completar`,
+    };
+  };
 
   const getMatrixCell = (ageGroupId: string, stepCode: string) => {
     if (editor.hasDraftForCell(ageGroupId, stepCode)) return "draft" as const;
@@ -164,8 +198,17 @@ function AdminThemeCrecerPage() {
 
       <section className="admin-crecer-workflow" aria-label="Selección de edad y momento">
         <div className="admin-crecer-workflow__intro">
-          <span>¿Cómo completar este paso?</span>
-          <p>Paso 1: elige la edad · Paso 2: elige un momento (del 1 al 6) · Paso 3: escribe el título y el texto abajo y pulsa «Guardar este momento».</p>
+          <div>
+            <span>¿Cómo completar este paso?</span>
+            <p>Paso 1: elige la edad · Paso 2: elige un momento (del 1 al 6) · Paso 3: escribe el título y el texto abajo y pulsa «Guardar este momento».</p>
+          </div>
+          <button
+            type="button"
+            className="admin-secondary-button !min-h-[2.35rem] !px-3.5 !py-1.5 text-xs shrink-0"
+            onClick={() => setReuseDialogOpen(true)}
+          >
+            <Copy size={15} /> Reutilizar de otra franja o tema
+          </button>
         </div>
 
         <div className="admin-crecer-workflow__controls">
@@ -175,6 +218,7 @@ function AdminThemeCrecerPage() {
               selectedAgeGroupId={editor.selectedAgeGroupId}
               onSelect={editor.setSelectedAgeGroupId}
               hasDraft={editor.hasDraftForAgeGroup}
+              getAgeGroupMeta={getAgeGroupMeta}
             />
           ) : null}
 
@@ -211,6 +255,7 @@ function AdminThemeCrecerPage() {
               editor.uploadMutation.mutateAsync({ file, type, metadata })
             }
             onSave={editor.saveCurrentDraft}
+            onOpenReuse={() => setReuseDialogOpen(true)}
             isPending={editor.saveMutation.isPending}
             isUploading={editor.uploadMutation.isPending}
             isSuccess={editor.isCurrentSaved}
@@ -272,8 +317,11 @@ function AdminThemeCrecerPage() {
 
             <div className="admin-crecer-preview__card">
               {editor.selectedResource?.tipo === "imagen" ? (
-                <img
-                  src={editor.selectedResource.url_publica}
+                <ResolvedMediaImage
+                  resourceId={editor.selectedResource.id}
+                  rawUrl={editor.selectedResource.url_publica}
+                  fallbackHint={editor.selectedResource.titulo || editor.title}
+                  useIlustracionFallback
                   alt={editor.selectedResource.texto_alternativo ?? "Vista previa del recurso"}
                   className="admin-crecer-preview__media"
                 />
@@ -285,7 +333,13 @@ function AdminThemeCrecerPage() {
 
               <span className="admin-eyebrow">{editor.activeStep?.nombre ?? "Momento"}</span>
               <h3>{editor.title || "Título pendiente"}</h3>
-              <p>{editor.body || "Escribe el contenido para ver una previsualización."}</p>
+              {editor.body.trim() ? (
+                <div className="mt-2 max-h-56 overflow-y-auto text-xs text-slate-600 dark:text-slate-300">
+                  <ContenidoMarkdown texto={editor.body} />
+                </div>
+              ) : (
+                <p>Escribe el contenido para ver una previsualización.</p>
+              )}
 
               {editor.selectedAudio ? (
                 <div className="admin-crecer-preview__audio">
@@ -307,6 +361,24 @@ function AdminThemeCrecerPage() {
         onSelect={(ageGroupId, stepCode) => {
           editor.setSelectedAgeGroupId(ageGroupId);
           editor.setActiveStepCode(stepCode);
+        }}
+      />
+
+      <CrecerReuseDialog
+        open={reuseDialogOpen}
+        themeId={themeId}
+        themeTitle={editor.theme.titulo}
+        ageGroups={availableAgeGroups ?? []}
+        targetAgeGroup={editor.selectedAgeGroup}
+        targetStepCode={editor.activeStepCode}
+        targetStepName={editor.activeStep?.nombre ?? "Momento"}
+        currentStepsData={editor.stepsQuery.data}
+        isCopyingAgeGroup={editor.copyAgeGroupMutation.isPending}
+        hasExistingContentInTarget={Boolean(editor.title.trim() || editor.body.trim())}
+        onClose={() => setReuseDialogOpen(false)}
+        onLoadMoment={(draft, label) => editor.applyReusedMoment(draft, label)}
+        onCopyFullAgeGroup={async (params) => {
+          await editor.copyAgeGroupMutation.mutateAsync(params);
         }}
       />
     </div>

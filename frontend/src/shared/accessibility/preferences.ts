@@ -92,12 +92,8 @@ export function leerPreferenciaPerfil(
 ): string | null {
   if (typeof window === "undefined") return fallback;
   try {
-    if (scopeId && scopeId !== "default") {
-      const valScoped = window.localStorage.getItem(obtenerClavePref(claveBase, scopeId));
-      if (valScoped !== null) return valScoped;
-    }
-    const valGlobal = window.localStorage.getItem(claveBase);
-    return valGlobal !== null ? valGlobal : fallback;
+    const val = window.localStorage.getItem(obtenerClavePref(claveBase, scopeId));
+    return val !== null ? val : fallback;
   } catch {
     return fallback;
   }
@@ -110,10 +106,7 @@ export function guardarPreferenciaPerfil(
 ): void {
   if (typeof window === "undefined") return;
   try {
-    if (scopeId && scopeId !== "default") {
-      window.localStorage.setItem(obtenerClavePref(claveBase, scopeId), valor);
-    }
-    window.localStorage.setItem(claveBase, valor);
+    window.localStorage.setItem(obtenerClavePref(claveBase, scopeId), valor);
     window.dispatchEvent(new CustomEvent("semillas:preferences-changed"));
   } catch {
     // ignorar si localStorage está bloqueado

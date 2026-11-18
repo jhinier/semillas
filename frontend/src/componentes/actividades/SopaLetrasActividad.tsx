@@ -38,12 +38,19 @@ export function SopaLetrasActividad({ actividad, onComplete }: SopaLetrasProps) 
   const [completed, setCompleted] = useState(false);
   const [errorFlash, setErrorFlash] = useState<Set<string>>(new Set());
 
-  const numFilas = actividad.configuracion?.filas || 8;
-  const numColumnas = actividad.configuracion?.columnas || 8;
+  const palabrasNormalizadas = (actividad.configuracion?.palabras || [])
+    .map((w: string) => w.trim().toUpperCase().replace(/\s+/g, ""))
+    .filter((w: string) => w.length >= 2);
+  const maxPalabra = Math.max(0, ...palabrasNormalizadas.map((w) => w.length));
+  const numFilas = Math.min(18, Math.max(actividad.configuracion?.filas || 10, maxPalabra, 6));
+  const numColumnas = Math.min(18, Math.max(actividad.configuracion?.columnas || 10, maxPalabra, 6));
 
   const generarSopa = useCallback(() => {
-    const words: string[] = (actividad.configuracion?.palabras || []).map((w: string) => w.toUpperCase());
-    const { grid: newGrid, palabrasColocadas } = generarSopaDeLetras(words, numFilas, numColumnas);
+    const { grid: newGrid, palabrasColocadas } = generarSopaDeLetras(
+      palabrasNormalizadas,
+      numFilas,
+      numColumnas,
+    );
     setPalabras(palabrasColocadas);
     setGrid(newGrid);
   }, [actividad, numFilas, numColumnas]);

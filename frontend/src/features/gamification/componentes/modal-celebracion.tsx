@@ -1,6 +1,8 @@
 import * as React from "react";
 import { X, Share2, Loader2 } from "lucide-react";
 import confetti from "canvas-confetti";
+import in2Img from "@/assets/images/Ilustraciones/in2.webp";
+import { ResolvedMediaImage } from "@/features/media/resolved-media-image";
 import { crearTarjetaInsignia, descargarTarjetaInsignia } from "../../logros/utils/crear-tarjeta-insignia";
 import { toast } from "sonner";
 import { crearPayloadCompartirInsignia } from "../../logros/utils/share-payload";
@@ -138,7 +140,12 @@ export const ModalCelebracion: React.FC<ModalCelebracionProps> = ({
         {/* Imagen de la insignia */}
         <div className="modal-celebracion__insignia">
           <div className="modal-celebracion__insignia-ring">
-            <img src={imagen} alt={nombre} className="modal-celebracion__insignia-img" />
+            <ResolvedMediaImage
+              rawUrl={imagen}
+              fallbackSrc={in2Img}
+              alt={nombre}
+              className="modal-celebracion__insignia-img"
+            />
           </div>
           <h3 className="modal-celebracion__nombre">{nombre}</h3>
           <span className="modal-celebracion__xp">✨ +{bonoXp} XP ganados</span>

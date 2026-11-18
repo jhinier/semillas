@@ -138,7 +138,14 @@ export function ActivityTypeConfigBuilder({
   }
 
   if (codigo === "aventura_decisiones") {
-    return <AventuraBuilder configuracion={configuracion} onChange={onChange} />;
+    return (
+      <AventuraBuilder
+        configuracion={configuracion}
+        onChange={onChange}
+        resources={resources}
+        uploading={uploading}
+      />
+    );
   }
 
   return (

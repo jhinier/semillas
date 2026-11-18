@@ -10,13 +10,17 @@ import "@/features/crecer/componentes/crecer-focus.css";
 import "./theme-detail.css";
 
 export const Route = createFileRoute("/admin/temas/$themeId/preview")({
+  validateSearch: (search: Record<string, unknown>): { grupoEdadId?: string } => ({
+    grupoEdadId: typeof search.grupoEdadId === "string" && search.grupoEdadId ? search.grupoEdadId : undefined,
+  }),
   component: AdminThemePreviewPage,
 });
 
 function AdminThemePreviewPage() {
   const { themeId } = Route.useParams();
+  const search = Route.useSearch();
   const navigate = useNavigate();
-  const preview = useThemePreviewPage({ themeId });
+  const preview = useThemePreviewPage({ themeId, initialAgeGroupId: search.grupoEdadId });
   const estudioQuery = useQuery({
     queryKey: ["admin", "theme", themeId, "studio"],
     queryFn: () => obtenerEstudioTemaAdmin(themeId),

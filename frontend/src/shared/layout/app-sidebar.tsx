@@ -119,7 +119,7 @@ export function AppSidebar({
         </p>
 
         <nav
-          className={`flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain ${variant === "admin" ? "gap-1 py-0.5 [scrollbar-width:thin]" : "gap-2 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"}`}
+          className={`flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-contain ${variant === "admin" ? "gap-1 py-0.5 [scrollbar-width:thin]" : "gap-2 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"}`}
           aria-label={variant === "admin" ? "Navegación administrativa" : "Navegación principal"}
         >
           {secciones.map((seccion) => (
@@ -161,7 +161,7 @@ export function AppSidebar({
                       )}
                     </span>
                     <span className="hidden lg:inline">{item.label}</span>
-                    {activo ? <span className={`absolute left-0 h-5 w-1 rounded-r-full lg:-left-1 ${variant === "admin" ? "bg-violet-600 dark:bg-violet-400" : "bg-primario dark:bg-emerald-400"}`} aria-hidden="true" /> : null}
+                    {activo ? <span className={`absolute left-0 h-5 w-1 rounded-r-full ${variant === "admin" ? "bg-violet-600 dark:bg-violet-400" : "bg-primario dark:bg-emerald-400"}`} aria-hidden="true" /> : null}
                   </Link>
                 );
               })}

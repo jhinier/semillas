@@ -2767,27 +2767,40 @@ html[data-semillas-text-size="grande"] {
 }
 
 /* ── Alto Contraste ── */
-.alto-contraste {
-  filter: contrast(1.15);
+.alto-contraste :focus-visible {
+  outline: 3px solid #1d4ed8 !important;
+  outline-offset: 2px !important;
 }
+
+.alto-contraste.dark :focus-visible,
+.alto-contraste[data-theme="app-dark"] :focus-visible,
+.alto-contraste[data-theme="admin-dark"] :focus-visible {
+  outline: 3px solid #60a5fa !important;
+  outline-offset: 2px !important;
+}
+
 .alto-contraste.dark body,
 .alto-contraste[data-theme="app-dark"] body,
+.alto-contraste[data-theme="admin-dark"] body,
 .dark .alto-contraste body,
 .alto-contraste.dark .app-shell,
+.alto-contraste[data-theme="app-dark"] .app-shell,
+.alto-contraste[data-theme="admin-dark"] .app-shell,
 .alto-contraste.dark .app-shell__workspace,
+.alto-contraste[data-theme="app-dark"] .app-shell__workspace,
+.alto-contraste[data-theme="admin-dark"] .app-shell__workspace,
 .alto-contraste.dark .onboarding-age-page,
 .alto-contraste.dark .login-panel--visual {
   background-color: #0c101a !important;
   color: #f8fafc !important;
 }
 
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) body,
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .app-shell,
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .app-shell__workspace,
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .onboarding-age-page,
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .login-panel--visual {
-  background-color: #ffffff !important;
-  color: #000000 !important;
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) {
+  --admin-border-default: #cbd5e1;
+  --admin-border-strong: #94a3b8;
+  --admin-text-heading: #0f172a;
+  --admin-text-body: #1e293b;
+  --admin-text-muted: #334155;
 }
 
 .alto-contraste.dark .profile-form-card,
@@ -2798,9 +2811,9 @@ html[data-semillas-text-size="grande"] {
 .alto-contraste.dark .profile-status-badge,
 .alto-contraste.dark .profile-metric-card,
 .alto-contraste.dark .card,
-.alto-contraste.dark .bg-white,
-.alto-contraste.dark .bg-slate-50,
-.alto-contraste.dark .bg-slate-100,
+.alto-contraste.dark .bg-white:not(.app-sidebar):not(button):not(a),
+.alto-contraste.dark .bg-slate-50:not(button):not(a),
+.alto-contraste.dark .bg-slate-100:not(button):not(a),
 .alto-contraste.dark .logro-card,
 .alto-contraste.dark .logros-progress-card,
 .alto-contraste.dark .logros-next-card,
@@ -2814,51 +2827,67 @@ html[data-semillas-text-size="grande"] {
 .alto-contraste.dark .offline-storage-card,
 [data-theme="app-dark"].alto-contraste .profile-form-card,
 [data-theme="app-dark"].alto-contraste .logro-card,
-[data-theme="app-dark"].alto-contraste .onboarding-age-card {
+[data-theme="app-dark"].alto-contraste .onboarding-age-card,
+[data-theme="admin-dark"].alto-contraste .admin-dashboard__intro,
+[data-theme="admin-dark"].alto-contraste .admin-metric-card,
+[data-theme="admin-dark"].alto-contraste .admin-panel-card,
+[data-theme="admin-dark"].alto-contraste .admin-studio-card,
+[data-theme="admin-dark"].alto-contraste .admin-user-card,
+[data-theme="admin-dark"].alto-contraste .admin-users-table-card {
   background-color: #131924 !important;
   color: #f3f4f6 !important;
   border-color: #4b5563 !important;
 }
 
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .profile-form-card,
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .profile-setting-row,
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .profile-hero-card,
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .profile-hero-card__notice,
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .profile-account-summary,
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .profile-status-badge,
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .profile-metric-card,
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .card,
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .bg-white,
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .bg-slate-50,
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .bg-slate-100,
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .logro-card,
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .logros-progress-card,
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .logros-next-card,
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .logros-share-card,
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .logros-tab,
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .logros-state-card,
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .login-benefit,
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .login-illustration-card,
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .login-privacy,
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .offline-theme-card,
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .offline-storage-card {
-  background-color: #ffffff !important;
-  color: #000000 !important;
-  border-color: #000000 !important;
-  border-width: 2px !important;
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .profile-form-card,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .profile-setting-row,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .profile-hero-card,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .profile-hero-card__notice,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .profile-account-summary,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .profile-status-badge,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .profile-metric-card,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .card,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .logro-card,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .logros-progress-card,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .logros-next-card,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .logros-share-card,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .logros-tab,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .logros-state-card,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .login-benefit,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .login-illustration-card,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .login-privacy,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .offline-theme-card,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .offline-storage-card {
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
 }
-/* Alto contraste: asegurar textos legibles sin romper fondos */
+
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .text-slate-400,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .text-slate-500,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .text-neutro,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .home-stat__label,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .home-stat__helper,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .app-topbar__subtitle {
+  color: #334155 !important;
+}
+
+/* Alto contraste: asegurar textos legibles sin romper fondos ni bordes */
 .alto-contraste.dark .app-shell,
-.alto-contraste[data-theme="app-dark"] .app-shell {
+.alto-contraste[data-theme="app-dark"] .app-shell,
+.alto-contraste[data-theme="admin-dark"] .app-shell {
   color: #f8fafc !important;
 }
 
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .app-shell {
-  color: #000000 !important;
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .app-shell {
+  color: #0f172a !important;
 }
 
 .alto-contraste a:not([class*="btn"]):not([class*="button"]):hover {
   text-decoration: underline !important;
+}
+
+.alto-contraste .app-sidebar a:hover {
+  text-decoration: none !important;
 }
 
 /* ── Modo Oscuro ── */
@@ -2920,22 +2949,19 @@ html[data-semillas-text-size="grande"] {
 
 .dark .app-sidebar,
 [data-theme="app-dark"] .app-sidebar,
-[data-theme="admin-dark"] .app-sidebar,
-.alto-contraste .app-sidebar {
+[data-theme="admin-dark"] .app-sidebar {
   background-color: var(--color-bg-sidebar, #101520) !important;
   border-color: var(--color-border, #1e293b) !important;
 }
 
 .dark .app-sidebar a[aria-current="page"],
-[data-theme="app-dark"] .app-sidebar a[aria-current="page"],
-.alto-contraste .app-sidebar a[aria-current="page"] {
+[data-theme="app-dark"] .app-sidebar a[aria-current="page"] {
   background-color: #14532d !important;
   color: #4ade80 !important;
 }
 
 .dark .app-sidebar a[aria-current="page"] *,
-[data-theme="app-dark"] .app-sidebar a[aria-current="page"] *,
-.alto-contraste .app-sidebar a[aria-current="page"] * {
+[data-theme="app-dark"] .app-sidebar a[aria-current="page"] * {
   color: #4ade80 !important;
 }
 
@@ -2950,17 +2976,47 @@ html[data-semillas-text-size="grande"] {
 
 .dark .app-sidebar a:not([aria-current="page"]),
 [data-theme="app-dark"] .app-sidebar a:not([aria-current="page"]),
-[data-theme="admin-dark"] .app-sidebar a:not([aria-current="page"]),
-.alto-contraste .app-sidebar a:not([aria-current="page"]) {
+[data-theme="admin-dark"] .app-sidebar a:not([aria-current="page"]) {
   color: #94a3b8 !important;
 }
 
 .dark .app-sidebar a:not([aria-current="page"]):hover,
 [data-theme="app-dark"] .app-sidebar a:not([aria-current="page"]):hover,
-[data-theme="admin-dark"] .app-sidebar a:not([aria-current="page"]):hover,
-.alto-contraste .app-sidebar a:not([aria-current="page"]):hover {
+[data-theme="admin-dark"] .app-sidebar a:not([aria-current="page"]):hover {
   background-color: #1e293b !important;
   color: #f8fafc !important;
+}
+
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .app-sidebar {
+  background-color: #ffffff !important;
+  border-right-color: #cbd5e1 !important;
+}
+
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .app-sidebar a:not([aria-current="page"]) {
+  color: #0f172a !important;
+}
+
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .app-sidebar a:not([aria-current="page"]):hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]):not([data-theme="admin-light"]) .app-sidebar a[aria-current="page"] {
+  background-color: #dcfce7 !important;
+  color: #14532d !important;
+}
+
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]):not([data-theme="admin-light"]) .app-sidebar a[aria-current="page"] * {
+  color: #14532d !important;
+}
+
+.alto-contraste[data-theme="admin-light"] .app-sidebar a[aria-current="page"] {
+  background-color: #ede9fe !important;
+  color: #4c1d95 !important;
+}
+
+.alto-contraste[data-theme="admin-light"] .app-sidebar a[aria-current="page"] * {
+  color: #4c1d95 !important;
 }
 
 .dark input,

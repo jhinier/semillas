@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import {
   Check,
+  Copy,
   FileAudio,
   Image,
   Lightbulb,
@@ -39,6 +40,7 @@ interface CrecerContentEditorProps {
   onQuestionsChange: (questions: ReflectionQuestion[]) => void;
   onUpload: (file: File, type: "imagen" | "audio" | "video", metadata: { titulo: string; textoAlternativo: string }) => void;
   onSave: () => void;
+  onOpenReuse?: () => void;
   isPending: boolean;
   isUploading: boolean;
   isSuccess: boolean;
@@ -68,20 +70,31 @@ export function CrecerContentEditor(props: CrecerContentEditorProps) {
     <section className="admin-editor-section">
       <div className="admin-editor-section__header">
         <div><h2>3. Escribe el contenido: {props.activeStep?.nombre ?? "Momento CRECER"}</h2><p>Editando para el grupo <strong>{props.selectedAgeGroup?.nombre ?? "seleccionado"}</strong>. El texto, la imagen y el audio se guardan juntos.</p></div>
-        {props.isDirty ? (
-          <span className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700 dark:bg-amber-950/60 dark:text-amber-300" role="status">
-            <span className="h-2 w-2 rounded-full bg-amber-500" aria-hidden="true" />
-            Cambios sin guardar
-          </span>
-        ) : tieneContenidoValido && props.isSuccess ? (
-          <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300" role="status">
-            <Check size={15} /> Listo y guardado
-          </span>
-        ) : !tieneContenidoValido ? (
-          <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300" role="status">
-            Falta completar
-          </span>
-        ) : null}
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {props.onOpenReuse ? (
+            <button
+              type="button"
+              onClick={props.onOpenReuse}
+              className="admin-secondary-button !min-h-[2.3rem] !px-3 !py-1.5 text-xs"
+            >
+              <Copy size={14} /> Reutilizar contenido
+            </button>
+          ) : null}
+          {props.isDirty ? (
+            <span className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700 dark:bg-amber-950/60 dark:text-amber-300" role="status">
+              <span className="h-2 w-2 rounded-full bg-amber-500" aria-hidden="true" />
+              Cambios sin guardar
+            </span>
+          ) : tieneContenidoValido && props.isSuccess ? (
+            <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300" role="status">
+              <Check size={15} /> Listo y guardado
+            </span>
+          ) : !tieneContenidoValido ? (
+            <span className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300" role="status">
+              Falta completar
+            </span>
+          ) : null}
+        </div>
       </div>
 
       {tipMomento ? (

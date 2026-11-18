@@ -76,3 +76,219 @@ export function obtenerEstadoTema(estado: string) {
       };
   }
 }
+
+export type AccionPasoPendiente = {
+  paso: 1 | 2 | 3 | 4;
+  label: string;
+};
+
+/** Determina únicamente los pasos que tienen criterios o errores reales pendientes para publicar. */
+export function obtenerAccionesPendientesPublicacion(
+  completitud?: {
+    criterios?: Array<{ codigo: string; completo: boolean; detalle?: string | null }>;
+    errores_publicacion?: Array<{ codigo: string; mensaje?: string | null }>;
+  } | null,
+): AccionPasoPendiente[] {
+  const criterios = completitud?.criterios ?? [];
+  const criteriosIncompletos = new Set(criterios.filter((c) => !c.completo).map((c) => c.codigo));
+  const codigosError = new Set((completitud?.errores_publicacion ?? []).map((e) => e.codigo));
+  const detallePublicacion = criterios.find((c) => c.codigo === "publicacion")?.detalle ?? "";
+
+  const acciones: AccionPasoPendiente[] = [];
+
+  const paso1Pendiente =
+    criteriosIncompletos.has("informacion") ||
+    criteriosIncompletos.has("ficha_base") ||
+    criteriosIncompletos.has("publico") ||
+    criteriosIncompletos.has("configuracion") ||
+    codigosError.has("VERSICULO_REQUERIDO") ||
+    codigosError.has("REFERENCIA_BIBLICA_REQUERIDA") ||
+    codigosError.has("TITULO_REQUERIDO") ||
+    codigosError.has("OBJETIVO_REQUERIDO") ||
+    codigosError.has("SENDA_REQUERIDA") ||
+    codigosError.has("FRANJA_REQUERIDA") ||
+    /VERSICULO_REQUERIDO|REFERENCIA_BIBLICA_REQUERIDA|TITULO_REQUERIDO|OBJETIVO_REQUERIDO|SENDA_REQUERIDA|FRANJA_REQUERIDA|vers[ií]culo/i.test(
+      detallePublicacion,
+    );
+
+  const paso2Pendiente =
+    criteriosIncompletos.has("portada") ||
+    codigosError.has("PORTADA_REQUERIDA") ||
+    /PORTADA_REQUERIDA|portada/i.test(detallePublicacion);
+
+  const paso3Pendiente =
+    criteriosIncompletos.has("crecer") ||
+    criteriosIncompletos.has("contenido_crecer") ||
+    Array.from(codigosError).some((c) => c.startsWith("CRECER_")) ||
+    /CRECER_/i.test(detallePublicacion);
+
+  const paso4Pendiente =
+    criteriosIncompletos.has("actividades") ||
+    codigosError.has("ACTIVIDAD_REQUERIDA") ||
+    /ACTIVIDAD_REQUERIDA/i.test(detallePublicacion);
+
+  if (paso1Pendiente) acciones.push({ paso: 1, label: "Revisar Paso 1 (Datos y versículo)" });
+  if (paso2Pendiente) acciones.push({ paso: 2, label: "Revisar Paso 2 (Portada)" });
+  if (paso3Pendiente) acciones.push({ paso: 3, label: "Revisar Paso 3 (CRECER)" });
+  if (paso4Pendiente) acciones.push({ paso: 4, label: "Revisar Paso 4 (Actividades)" });
+
+  if (acciones.length === 0 && criteriosIncompletos.size > 0) {
+    acciones.push({ paso: 1, label: "Revisar Paso 1 (Datos y versículo)" });
+  }
+
+  return acciones;
+}
+
+export type CampoPendientePaso1 = {
+  id: string;
+  seccion: "general" | "versiculo";
+  etiqueta: string;
+  mensajeToast: string;
+};
+
+/** Evalúa qué campos obligatorios del Paso 1 faltan completar al entrar o editar. */
+export function validarCamposObligatoriosPaso1(input: {
+  titulo: string;
+  senda_ids: string[];
+  senda_id: string;
+  version_biblica_id?: string;
+  resumen?: string;
+  objetivo: string;
+  grupo_edad_ids: string[];
+  libro_id: number;
+  capitulo: number;
+  versiculo: number;
+  versiculo_texto: string;
+}) {
+  const tituloLimpio = input.titulo.trim();
+  const sendasCount = input.senda_ids.length || (input.senda_id ? 1 : 0);
+  const versionBiblicaInvalida =
+    input.version_biblica_id !== undefined && !input.version_biblica_id.trim();
+  const resumenLimpio = input.resumen?.trim() ?? "";
+  const resumenInvalido =
+    input.resumen !== undefined && resumenLimpio.length < 10;
+  const objetivoLimpio = input.objetivo.trim();
+  const versiculoTextoLimpio = input.versiculo_texto.trim();
+  const libroNum = Number(input.libro_id);
+  const capituloNum = Number(input.capitulo);
+  const versiculoNum = Number(input.versiculo);
+
+  const tituloInvalido = tituloLimpio.length < 3;
+  const sendaInvalida = sendasCount === 0;
+  const objetivoInvalido = objetivoLimpio.length < 10;
+  const edadesInvalidas = input.grupo_edad_ids.length === 0;
+  const libroInvalido =
+    !Number.isInteger(libroNum) || libroNum < 1 || libroNum > 66;
+  const capituloInvalido =
+    !Number.isInteger(capituloNum) || capituloNum < 1 || capituloNum > 150;
+  const versiculoNumInvalido =
+    !Number.isInteger(versiculoNum) || versiculoNum < 1 || versiculoNum > 176;
+  const versiculoTextoInvalido = versiculoTextoLimpio.length < 3;
+
+  const pendientesGeneral: CampoPendientePaso1[] = [];
+  if (tituloInvalido) {
+    pendientesGeneral.push({
+      id: "tema-titulo",
+      seccion: "general",
+      etiqueta: "Título del tema (mín. 3 letras)",
+      mensajeToast: "título (mínimo 3 letras)",
+    });
+  }
+  if (sendaInvalida) {
+    pendientesGeneral.push({
+      id: "tema-sendas",
+      seccion: "general",
+      etiqueta: "Al menos una senda",
+      mensajeToast: "al menos una senda",
+    });
+  }
+  if (versionBiblicaInvalida) {
+    pendientesGeneral.push({
+      id: "tema-version",
+      seccion: "general",
+      etiqueta: "Versión de la Biblia",
+      mensajeToast: "versión de la Biblia",
+    });
+  }
+  if (resumenInvalido) {
+    pendientesGeneral.push({
+      id: "tema-resumen",
+      seccion: "general",
+      etiqueta: "Resumen breve (mín. 10 letras)",
+      mensajeToast: "resumen corto (mínimo 10 letras)",
+    });
+  }
+  if (objetivoInvalido) {
+    pendientesGeneral.push({
+      id: "tema-objetivo",
+      seccion: "general",
+      etiqueta: "Objetivo de aprendizaje (mín. 10 letras)",
+      mensajeToast: "objetivo de aprendizaje (mínimo 10 letras)",
+    });
+  }
+  if (edadesInvalidas) {
+    pendientesGeneral.push({
+      id: "tema-edades",
+      seccion: "general",
+      etiqueta: "Edades destinatarias",
+      mensajeToast: "al menos una edad",
+    });
+  }
+
+  const pendientesVersiculo: CampoPendientePaso1[] = [];
+  if (libroInvalido) {
+    pendientesVersiculo.push({
+      id: "tema-libro",
+      seccion: "versiculo",
+      etiqueta: "Libro de la Biblia",
+      mensajeToast: "libro de la Biblia",
+    });
+  }
+  if (capituloInvalido) {
+    pendientesVersiculo.push({
+      id: "tema-capitulo",
+      seccion: "versiculo",
+      etiqueta: "Capítulo válido (1–150)",
+      mensajeToast: "capítulo válido",
+    });
+  }
+  if (versiculoNumInvalido) {
+    pendientesVersiculo.push({
+      id: "tema-versiculo",
+      seccion: "versiculo",
+      etiqueta: "Número de versículo (1–176)",
+      mensajeToast: "número de versículo válido",
+    });
+  }
+  if (versiculoTextoInvalido) {
+    pendientesVersiculo.push({
+      id: "tema-versiculo-texto",
+      seccion: "versiculo",
+      etiqueta: "Versículo clave (mín. 3 letras)",
+      mensajeToast: "texto completo del versículo clave (mínimo 3 letras)",
+    });
+  }
+
+  const pendientes = [...pendientesGeneral, ...pendientesVersiculo];
+
+  return {
+    tituloInvalido,
+    sendaInvalida,
+    versionBiblicaInvalida,
+    resumenInvalido,
+    objetivoInvalido,
+    edadesInvalidas,
+    libroInvalido,
+    capituloInvalido,
+    versiculoNumInvalido,
+    versiculoTextoInvalido,
+    tituloLargo: tituloLimpio.length,
+    resumenLargo: resumenLimpio.length,
+    objetivoLargo: objetivoLimpio.length,
+    versiculoTextoLargo: versiculoTextoLimpio.length,
+    pendientesGeneral,
+    pendientesVersiculo,
+    pendientes,
+    esValido: pendientes.length === 0,
+  };
+}

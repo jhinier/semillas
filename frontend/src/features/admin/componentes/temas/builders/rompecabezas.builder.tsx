@@ -39,13 +39,25 @@ export function RompecabezasBuilder({
         label="Filas"
         value={String(configuracion.filas ?? 3)}
         type="number"
-        onChange={(valor) => actualizar("filas", Number(valor))}
+        min={2}
+        max={6}
+        help="Entre 2 y 6 filas (recomendado: 3)."
+        onChange={(valor) => {
+          const num = Number.parseInt(valor, 10);
+          actualizar("filas", Number.isNaN(num) ? 3 : Math.max(2, Math.min(6, num)));
+        }}
       />
       <CampoConfiguracion
         label="Columnas"
         value={String(configuracion.columnas ?? 3)}
         type="number"
-        onChange={(valor) => actualizar("columnas", Number(valor))}
+        min={2}
+        max={6}
+        help="Entre 2 y 6 columnas (recomendado: 3)."
+        onChange={(valor) => {
+          const num = Number.parseInt(valor, 10);
+          actualizar("columnas", Number.isNaN(num) ? 3 : Math.max(2, Math.min(6, num)));
+        }}
       />
     </div>
   );

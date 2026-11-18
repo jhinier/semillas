@@ -1,3 +1,10 @@
+export {
+  AdminStudioField,
+  AvisoSeccionObligatoria,
+  claseContenedorSelectorPaso1,
+  claseTarjetaSelectorPaso1,
+  enfocarCampoPaso1,
+} from './admin-studio-field';
 export { Field } from './Field';
 export { TagInput } from './TagInput';
 export { ThemePreviewCard, PreviewSection } from './ThemePreviewCard';
@@ -30,6 +37,7 @@ export { AdminThemesTabs } from './admin-themes-tabs';
 export { AgeGroupSelector } from './age-group-selector';
 export { CoverImageUpload } from './cover-image-upload';
 export { CrecerContentEditor } from './crecer-content-editor';
+export { CrecerReuseDialog } from './crecer-reuse-dialog';
 export { CrecerStepSelector } from './crecer-step-selector';
 export { CrecerMatrixStatus } from './crecer-matrix-status';
 export type { CrecerMatrixAgeGroup, CrecerMatrixCell, CrecerMatrixCellStatus, CrecerMatrixStep } from './crecer-matrix-status';
@@ -68,7 +76,13 @@ export { ThemeObjetivoCard } from './theme-objetivo-card';
 export type { ThemePreviewHeaderProps } from './theme-preview-header';
 export { ThemePreviewHeader } from './theme-preview-header';
 export { ThemeStatsGrid } from './theme-stats-grid';
-export { formatearFechaHoraTema, formatearFechaTema, obtenerEstadoTema } from './theme-view.utils';
+export {
+  formatearFechaHoraTema,
+  formatearFechaTema,
+  obtenerAccionesPendientesPublicacion,
+  obtenerEstadoTema,
+  validarCamposObligatoriosPaso1,
+} from './theme-view.utils';
 export type { Opcion, ActividadParaEditar } from './use-activity-form-state';
 export { useActivityFormState } from './use-activity-form-state';
 export { usePortadaHandlers } from './use-portada-handlers';

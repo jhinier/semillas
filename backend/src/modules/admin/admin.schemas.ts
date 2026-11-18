@@ -24,6 +24,7 @@ const versiculoClaveInputSchema = z.object({
 
 export const createThemeSchema = z.object({
   senda_id: z.string().uuid(),
+  senda_ids: z.array(z.string().uuid()).min(1).optional(),
   titulo: z.string().min(3).max(120),
   slug: z.string().min(3).max(140),
   objetivo: z.string().min(10),
@@ -38,6 +39,7 @@ export const createThemeSchema = z.object({
 
 export const updateThemeSchema = z.object({
   senda_id: z.string().uuid().optional(),
+  senda_ids: z.array(z.string().uuid()).min(1).optional(),
   titulo: z.string().min(3).max(120).optional(),
   slug: z.string().min(3).max(140).optional(),
   objetivo: z.string().min(10).optional(),
@@ -232,6 +234,16 @@ export const actualizarAjustesSistemaSchema = ajustesSistemaBaseSchema.partial()
   message: "Envía al menos un cambio"
 });
 
+export const updateGrupoEdadSchema = z.object({
+  nombre: z.string().trim().min(2).max(100).optional(),
+  descripcion: z.string().trim().max(300).nullable().optional(),
+  edad_minima: z.number().int().min(1).max(99).optional(),
+  edad_maxima: z.number().int().min(1).max(99).optional()
+}).refine((body) => Object.keys(body).length > 0, {
+  message: "Envía al menos un cambio"
+});
+
+export type UpdateGrupoEdadInput = z.infer<typeof updateGrupoEdadSchema>;
 export type CreateAdminUserInput = z.infer<typeof createAdminUserSchema>;
 export type ReviewListQueryInput = z.infer<typeof reviewListQuerySchema>;
 export type ReportsQueryInput = z.infer<typeof reportsQuerySchema>;

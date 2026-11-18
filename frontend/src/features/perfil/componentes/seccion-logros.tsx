@@ -1,4 +1,5 @@
 import { ArrowRight, BookOpenCheck, Trophy } from "lucide-react";
+import { ResolvedMediaImage } from "@/features/media/resolved-media-image";
 import type { GamificacionMiRespuesta } from "../profile.api";
 
 interface SeccionLogrosProps {
@@ -45,7 +46,11 @@ export function SeccionLogros({
             <article key={item.logro_id} className="profile-achievement-item">
               <span className="profile-achievement-item__icon" aria-hidden="true">
                 {item.logro?.url_icono ? (
-                  <img src={item.logro.url_icono} alt="" />
+                  <ResolvedMediaImage
+                    rawUrl={item.logro.url_icono}
+                    alt=""
+                    renderFallback={() => <Trophy size={22} />}
+                  />
                 ) : (
                   <Trophy size={22} />
                 )}

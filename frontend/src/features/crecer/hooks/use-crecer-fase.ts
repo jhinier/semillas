@@ -1308,7 +1308,13 @@ export function useCrecerFase({ themeId, pasoCodigo }: UseCrecerFaseOptions) {
     queryFn: obtenerMiPerfil,
   });
 
-  const grupoEdadId = meQuery.data?.perfil?.grupo_edad_id ?? undefined;
+  const franjaOverride =
+    typeof localStorage !== "undefined" ? localStorage.getItem("semillas_franja_prueba_id") : null;
+  const grupoEdadId =
+    franjaOverride ||
+    meQuery.data?.perfil?.grupo_edad_id ||
+    (typeof localStorage !== "undefined" ? localStorage.getItem("onboarding_grupo_edad_id") : null) ||
+    undefined;
   const codigoGrupoEdad = useMemo(
     () => resolverCodigoGrupoEdad(grupoEdadId, meQuery.data?.grupos_edad),
     [grupoEdadId, meQuery.data?.grupos_edad],
@@ -1448,7 +1454,7 @@ export function useCrecerFase({ themeId, pasoCodigo }: UseCrecerFaseOptions) {
     if (pasoCodigo === "conectar") {
       const cuerpoDb = exactoPorEdad?.cuerpo?.trim() ?? "";
       const usarCuerpoDb =
-        cuerpoDb.length >= 220 &&
+        cuerpoDb.length > 0 &&
         !(
           claveSenda === "padre" &&
           cuerpoDb.toLowerCase().includes("senda del hijo") &&
@@ -1479,7 +1485,7 @@ export function useCrecerFase({ themeId, pasoCodigo }: UseCrecerFaseOptions) {
       };
     }
 
-    if (!exactoPorEdad) {
+    if (!exactoPorEdad || !exactoPorEdad.cuerpo?.trim()) {
       return {
         id: base?.id ?? `${pasoCodigo}-${claveSenda}-${codigoGrupoEdad}`,
         paso_id: base?.paso_id ?? pasoActual?.id ?? "",

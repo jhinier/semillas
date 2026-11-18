@@ -19,15 +19,24 @@ export function validarPublicacion(datos: DatosPublicacion): ResultadoValidacion
   if (datos.gruposEdadIds.length === 0) errores.push({ codigo: "FRANJA_REQUERIDA", ruta: "gruposEdadIds", mensaje: "Selecciona al menos una franja" });
 
   const matriz = evaluarMatrizCrecer(datos.gruposEdadIds, datos.celdasCrecer);
-  for (const celda of matriz.celdas) {
-    for (const codigo of celda.errores) {
-      errores.push({
-        codigo: `CRECER_${codigo.toUpperCase()}`,
-        ruta: `crecer.${celda.grupoEdadId}.${celda.codigoMomento}`,
-        mensaje: `La celda ${celda.codigoMomento} no está completa`,
-        grupoEdadId: celda.grupoEdadId,
-        momento: celda.codigoMomento,
-      });
+  const gruposCompletos = new Set(
+    datos.gruposEdadIds.filter((grupoEdadId) => {
+      const celdasGrupo = matriz.celdas.filter((c) => c.grupoEdadId === grupoEdadId);
+      return celdasGrupo.length > 0 && celdasGrupo.every((c) => c.errores.length === 0);
+    }),
+  );
+
+  if (gruposCompletos.size === 0) {
+    for (const celda of matriz.celdas) {
+      for (const codigo of celda.errores) {
+        errores.push({
+          codigo: `CRECER_${codigo.toUpperCase()}`,
+          ruta: `crecer.${celda.grupoEdadId}.${celda.codigoMomento}`,
+          mensaje: `La celda ${celda.codigoMomento} no está completa`,
+          grupoEdadId: celda.grupoEdadId,
+          momento: celda.codigoMomento,
+        });
+      }
     }
   }
 

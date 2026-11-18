@@ -77,6 +77,19 @@ describe("normalizarConfiguracionActividad", () => {
       orden_correcto: [0, 1],
     });
   });
+
+  it("completa dimensiones por defecto en rompecabezas (3x3) y sopa_letras (10x10)", () => {
+    expect(normalizarConfiguracionActividad("rompecabezas", { imagen: "https://cdn.ejemplo.com/a.jpg" })).toEqual({
+      imagen: "https://cdn.ejemplo.com/a.jpg",
+      filas: 3,
+      columnas: 3,
+    });
+    expect(normalizarConfiguracionActividad("sopa_letras", { palabras: ["FE", "AMOR"] })).toEqual({
+      palabras: ["FE", "AMOR"],
+      filas: 10,
+      columnas: 10,
+    });
+  });
 });
 
 describe("validarActividadParaGuardar", () => {
@@ -182,5 +195,30 @@ describe("validarActividadParaGuardar", () => {
 
     expect(letraInvalida).toContain("letra");
     expect(accionesInvalidas).toContain("acciones");
+  });
+
+  it("valida dimensiones por defecto y longitud de palabras en sopa_letras y rompecabezas", () => {
+    expect(
+      validarActividadParaGuardar({
+        codigo: "rompecabezas",
+        configuracion: { imagen: "https://cdn.ejemplo.com/puzzle.png" },
+        opciones: [],
+      }),
+    ).toBeNull();
+
+    expect(
+      validarActividadParaGuardar({
+        codigo: "sopa_letras",
+        configuracion: { palabras: ["FE", "AMOR"] },
+        opciones: [],
+      }),
+    ).toBeNull();
+
+    const palabraLarga = validarActividadParaGuardar({
+      codigo: "sopa_letras",
+      configuracion: { palabras: ["FE", "SUPERCALIFRAGILISTICO"], filas: 10, columnas: 10 },
+      opciones: [],
+    });
+    expect(palabraLarga).toContain("supera el tamaño máximo");
   });
 });

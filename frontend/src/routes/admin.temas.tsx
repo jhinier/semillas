@@ -181,9 +181,14 @@ function AdminThemeLibrary() {
           <button
             type="button"
             className="admin-primary-button"
-            onClick={() => navigate({ to: "/admin/temas/new" })}
+            onClick={() =>
+              navigate({
+                to: "/admin/temas/new",
+                search: grupoEdadId ? ({ grupoEdadId } as any) : ({} as any),
+              })
+            }
           >
-            <Plus size={17} /> Crear nuevo tema
+            <Plus size={17} /> {grupoEdadId ? "Crear tema en esta franja" : "Crear nuevo tema"}
           </button>
         </div>
       </section>
@@ -379,7 +384,11 @@ function ThemeLibraryRow({
       actividades: 0,
     },
   };
-  const sendaNombre = typeof tema.senda === "string" ? tema.senda : tema.senda?.nombre ?? "Sin senda";
+  const sendaNombre = Array.isArray(tema.sendas) && tema.sendas.length > 0
+    ? tema.sendas.map((s) => s.nombre).join(" · ")
+    : typeof tema.senda === "string"
+      ? tema.senda
+      : tema.senda?.nombre ?? "Sin senda";
 
   return (
     <article className={`admin-theme-row ${menuOpen ? "admin-theme-row--menu-open" : ""}`}>
@@ -409,7 +418,15 @@ function ThemeLibraryRow({
         </small>
       </div>
       <div className="admin-theme-row__author">
-        <span className="admin-state-pill bg-slate-100 text-slate-600">{stateLabel}</span>
+        <span
+          className={`admin-state-pill ${
+            tema.estado === "publicado"
+              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+              : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+          }`}
+        >
+          {stateLabel}
+        </span>
         <small className="mt-2 block text-[10px] text-slate-400">{formatDate(tema.actualizado_en)}</small>
       </div>
       <div className="admin-theme-row__actions relative">

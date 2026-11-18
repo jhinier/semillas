@@ -1258,23 +1258,23 @@
 }
 
 /* Alto contraste en modo claro para Logros */
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .logro-card__heading h2 {
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .logro-card__heading h2 {
   color: #000000 !important;
 }
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .logro-card__description {
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .logro-card__description {
   color: #1f2937 !important;
 }
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .logro-card__criterion {
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .logro-card__criterion {
   color: #4338ca !important;
 }
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .logros-progress-card__label,
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .logros-next-card p,
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .logros-share-card p {
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .logros-progress-card__label,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .logros-next-card p,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .logros-share-card p {
   color: #1f2937 !important;
 }
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .logros-progress-card h2,
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .logros-next-card h2,
-.alto-contraste:not(.dark):not([data-theme="app-dark"]) .logros-share-card h2 {
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .logros-progress-card h2,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .logros-next-card h2,
+.alto-contraste:not(.dark):not([data-theme="app-dark"]):not([data-theme="admin-dark"]) .logros-share-card h2 {
   color: #000000 !important;
 }
 

@@ -31,6 +31,8 @@ function PaginaTemas() {
     temaParaContinuar,
     temaRecomendado,
     grupoEdadActivo,
+    gruposEdadDisponibles,
+    cambiarGrupoEdad,
     isLoading,
     isError,
     filtroTab,
@@ -63,14 +65,35 @@ function PaginaTemas() {
         </div>
 
         <div className="temas-page__filters" aria-label="Filtros de temas">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-emerald-200/80 bg-emerald-50/70 px-3.5 py-2 text-xs text-emerald-950 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-100">
-            <span className="inline-flex items-center gap-1.5 font-extrabold">
-              <Sparkles className="size-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
-              Franja de edad activa: {grupoEdadActivo.nombre} ({grupoEdadActivo.rango})
-            </span>
-            <span className="font-semibold text-emerald-800/90 dark:text-emerald-300">
-              3 Sendas adaptadas a tu edad · {grupoEdadActivo.enfoque} · Metodología CRECER
-            </span>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-emerald-200/80 bg-emerald-50/70 px-3.5 py-2.5 text-xs text-emerald-950 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-100">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 font-extrabold">
+                <Sparkles className="size-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+                Franja activa: {grupoEdadActivo.nombre} ({grupoEdadActivo.rango})
+              </span>
+              <span className="font-semibold text-emerald-800/90 dark:text-emerald-300">
+                · {grupoEdadActivo.enfoque}
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Cambiar franja de edad">
+              {gruposEdadDisponibles.map((grupo) => {
+                const activa = grupo.id === grupoEdadActivo.id || grupo.codigo === grupoEdadActivo.codigo;
+                return (
+                  <button
+                    key={grupo.id}
+                    type="button"
+                    onClick={() => cambiarGrupoEdad(grupo.id)}
+                    className={`rounded-full px-2.5 py-1 text-[11px] font-extrabold transition ${
+                      activa
+                        ? "bg-emerald-600 text-white shadow-sm"
+                        : "border border-emerald-300/80 bg-white/80 text-emerald-900 hover:bg-white dark:border-emerald-700 dark:bg-slate-900/70 dark:text-emerald-200"
+                    }`}
+                  >
+                    {grupo.nombre}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <SendaFilterRow

@@ -104,7 +104,12 @@ const limitarAutenticado = crearRateLimitMiddleware("autenticado");
 const limitarSensible = crearRateLimitMiddleware("sensible");
 app.use("*", async (c, next) => {
   const ruta = new URL(c.req.url).pathname;
-  const sensible = ruta === "/autenticacion/invitado" || ruta.includes("/vincular-cuenta") || ruta === "/media/subir" || ruta.startsWith("/administracion");
+  const esLectura = c.req.method === "GET" || c.req.method === "HEAD" || c.req.method === "OPTIONS";
+  const sensible =
+    ruta === "/autenticacion/invitado" ||
+    ruta.includes("/vincular-cuenta") ||
+    ruta === "/media/subir" ||
+    (ruta.startsWith("/administracion") && !esLectura);
   const autenticado = !sensible && (c.req.header("authorization") || c.req.header("x-guest-user-id"));
   return (sensible ? limitarSensible : autenticado ? limitarAutenticado : limitarPublico)(c, next);
 });

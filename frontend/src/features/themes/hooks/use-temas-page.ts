@@ -4,7 +4,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { obtenerTemas, resolverGrupoCodigo } from "@/features/themes/themes.api";
 import { obtenerMiProgreso } from "@/features/progress/progress.api";
 import { obtenerMiPerfil } from "@/features/perfil/profile.api";
-import { GRUPOS_EDAD_OFFLINE } from "@/features/catalog/catalog.api";
+import { GRUPOS_EDAD_OFFLINE, obtenerGruposEdad } from "@/features/catalog/catalog.api";
 import { usePortadasFirmadas } from "@/features/themes/hooks/usePortadasFirmadas";
 import { normalizarSenda } from "@/features/themes/componentes/senda-filter-row";
 import { leerFavoritos, guardarFavoritos, mapearTema } from "@/features/themes/utils/temas-favorites.utils";
@@ -22,23 +22,44 @@ export function useTemasPage({ searchSenda }: UseTemasPageOptions = {}) {
   const [filtroTab, setFiltroTab] = useState<FiltroTab>("todos");
   const [busqueda, setBusqueda] = useState("");
   const [favoritosLocales, setFavoritosLocales] = useState<Record<string, boolean>>(leerFavoritos);
+  const [franjaManualId, setFranjaManualId] = useState<string | null>(() =>
+    typeof localStorage !== "undefined" ? localStorage.getItem("semillas_franja_prueba_id") : null,
+  );
 
   const meQuery = useQuery({
     queryKey: ["me"],
     queryFn: obtenerMiPerfil,
     staleTime: 1000 * 60 * 3,
   });
+  const gruposQuery = useQuery({
+    queryKey: ["catalog", "age-groups"],
+    queryFn: obtenerGruposEdad,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const gruposEdadDisponibles = useMemo(() => {
+    if (gruposQuery.data?.length) return gruposQuery.data;
+    if (meQuery.data?.grupos_edad?.length) return meQuery.data.grupos_edad;
+    return GRUPOS_EDAD_OFFLINE;
+  }, [gruposQuery.data, meQuery.data?.grupos_edad]);
 
   const grupoEdadId =
+    franjaManualId ||
     meQuery.data?.perfil?.grupo_edad_id ||
     (typeof localStorage !== "undefined" ? localStorage.getItem("onboarding_grupo_edad_id") : null) ||
     undefined;
 
+  const cambiarGrupoEdad = useCallback((nuevoGrupoId: string) => {
+    setFranjaManualId(nuevoGrupoId);
+    try {
+      localStorage.setItem("semillas_franja_prueba_id", nuevoGrupoId);
+    } catch {
+      // ignorar
+    }
+  }, []);
+
   const grupoEdadActivo = useMemo(() => {
-    const grupos =
-      meQuery.data?.grupos_edad && meQuery.data.grupos_edad.length > 0
-        ? meQuery.data.grupos_edad
-        : GRUPOS_EDAD_OFFLINE;
+    const grupos = gruposEdadDisponibles;
 
     const codigoGrupo = resolverGrupoCodigo(grupoEdadId);
     const encontrado = grupos.find(
@@ -62,11 +83,12 @@ export function useTemasPage({ searchSenda }: UseTemasPageOptions = {}) {
         nombre: encontrado.nombre || (codigo === "embajadores" ? "Embajadores" : codigo === "exploradores" ? "Exploradores" : "Semillas"),
         rango: `${min} a ${max} años`,
         enfoque:
-          codigo === "embajadores"
+          encontrado.descripcion ||
+          (codigo === "embajadores"
             ? "Reflexión profunda, carácter y liderazgo"
             : codigo === "exploradores"
               ? "Retos bíblicos, descubrimientos y acción"
-              : "Historias interactivas, canciones y juegos",
+              : "Historias interactivas, canciones y juegos"),
       };
     }
 
@@ -97,11 +119,11 @@ export function useTemasPage({ searchSenda }: UseTemasPageOptions = {}) {
       rango: "5 a 8 años",
       enfoque: "Historias interactivas, canciones y juegos",
     };
-  }, [grupoEdadId, meQuery.data?.grupos_edad]);
+  }, [grupoEdadId, gruposEdadDisponibles]);
 
   const { data: temasApi, isLoading, isError } = useQuery({
-    queryKey: ["temas", grupoEdadActivo.codigo],
-    queryFn: () => obtenerTemas({ grupo_edad_id: grupoEdadActivo.codigo || grupoEdadActivo.id }),
+    queryKey: ["temas", grupoEdadActivo.id || grupoEdadActivo.codigo],
+    queryFn: () => obtenerTemas({ grupo_edad_id: grupoEdadActivo.id || grupoEdadActivo.codigo }),
     staleTime: 1000 * 60 * 3,
   });
 
@@ -157,7 +179,9 @@ export function useTemasPage({ searchSenda }: UseTemasPageOptions = {}) {
         (filtroTab === "progreso" && tema.estado === "enProgreso") ||
         (filtroTab === "favoritos" && tema.favorito);
 
-      const cumpleSenda = !searchSenda || normalizarSenda(tema.senda) === searchSenda;
+      const nombresSendaTema = tema.sendas?.length ? tema.sendas : [tema.senda];
+      const cumpleSenda =
+        !searchSenda || nombresSendaTema.some((nombre) => normalizarSenda(nombre) === searchSenda);
 
       return cumpleBusqueda && cumpleTab && cumpleSenda;
     });
@@ -194,6 +218,8 @@ export function useTemasPage({ searchSenda }: UseTemasPageOptions = {}) {
     temaParaContinuar,
     temaRecomendado,
     grupoEdadActivo,
+    gruposEdadDisponibles,
+    cambiarGrupoEdad,
     isLoading,
     isError,
     filtroTab,

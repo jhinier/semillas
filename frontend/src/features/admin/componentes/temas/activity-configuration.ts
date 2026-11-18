@@ -184,9 +184,59 @@ export function normalizarConfiguracionActividad(
       ? configuracion.letra.split(/\r?\n/)
       : obtenerArreglo(configuracion.letra).filter((linea): linea is string => typeof linea === "string");
 
-    return {
+    const base: ConfiguracionActividad = {
       ...configuracion,
       letra: letra.map((linea) => linea.trim()).filter(Boolean),
+    };
+
+    if (!esTextoNoVacio(base.audio_url) && esTextoNoVacio(base.cancion_url)) {
+      base.audio_url = base.cancion_url.trim();
+    }
+
+    return base;
+  }
+
+  if (codigo === "rompecabezas") {
+    const filas = typeof configuracion.filas === "number" && !Number.isNaN(configuracion.filas)
+      ? configuracion.filas
+      : 3;
+    const columnas = typeof configuracion.columnas === "number" && !Number.isNaN(configuracion.columnas)
+      ? configuracion.columnas
+      : 3;
+    return {
+      ...configuracion,
+      filas,
+      columnas,
+    };
+  }
+
+  if (codigo === "sopa_letras") {
+    const filas = typeof configuracion.filas === "number" && !Number.isNaN(configuracion.filas)
+      ? configuracion.filas
+      : 10;
+    const columnas = typeof configuracion.columnas === "number" && !Number.isNaN(configuracion.columnas)
+      ? configuracion.columnas
+      : 10;
+    return {
+      ...configuracion,
+      filas,
+      columnas,
+    };
+  }
+
+  if (codigo === "actividad_video" || codigo === "video") {
+    const opcionesRaw = obtenerArreglo(configuracion.opciones);
+    const indiceCorrectoPrevio = opcionesRaw.findIndex(esOpcionCorrecta);
+    const respuestaCorrecta =
+      typeof configuracion.respuesta_correcta === "number" && Number.isInteger(configuracion.respuesta_correcta) && configuracion.respuesta_correcta >= 0
+        ? configuracion.respuesta_correcta
+        : indiceCorrectoPrevio >= 0
+          ? indiceCorrectoPrevio
+          : 0;
+
+    return {
+      ...configuracion,
+      respuesta_correcta: respuestaCorrecta,
     };
   }
 
@@ -203,7 +253,9 @@ export function validarActividadParaGuardar({
 
   if (codigo === "rompecabezas") {
     if (!esTextoNoVacio(configuracion.imagen)) return "El rompecabezas requiere una imagen.";
-    if (!esEnteroEnRango(configuracion.filas, 2, 6) || !esEnteroEnRango(configuracion.columnas, 2, 6)) return "El rompecabezas requiere filas y columnas enteras entre 2 y 6.";
+    const filas = configuracion.filas === undefined ? 3 : configuracion.filas;
+    const columnas = configuracion.columnas === undefined ? 3 : configuracion.columnas;
+    if (!esEnteroEnRango(filas, 2, 6) || !esEnteroEnRango(columnas, 2, 6)) return "El rompecabezas requiere filas y columnas enteras entre 2 y 6.";
   }
 
   if (codigo === "completar_versiculo") {
@@ -218,7 +270,14 @@ export function validarActividadParaGuardar({
   if (codigo === "sopa_letras") {
     const palabras = obtenerArreglo(configuracion.palabras).filter(esTextoNoVacio);
     if (palabras.length < 2) return "La sopa de letras requiere al menos dos palabras.";
-    if (!esEnteroEnRango(configuracion.filas, 6, 18) || !esEnteroEnRango(configuracion.columnas, 6, 18)) return "La sopa de letras requiere filas y columnas enteras entre 6 y 18.";
+    const filas = configuracion.filas === undefined ? 10 : configuracion.filas;
+    const columnas = configuracion.columnas === undefined ? 10 : configuracion.columnas;
+    if (!esEnteroEnRango(filas, 6, 18) || !esEnteroEnRango(columnas, 6, 18)) return "La sopa de letras requiere filas y columnas enteras entre 6 y 18.";
+    const maxDimension = Math.max(filas as number, columnas as number);
+    const palabraDemasiadoLarga = palabras.find((p) => p.trim().replace(/\s+/g, "").length > maxDimension);
+    if (palabraDemasiadoLarga) {
+      return `La palabra "${palabraDemasiadoLarga.trim()}" supera el tamaño máximo del tablero (${maxDimension} casillas). Aumenta las filas o columnas.`;
+    }
   }
 
   if (codigo === "manualidad") {
@@ -250,14 +309,15 @@ export function validarActividadParaGuardar({
     if (opcionesValidas.filter(esOpcionCorrecta).length !== 1) return "La actividad de audio requiere exactamente una respuesta correcta.";
   }
 
-  if (codigo === "actividad_video") {
+  if (codigo === "actividad_video" || codigo === "video") {
     if (!esTextoNoVacio(configuracion.video_url)) return "La actividad requiere una URL del video.";
     if (!esTextoNoVacio(configuracion.pregunta)) return "La actividad de video requiere una pregunta.";
 
-    const opciones = obtenerArreglo(configuracion.opciones).filter(esTextoNoVacio);
+    const opciones = obtenerArreglo(configuracion.opciones).filter((op) => esTextoNoVacio(obtenerTexto(op)));
     if (opciones.length < 2) return "La actividad de video requiere al menos dos opciones.";
 
-    if (!esEnteroEnRango(configuracion.respuesta_correcta, 0, opciones.length - 1)) return "La actividad de video requiere una respuesta correcta válida.";
+    const respuestaCorrecta = configuracion.respuesta_correcta === undefined ? 0 : configuracion.respuesta_correcta;
+    if (!esEnteroEnRango(respuestaCorrecta, 0, opciones.length - 1)) return "La actividad de video requiere una respuesta correcta válida.";
   }
 
   if (codigo === "cuestionario") {
@@ -287,6 +347,10 @@ export function validarActividadParaGuardar({
 
     const acciones = configuracion.acciones;
     if (acciones !== undefined && (!Array.isArray(acciones) || !acciones.every(esTextoNoVacio))) return "La canción requiere acciones textuales.";
+
+    const tieneAudio = esTextoNoVacio(configuracion.audio_url) || esTextoNoVacio(configuracion.cancion_url);
+    if (!tieneAudio) return "La canción requiere seleccionar o subir un audio válido.";
+    if (!Array.isArray(letra) || letra.filter(esTextoNoVacio).length < 1) return "La canción requiere al menos una línea en la letra.";
   }
 
   return null;

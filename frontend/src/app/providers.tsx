@@ -59,7 +59,7 @@ function AuthBootstrap({ children }: { children: ReactNode }) {
 
     if (!tieneSesion || esRutaPublica) {
       limpiarPreferenciasSesion();
-    } else {
+    } else if (!sessionStorageApi.getAccessToken()) {
       aplicarPreferenciasDispositivo();
     }
   }, []);

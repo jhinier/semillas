@@ -217,7 +217,8 @@
   color: #51627d;
   font-size: clamp(1rem, 3.8vw, 1.12rem);
   line-height: 1.72;
-  white-space: pre-line;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .crecer-focus__activities {
   display: flex;

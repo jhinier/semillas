@@ -56,3 +56,10 @@ test("exige narración completa para Semillas", () => {
   expect(resultado.valido).toBe(false);
   expect(resultado.errores).toContainEqual(expect.objectContaining({ codigo: "NARRACION_SEMILLAS_REQUERIDA" }));
 });
+
+test("permite publicar si al menos una franja tiene sus seis momentos CRECER completos", () => {
+  const datos = datosBase();
+  datos.gruposEdadIds = ["g1", "g2"];
+  const resultado = validarPublicacion(datos);
+  expect(resultado).toEqual({ valido: true, errores: [] });
+});

@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useBlocker, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 
-import { obtenerPasosAdmin, guardarParlante, obtenerTemaAdmin } from "../admin.api";
+import { asegurarGrupoEdadEnTema, obtenerPasosAdmin, guardarParlante, obtenerTemaAdmin } from "../admin.api";
 import { obtenerGruposEdad, obtenerPasosCrecer } from "../../catalog/catalog.api";
 import {
   obtenerRecursosMultimedia,
@@ -28,8 +28,9 @@ export type CrecerDraft = {
 type SubirImagen = (archivo: File, tipo: "imagen") => Promise<Pick<RecursoMultimedia, "id">>;
 type ObtenerUrlFirmada = (recursoId: string) => Promise<{ url: string }>;
 type DraftState = { themeId: string; items: Record<string, CrecerDraft> };
-type StepRecord = {
-  tipo_paso?: { codigo: string } | null;
+export type StepRecord = {
+  orden?: number;
+  tipo_paso?: { id?: string; codigo: string; nombre?: string } | null;
   contenidos?: Array<{
     grupo_edad_id: string;
     titulo?: string | null;
@@ -43,6 +44,16 @@ type StepRecord = {
     pregunta: string;
     orden: number;
   }> | null;
+};
+
+export type MomentoCrecerReutilizable = {
+  key: string;
+  stepCode: string;
+  stepName: string;
+  stepOrder: number;
+  ageGroupId: string;
+  ageGroupName: string;
+  draft: CrecerDraft;
 };
 
 type SaveDraftVariables = {
@@ -125,28 +136,118 @@ function crearBorradorVacio(): CrecerDraft {
   };
 }
 
+export function esContenidoCrecerValido(
+  content?: { titulo?: string | null; cuerpo?: string | null } | null,
+): boolean {
+  return Boolean(
+    content?.titulo?.trim() &&
+      content?.cuerpo?.trim() &&
+      content.cuerpo !== "Contenido pendiente...",
+  );
+}
+
+export function construirBorradorDesdeStepRecord(
+  stepRecord: StepRecord | undefined,
+  ageGroupId: string,
+): CrecerDraft {
+  if (!stepRecord || !ageGroupId) return crearBorradorVacio();
+  const content = stepRecord.contenidos?.find((item) => item.grupo_edad_id === ageGroupId);
+  const questions = (stepRecord.preguntas ?? [])
+    .filter((question) => question.grupo_edad_id === ageGroupId)
+    .sort((left, right) => left.orden - right.orden)
+    .map((question, index) => ({ pregunta: question.pregunta, orden: index + 1 }));
+
+  return {
+    title: content?.cuerpo?.trim() ? (content?.titulo ?? "") : "",
+    body: content?.cuerpo?.trim() ? content.cuerpo : "",
+    shortInstruction: content?.instruccion_corta ?? "",
+    resourceId: content?.recurso_id ?? null,
+    audioResourceId: content?.recurso_audio_id ?? null,
+    questions,
+  };
+}
+
+export function extraerMomentosReutilizables(
+  stepsData: StepRecord[] | undefined,
+  ageGroups: Array<{ id: string; nombre: string }>,
+): MomentoCrecerReutilizable[] {
+  if (!stepsData?.length) return [];
+  const ageGroupNames = new Map(ageGroups.map((g) => [g.id, g.nombre]));
+  const items: MomentoCrecerReutilizable[] = [];
+
+  for (const step of stepsData) {
+    const stepCode = step.tipo_paso?.codigo ?? "";
+    if (!stepCode) continue;
+    const stepName = step.tipo_paso?.nombre ?? stepCode;
+    const stepOrder = step.orden ?? 0;
+
+    for (const content of step.contenidos ?? []) {
+      if (!esContenidoCrecerValido(content)) continue;
+      items.push({
+        key: `${content.grupo_edad_id}${DRAFT_KEY_SEPARATOR}${stepCode}`,
+        stepCode,
+        stepName,
+        stepOrder,
+        ageGroupId: content.grupo_edad_id,
+        ageGroupName: ageGroupNames.get(content.grupo_edad_id) ?? "Franja",
+        draft: construirBorradorDesdeStepRecord(step, content.grupo_edad_id),
+      });
+    }
+  }
+
+  return items.sort((a, b) => a.stepOrder - b.stepOrder || a.ageGroupName.localeCompare(b.ageGroupName, "es"));
+}
+
+export function planificarCopiaFranjaCrecer(params: {
+  sourceSteps: StepRecord[] | undefined;
+  targetSteps: StepRecord[] | undefined;
+  sourceAgeGroupId: string;
+  targetAgeGroupId: string;
+  pasosCatalog: Array<{ id: string; codigo: string; nombre: string }>;
+  overwriteExisting: boolean;
+}) {
+  const { sourceSteps, targetSteps, sourceAgeGroupId, targetAgeGroupId, pasosCatalog, overwriteExisting } = params;
+  if (!sourceSteps?.length || !sourceAgeGroupId || !targetAgeGroupId) return [];
+
+  const plan: Array<{
+    key: string;
+    stepCode: string;
+    stepName: string;
+    stepTypeId: string;
+    draft: CrecerDraft;
+  }> = [];
+
+  for (const pasoCatalogo of pasosCatalog) {
+    const sourceStep = sourceSteps.find((s) => s.tipo_paso?.codigo === pasoCatalogo.codigo);
+    const sourceContent = sourceStep?.contenidos?.find((c) => c.grupo_edad_id === sourceAgeGroupId);
+    if (!esContenidoCrecerValido(sourceContent)) continue;
+
+    if (!overwriteExisting) {
+      const targetStep = targetSteps?.find((s) => s.tipo_paso?.codigo === pasoCatalogo.codigo);
+      const targetContent = targetStep?.contenidos?.find((c) => c.grupo_edad_id === targetAgeGroupId);
+      if (esContenidoCrecerValido(targetContent)) continue;
+    }
+
+    plan.push({
+      key: crearClaveBorradorCrecer(targetAgeGroupId, pasoCatalogo.codigo),
+      stepCode: pasoCatalogo.codigo,
+      stepName: pasoCatalogo.nombre,
+      stepTypeId: pasoCatalogo.id,
+      draft: construirBorradorDesdeStepRecord(sourceStep, sourceAgeGroupId),
+    });
+  }
+
+  return plan;
+}
+
 function crearBorradorServidor(
   stepsData: StepRecord[] | undefined,
   ageGroupId: string,
   stepCode: string,
 ): CrecerDraft {
   if (!ageGroupId || !stepCode) return crearBorradorVacio();
-
   const stepRecord = stepsData?.find((step) => step.tipo_paso?.codigo === stepCode);
-  const content = stepRecord?.contenidos?.find((item) => item.grupo_edad_id === ageGroupId);
-  const questions = (stepRecord?.preguntas ?? [])
-    .filter((question) => question.grupo_edad_id === ageGroupId)
-    .sort((left, right) => left.orden - right.orden)
-    .map((question, index) => ({ pregunta: question.pregunta, orden: index + 1 }));
-
-  return {
-    title: content?.titulo ?? "",
-    body: content?.cuerpo ?? "",
-    shortInstruction: content?.instruccion_corta ?? "",
-    resourceId: content?.recurso_id ?? null,
-    audioResourceId: content?.recurso_audio_id ?? null,
-    questions,
-  };
+  return construirBorradorDesdeStepRecord(stepRecord, ageGroupId);
 }
 
 function storageKey(themeId: string) {
@@ -360,15 +461,13 @@ export function useThemeCrecerPage({ themeId }: UseThemeCrecerPageProps) {
     enableBeforeUnload: hasUnsavedChanges,
   });
 
-  const saveMutation = useMutation({
-    mutationFn: ({ ageGroupId, stepCode, draft }: SaveDraftVariables) => {
-      const stepType = crecerStepsQuery.data?.find((step) => step.codigo === stepCode);
-      if (!stepType || !ageGroupId) throw new Error("Selecciona una franja y un paso");
+  const persistirMomento = useCallback(
+    async (stepTypeId: string, ageGroupId: string, draft: CrecerDraft) => {
       const validationError = validarContenidoCrecer(draft.title, draft.body);
       if (validationError) throw new Error(validationError);
 
       return guardarParlante(themeId, {
-        tipo_paso_id: stepType.id,
+        tipo_paso_id: stepTypeId,
         grupo_edad_id: ageGroupId,
         titulo: draft.title.trim(),
         cuerpo: draft.body.trim(),
@@ -381,8 +480,20 @@ export function useThemeCrecerPage({ themeId }: UseThemeCrecerPageProps) {
           .map((question, index) => ({ pregunta: question.pregunta.trim(), orden: index + 1 })),
       });
     },
+    [themeId],
+  );
+
+  const saveMutation = useMutation({
+    mutationFn: async ({ ageGroupId, stepCode, draft }: SaveDraftVariables) => {
+      const stepType = crecerStepsQuery.data?.find((step) => step.codigo === stepCode);
+      if (!stepType || !ageGroupId) throw new Error("Selecciona una franja y un paso");
+      const resultado = await persistirMomento(stepType.id, ageGroupId, draft);
+      await asegurarGrupoEdadEnTema(themeId, ageGroupId, theme?.grupos_edad);
+      return resultado;
+    },
     onSuccess: async (_, variables) => {
       await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "theme", themeId] }),
         queryClient.invalidateQueries({ queryKey: ["admin", "theme", themeId, "steps"] }),
         queryClient.invalidateQueries({ queryKey: ["admin", "theme", themeId, "studio"] }),
       ]);
@@ -448,6 +559,89 @@ export function useThemeCrecerPage({ themeId }: UseThemeCrecerPageProps) {
     onError: (error) => toast.error(error instanceof Error ? error.message : "No se pudo subir el recurso"),
   });
 
+  const applyReusedMoment = useCallback(
+    (sourceDraft: CrecerDraft, sourceLabel?: string) => {
+      if (!currentDraftKey) {
+        toast.error("Selecciona primero una franja de edad y un momento");
+        return;
+      }
+      updateCurrentDraft((actual) => ({
+        title: sourceDraft.title,
+        body: sourceDraft.body,
+        shortInstruction: sourceDraft.shortInstruction,
+        resourceId: sourceDraft.resourceId,
+        audioResourceId: sourceDraft.audioResourceId,
+        questions:
+          activeStepCode === "experimentar"
+            ? sourceDraft.questions.map((q, idx) => ({ pregunta: q.pregunta, orden: idx + 1 }))
+            : actual.questions,
+      }));
+      toast.success(
+        sourceLabel
+          ? `Contenido cargado desde ${sourceLabel}. Puedes adaptarlo y pulsar «Guardar este momento».`
+          : "Contenido cargado en el editor. Adáptalo si deseas y guarda este momento.",
+      );
+    },
+    [activeStepCode, currentDraftKey, updateCurrentDraft],
+  );
+
+  const copyAgeGroupMutation = useMutation({
+    mutationFn: async ({
+      sourceSteps,
+      sourceAgeGroupId,
+      overwriteExisting,
+      sourceLabel,
+    }: {
+      sourceSteps: StepRecord[] | undefined;
+      sourceAgeGroupId: string;
+      overwriteExisting: boolean;
+      sourceLabel: string;
+    }) => {
+      if (!selectedAgeGroupId) throw new Error("Selecciona la franja destino");
+      const plan = planificarCopiaFranjaCrecer({
+        sourceSteps,
+        targetSteps: stepsQuery.data,
+        sourceAgeGroupId,
+        targetAgeGroupId: selectedAgeGroupId,
+        pasosCatalog: crecerStepsQuery.data ?? [],
+        overwriteExisting,
+      });
+      if (plan.length === 0) {
+        return { copiedCount: 0, keys: [] as string[], sourceLabel };
+      }
+
+      for (const item of plan) {
+        await persistirMomento(item.stepTypeId, selectedAgeGroupId, item.draft);
+      }
+      await asegurarGrupoEdadEnTema(themeId, selectedAgeGroupId, theme?.grupos_edad);
+      return { copiedCount: plan.length, keys: plan.map((item) => item.key), sourceLabel };
+    },
+    onSuccess: async (resultado) => {
+      if (resultado.copiedCount === 0) {
+        toast.info("Los momentos de esta franja ya estaban completos; activa «Sobrescribir todos» si deseas reemplazarlos.");
+        return;
+      }
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "theme", themeId] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "theme", themeId, "steps"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "theme", themeId, "studio"] }),
+      ]);
+      setDraftState((current) => {
+        if (current.themeId !== themeId) return current;
+        const nextItems = { ...current.items };
+        for (const key of resultado.keys) {
+          delete nextItems[key];
+        }
+        return { ...current, items: nextItems };
+      });
+      toast.success(
+        `Se ${resultado.copiedCount === 1 ? "copió 1 momento" : `copiaron ${resultado.copiedCount} momentos`} desde ${resultado.sourceLabel} hacia ${selectedAgeGroup?.nombre ?? "esta franja"}.`,
+      );
+    },
+    onError: (error) =>
+      toast.error(error instanceof Error ? error.message : "No se pudieron copiar los momentos de la franja"),
+  });
+
   const handleSubirImagenMarkdown = async (archivo: File) => {
     const url = await subirImagenMarkdown(archivo);
     await queryClient.invalidateQueries({ queryKey: ["admin", "media"] });
@@ -457,7 +651,7 @@ export function useThemeCrecerPage({ themeId }: UseThemeCrecerPageProps) {
 
   const pasos = crecerStepsQuery.data ?? [];
   const totalPasos = pasos.length || 6;
-  const pasosCompletos = pasos.filter((step) => selectedAgeGroupId && stepsQuery.data?.some((contentStep) => contentStep.tipo_paso?.codigo === step.codigo && contentStep.contenidos?.some((content) => content.grupo_edad_id === selectedAgeGroupId && content.titulo?.trim() && content.cuerpo?.trim()))).length;
+  const pasosCompletos = pasos.filter((step) => selectedAgeGroupId && stepsQuery.data?.some((contentStep) => contentStep.tipo_paso?.codigo === step.codigo && contentStep.contenidos?.some((content) => content.grupo_edad_id === selectedAgeGroupId && esContenidoCrecerValido(content)))).length;
   const progreso = selectedAgeGroupId ? Math.round((pasosCompletos / totalPasos) * 100) : 0;
   const media = mediaQuery.data ?? [];
   const selectedResource = media.find((resource) => resource.id === currentDraft.resourceId) ?? null;
@@ -494,8 +688,8 @@ export function useThemeCrecerPage({ themeId }: UseThemeCrecerPageProps) {
     audioResourceId: currentDraft.audioResourceId, setAudioResourceId,
     questions: currentDraft.questions, setQuestions,
     selectedResource, selectedAudio, media,
-    themeQuery, portadaQuery, stepsQuery, ageGroupsQuery, crecerStepsQuery, mediaQuery, saveMutation, uploadMutation,
-    handleSubirImagenMarkdown, saveCurrentDraft, saveCurrentDraftAsync,
+    themeQuery, portadaQuery, stepsQuery, ageGroupsQuery, crecerStepsQuery, mediaQuery, saveMutation, uploadMutation, copyAgeGroupMutation,
+    handleSubirImagenMarkdown, saveCurrentDraft, saveCurrentDraftAsync, applyReusedMoment,
     isCurrentDirty, isCurrentSaved, hasUnsavedChanges, unsavedDraftCount,
     hasDraftForStep, hasDraftForAgeGroup, hasDraftForCell,
     handleBack: () => navigate({ to: "/admin/temas/$themeId/detalle", params: { themeId } }),

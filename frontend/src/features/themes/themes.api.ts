@@ -386,22 +386,7 @@ export async function obtenerTemas(params?: { senda_id?: string; grupo_edad_id?:
       autenticar: false,
     });
 
-    let temasFinales = remotos;
-    // Si el backend retornó temas y el usuario es de exploradores o embajadores,
-    // verificar si los temas remotos son exclusivamente el set estándar de semillas
-    if (codigoGrupo !== "semillas" && remotos.length > 0) {
-      const todosSonSemillas = remotos.every(
-        (t) =>
-          t.slug === "el-amor-de-dios" ||
-          t.slug === "jesus-ensena-con-parabolas" ||
-          t.slug === "los-frutos-del-espiritu",
-      );
-      if (todosSonSemillas) {
-        temasFinales = TEMAS_POR_GRUPO_EDAD[codigoGrupo];
-      }
-    } else if (remotos.length === 0) {
-      temasFinales = TEMAS_POR_GRUPO_EDAD[codigoGrupo];
-    }
+    const temasFinales = Array.isArray(remotos) ? remotos : [];
 
     const cacheKey = `${CACHE_TEMAS_LIST_KEY}:${codigoGrupo}`;
     guardarJsonLocal(cacheKey, temasFinales);

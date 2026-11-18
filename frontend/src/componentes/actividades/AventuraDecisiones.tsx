@@ -4,7 +4,7 @@ import { playSound } from "../../lib/audio";
 import { ChevronRight, ShieldAlert, X } from "lucide-react";
 import imagenDefault from "../../assets/images/Ilustraciones/Exploradores.webp";
 import { CompletadoCard } from "./CompletadoCard";
-import { obtenerIlustracionFallback } from "@/features/media/use-resolved-media-url";
+import { obtenerIlustracionFallback, useResolvedMediaUrl } from "@/features/media/use-resolved-media-url";
 
 interface AventuraDecisionesProps {
   actividad: Actividad;
@@ -19,6 +19,7 @@ interface OpcionDecision {
 interface EscenaDecision {
   texto: string;
   imagen_url?: string;
+  imagen_recurso_id?: string | null;
   opciones?: OpcionDecision[];
 }
 
@@ -49,10 +50,16 @@ export function AventuraDecisiones({ actividad, onComplete }: AventuraDecisiones
         ];
 
   const escenaActual = escenas[escenaActualIndex]!;
-  const rawImg = escenaActual.imagen_url?.startsWith("/src/assets/")
+  const rawNormalizedUrl = escenaActual.imagen_url?.startsWith("/src/assets/")
     ? obtenerIlustracionFallback(escenaActual.imagen_url)
-    : escenaActual.imagen_url || imagenDefault;
-  const imgSrc = imgFallbackMap[escenaActualIndex] || rawImg;
+    : escenaActual.imagen_url || null;
+  const resolvedMedia = useResolvedMediaUrl({
+    resourceId: escenaActual.imagen_recurso_id ?? null,
+    rawUrl: rawNormalizedUrl,
+    fallbackHint: escenaActual.texto || actividad.titulo,
+    useFallbackOnError: Boolean(rawNormalizedUrl || escenaActual.imagen_recurso_id),
+  });
+  const imgSrc = imgFallbackMap[escenaActualIndex] || resolvedMedia.src || rawNormalizedUrl || imagenDefault;
 
   const handleSeleccionarOpcion = (opcion: OpcionDecision, index: number) => {
     if (opcion.correcta) {

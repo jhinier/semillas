@@ -17,9 +17,17 @@ export function SopaLetrasGrid({
   errorFlash, 
   onCellClick 
 }: SopaLetrasGridProps) {
+  const maxContainerClass =
+    numColumnas >= 15
+      ? "max-w-xl"
+      : numColumnas >= 11
+        ? "max-w-md sm:max-w-lg"
+        : "max-w-[320px] sm:max-w-sm lg:max-w-md";
+  const dense = numColumnas >= 11;
+
   return (
     <div 
-      className="w-full max-w-[280px] sm:max-w-xs lg:max-w-sm aspect-square bg-slate-100 rounded-2xl p-2 grid gap-1 border-4 border-slate-200 shadow-inner"
+      className={`w-full ${maxContainerClass} bg-slate-100 dark:bg-slate-900/70 rounded-2xl p-2 sm:p-3 grid gap-1 border-4 border-slate-200 dark:border-slate-700 shadow-inner`}
       style={{ 
         gridTemplateColumns: `repeat(${numColumnas}, minmax(0, 1fr))` 
       }}
@@ -39,6 +47,7 @@ export function SopaLetrasGrid({
               isFound={isFound}
               isSelectedStart={isSelectedStart}
               isError={isError}
+              dense={dense}
               onClick={() => onCellClick(r, c)}
             />
           );

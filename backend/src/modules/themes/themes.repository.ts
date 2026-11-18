@@ -49,6 +49,19 @@ export function crearThemesRepository(db: DbClient) {
         return filas;
       }
 
+      let grupoEdadResueltoId = grupoEdadId;
+      const esUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(grupoEdadId);
+      if (!esUuid) {
+        const [grupoPorCodigo] = await db
+          .select({ id: schema.grupoEdad.id })
+          .from(schema.grupoEdad)
+          .where(eq(schema.grupoEdad.codigo, grupoEdadId))
+          .limit(1);
+        if (grupoPorCodigo?.id) {
+          grupoEdadResueltoId = grupoPorCodigo.id;
+        }
+      }
+
       const relacionesEdad = await db
         .select({
           temaId: schema.temaGrupoEdad.temaId,
@@ -74,10 +87,10 @@ export function crearThemesRepository(db: DbClient) {
         const grupos = gruposPorTema.get(fila.tema.id);
         // Si el tema no tiene restricción explícita en tema_grupo_edad o incluye la franja actual, se muestra
         if (!grupos || grupos.size === 0) return true;
-        return grupos.has(grupoEdadId);
+        return grupos.has(grupoEdadResueltoId);
       });
 
-      return filtrados.length > 0 ? filtrados : filas;
+      return filtrados;
     },
 
     async obtenerTemaPublico(temaId: string): Promise<TemaListadoRepo | null> {

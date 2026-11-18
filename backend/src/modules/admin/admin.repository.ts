@@ -5,7 +5,7 @@ import { schema, type DbClient } from "../../db/client";
 import { BadRequestError, NotFoundError, UnprocessableEntityError } from "../../shared/errors/http-error";
 import { z } from "zod";
 import { crearSlugCopia, crearTituloCopia, mapActivity, mapStep, mapTheme } from "./admin.formatters";
-import { actualizarAjustesSistemaSchema, createActivitySchema, createSendaSchema, createThemeSchema, reorderActivitiesSchema, resolveReviewSchema, submitReviewSchema, updateActivitySchema, updateSendaSchema, updateThemeSchema, updateUserSchema, upsertStepContentSchema } from "./admin.schemas";
+import { actualizarAjustesSistemaSchema, createActivitySchema, createSendaSchema, createThemeSchema, reorderActivitiesSchema, resolveReviewSchema, submitReviewSchema, updateActivitySchema, updateGrupoEdadSchema, updateSendaSchema, updateThemeSchema, updateUserSchema, upsertStepContentSchema } from "./admin.schemas";
 import { evaluarMatrizCrecer, MOMENTOS, type MomentoCrecer } from "./publicacion/matriz-crecer";
 import { validarPublicacion } from "./publicacion/validar-publicacion";
 import { validarTransicionEditorial, puedePublicar } from "./publicacion/editorial-policy";
@@ -34,6 +34,176 @@ type ReorderActivitiesInput = z.infer<typeof reorderActivitiesSchema>;
 type SubmitReviewInput = z.infer<typeof submitReviewSchema>;
 type ResolveReviewInput = z.infer<typeof resolveReviewSchema>;
 type UpdateAjustesSistemaInput = z.infer<typeof actualizarAjustesSistemaSchema>;
+type UpdateGrupoEdadInput = z.infer<typeof updateGrupoEdadSchema>;
+
+function resumirErroresPublicacion(errores: Array<{ codigo: string; mensaje: string }>): string {
+  if (!errores.length) return "Listo para publicar";
+
+  const mensajes: string[] = [];
+  const agregar = (texto: string) => {
+    if (!mensajes.includes(texto)) mensajes.push(texto);
+  };
+
+  for (const error of errores) {
+    const codigo = String(error.codigo || "");
+    if (codigo === "TITULO_REQUERIDO" || codigo === "SENDA_REQUERIDA" || codigo === "VERSION_BIBLICA_REQUERIDA") {
+      agregar("completa la información básica");
+    } else if (codigo === "VERSICULO_REQUERIDO" || codigo === "REFERENCIA_BIBLICA_REQUERIDA") {
+      agregar("agrega el versículo clave con su cita bíblica");
+    } else if (codigo === "PORTADA_REQUERIDA" || codigo === "ALT_REQUERIDO") {
+      agregar("elige una imagen de portada");
+    } else if (codigo === "FRANJA_REQUERIDA") {
+      agregar("selecciona al menos una franja de edad");
+    } else if (codigo.startsWith("CRECER_")) {
+      agregar("completa los 6 momentos CRECER en al menos una franja de edad");
+    } else if (codigo === "ACTIVIDAD_REQUERIDA") {
+      agregar("agrega al menos 1 actividad interactiva");
+    } else if (
+      codigo === "ACTIVIDAD_TITULO_REQUERIDO" ||
+      codigo === "ACTIVIDAD_CONSIGNA_REQUERIDA" ||
+      codigo === "RESPUESTA_CORRECTA_REQUERIDA" ||
+      codigo === "MEDIA_INVALIDA" ||
+      codigo === "CONFIGURACION_ACTIVIDAD_INVALIDA"
+    ) {
+      agregar("revisa una actividad con configuración o respuesta pendiente");
+    } else if (codigo !== "NARRACION_SEMILLAS_REQUERIDA" && error.mensaje) {
+      agregar(error.mensaje.toLowerCase());
+    }
+  }
+
+  return mensajes.length ? `Pendiente: ${mensajes.join("; ")}` : "Listo para publicar";
+}
+
+function evaluarCompletitudDesdeDatos({
+  tema,
+  grupos,
+  pasos,
+  actividades,
+  versiculo,
+  portada,
+  revisionAprobada,
+}: {
+  tema: any;
+  grupos: any[];
+  pasos: any[];
+  actividades: any[];
+  versiculo: any;
+  portada: { id: string; texto_alternativo?: string | null } | null;
+  revisionAprobada: boolean;
+}) {
+  const esperados = Math.max(grupos.length * 6, 1);
+  const contenidosValidos = pasos
+    .flatMap((paso: any) => paso.contenidos ?? [])
+    .filter((contenido: any) => contenido.titulo?.trim() && contenido.cuerpo?.trim()).length;
+  const gruposEdadIds = grupos.map((grupo: any) => String(grupo.grupo_edad_id));
+
+  const celdas = pasos.flatMap((paso: any) => {
+    const tipoPaso = Array.isArray(paso.tipo_paso) ? paso.tipo_paso[0] : paso.tipo_paso;
+    const codigoMomento = tipoPaso?.codigo as MomentoCrecer | undefined;
+    if (!codigoMomento) return [];
+    return (paso.contenidos ?? []).map((contenido: any) => ({
+      grupoEdadId: String(contenido.grupo_edad_id),
+      codigoMomento,
+      completa: Boolean(contenido.titulo?.trim() && contenido.cuerpo?.trim()),
+      audioValida: Boolean(contenido.recurso_audio_id),
+      orden: paso.orden,
+    }));
+  });
+
+  const franjasDetalle = grupos.map((grupo: any) => {
+    const gid = String(grupo.grupo_edad_id);
+    const infoGrupo = Array.isArray(grupo.grupo_edad) ? grupo.grupo_edad[0] : grupo.grupo_edad;
+    const momentosCompletos = MOMENTOS.filter((momento) =>
+      celdas.some((celda) => celda.grupoEdadId === gid && celda.codigoMomento === momento && celda.completa),
+    ).length;
+    const actividadesGrupo = actividades.filter((a: any) => String(a.grupo_edad_id) === gid).length;
+    const crecerCompleto = momentosCompletos === MOMENTOS.length;
+    return {
+      grupo_edad_id: gid,
+      codigo: String(infoGrupo?.codigo ?? ""),
+      nombre: String(infoGrupo?.nombre ?? "Franja"),
+      momentos_completos: momentosCompletos,
+      momentos_total: MOMENTOS.length,
+      actividades: actividadesGrupo,
+      lista_para_publicar: crecerCompleto && actividades.length > 0,
+    };
+  });
+
+  const franjasCompletas = franjasDetalle.filter((f) => f.momentos_completos === MOMENTOS.length).length;
+  const algunaFranjaCrecerCompleta = franjasCompletas > 0;
+
+  const publicacion = validarPublicacion({
+    titulo: tema.titulo,
+    sendaId: tema.senda_id,
+    versionBiblicaId: tema.version_biblica_id,
+    versiculo: versiculo
+      ? { texto: versiculo.texto, libroId: String(versiculo.libro_id), capitulo: versiculo.capitulo, numero: versiculo.versiculo }
+      : null,
+    portada: portada
+      ? { id: portada.id, alt: portada.texto_alternativo || tema.titulo }
+      : tema.portada_recurso_id
+        ? { id: tema.portada_recurso_id, alt: tema.titulo }
+        : null,
+    gruposEdadIds,
+    celdasCrecer: celdas,
+    actividades: actividades.map((actividad: any) => {
+      const codigoTipo = String((Array.isArray(actividad.tipo_actividad) ? actividad.tipo_actividad[0] : actividad.tipo_actividad)?.codigo ?? "");
+      const opcionesLista = Array.isArray(actividad.opciones) ? actividad.opciones : [];
+      const configDirectaValida = validarConfiguracionActividad(codigoTipo, actividad.configuracion).success;
+      const configOpcionesFallbackValida =
+        codigoTipo === "cuestionario" &&
+        opcionesLista.length >= 2 &&
+        opcionesLista.filter((op: any) => op.correcta).length === 1;
+      return {
+        id: actividad.id,
+        titulo: actividad.titulo,
+        consigna: actividad.consigna,
+        requiereOpciones: codigoTipo === "cuestionario",
+        configuracionValida: configDirectaValida || configOpcionesFallbackValida,
+        opciones: opcionesLista,
+      };
+    }),
+    revisionAprobada,
+    narracionSemillasValida: true,
+  });
+
+  const crecimientoDetalle = algunaFranjaCrecerCompleta
+    ? `${franjasCompletas} de ${Math.max(grupos.length, 1)} franja(s) listas (6/6 momentos)`
+    : `Completa 6 momentos en al menos 1 franja (${contenidosValidos}/${esperados})`;
+
+  const publicacionDetalle =
+    tema.estado === "publicado"
+      ? "Tema publicado y visible para los estudiantes"
+      : resumirErroresPublicacion(publicacion.errores);
+
+  const criterios = [
+    { codigo: "informacion", etiqueta: "Información general", completo: Boolean(tema.titulo && tema.slug && tema.objetivo && tema.resumen && tema.senda_id) },
+    { codigo: "portada", etiqueta: "Portada", completo: Boolean(tema.portada_recurso_id) },
+    { codigo: "publico", etiqueta: "Público objetivo", completo: grupos.length > 0 },
+    { codigo: "crecer", etiqueta: "Recorrido CRECER", completo: algunaFranjaCrecerCompleta, detalle: crecimientoDetalle },
+    { codigo: "actividades", etiqueta: "Actividades", completo: actividades.length > 0, detalle: `${actividades.length} actividad(es)` },
+    { codigo: "configuracion", etiqueta: "Configuración", completo: Boolean(tema.version_biblica_id && tema.minutos_estimados > 0 && tema.xp_recompensa >= 0) },
+    { codigo: "publicacion", etiqueta: "Validación de publicación", completo: publicacion.valido, detalle: publicacionDetalle },
+  ];
+
+  const porcentaje = Math.round((criterios.filter((criterio) => criterio.completo).length / criterios.length) * 100);
+
+  return {
+    porcentaje,
+    listo_para_revision: criterios.every((criterio) => criterio.completo),
+    criterios,
+    franjas_detalle: franjasDetalle,
+    estadisticas: {
+      grupos_edad: grupos.length,
+      pasos_creados: pasos.length,
+      contenidos_creados: contenidosValidos,
+      contenidos_esperados: esperados,
+      actividades: actividades.length,
+    },
+    revisionAprobada,
+    errores_publicacion: publicacion.errores,
+  };
+}
 
 const CLAVES_AJUSTES_SISTEMA = {
   nombrePlataforma: "administracion.nombre_plataforma",
@@ -87,8 +257,8 @@ export function crearAdminRepository({ supabase, drizzle }: AdminDb) {
 
   async function calcularCompletitudTema(temaId: string, opciones: { requiereRevisionAprobada?: boolean } = {}) {
     const [temaResult, gruposResult, pasosResult, actividadesResult, versiculoResult] = await Promise.all([
-      supabase.from("tema").select("id, titulo, slug, objetivo, resumen, portada_recurso_id, version_biblica_id, senda_id, xp_recompensa, minutos_estimados").eq("id", temaId).single(),
-      supabase.from("tema_grupo_edad").select("grupo_edad_id, grupo_edad:grupo_edad_id(codigo)").eq("tema_id", temaId),
+      supabase.from("tema").select("id, titulo, slug, objetivo, resumen, estado, portada_recurso_id, version_biblica_id, senda_id, xp_recompensa, minutos_estimados").eq("id", temaId).single(),
+      supabase.from("tema_grupo_edad").select("grupo_edad_id, grupo_edad:grupo_edad_id(codigo, nombre)").eq("tema_id", temaId),
       supabase.from("paso_tema").select("id, tipo_paso_id, orden, tipo_paso:tipo_paso_id(codigo), contenidos:contenido_paso_tema(id, grupo_edad_id, titulo, cuerpo, recurso_audio_id)").eq("tema_id", temaId),
       supabase.from("actividad").select("id, paso_id, grupo_edad_id, titulo, consigna, configuracion, tipo_actividad:tipo_actividad_id(codigo), opciones:opcion_actividad(correcta)").eq("tema_id", temaId),
       supabase.from("versiculo_clave").select("texto, libro_id, capitulo, versiculo").eq("tema_id", temaId).maybeSingle()
@@ -114,91 +284,15 @@ export function crearAdminRepository({ supabase, drizzle }: AdminDb) {
       revisionAprobada = Boolean(revisionResult.data);
     }
 
-    const tema = temaResult.data;
-    const grupos = gruposResult.data ?? [];
-    const pasos = pasosResult.data ?? [];
-    const actividades = actividadesResult.data ?? [];
-    const esperados = Math.max(grupos.length * 6, 1);
-    const contenidosValidos = pasos.flatMap((paso: any) => paso.contenidos ?? []).filter((contenido: any) => contenido.titulo?.trim() && contenido.cuerpo?.trim()).length;
-    const gruposEdadIds = grupos.map((grupo) => grupo.grupo_edad_id);
-    const gruposSemillas = grupos.filter((grupo: any) => {
-      const edad = Array.isArray(grupo.grupo_edad) ? grupo.grupo_edad[0] : grupo.grupo_edad;
-      return edad?.codigo === "semillas";
-    }).map((grupo) => grupo.grupo_edad_id);
-    const celdas = pasos.flatMap((paso: any) => {
-      const tipoPaso = Array.isArray(paso.tipo_paso) ? paso.tipo_paso[0] : paso.tipo_paso;
-      const codigoMomento = tipoPaso?.codigo as MomentoCrecer | undefined;
-      if (!codigoMomento) return [];
-      return (paso.contenidos ?? []).map((contenido: any) => ({
-        grupoEdadId: contenido.grupo_edad_id,
-        codigoMomento,
-        completa: Boolean(contenido.titulo?.trim() && contenido.cuerpo?.trim()),
-        audioValida: Boolean(contenido.recurso_audio_id),
-        orden: paso.orden,
-      }));
-    });
-    const matriz = evaluarMatrizCrecer(gruposEdadIds, celdas);
-    const narracionSemillasValida = true;
-    const publicacion = validarPublicacion({
-      titulo: tema.titulo,
-      sendaId: tema.senda_id,
-      versionBiblicaId: tema.version_biblica_id,
-      versiculo: versiculoResult.data
-        ? { texto: versiculoResult.data.texto, libroId: String(versiculoResult.data.libro_id), capitulo: versiculoResult.data.capitulo, numero: versiculoResult.data.versiculo }
-        : null,
-      portada: portadaResult.data
-        ? { id: portadaResult.data.id, alt: portadaResult.data.texto_alternativo || tema.titulo }
-        : tema.portada_recurso_id
-          ? { id: tema.portada_recurso_id, alt: tema.titulo }
-          : null,
-      gruposEdadIds,
-      celdasCrecer: celdas,
-      actividades: actividades.map((actividad: any) => {
-        const codigoTipo = String((Array.isArray(actividad.tipo_actividad) ? actividad.tipo_actividad[0] : actividad.tipo_actividad)?.codigo ?? "");
-        const opcionesLista = Array.isArray(actividad.opciones) ? actividad.opciones : [];
-        const configDirectaValida = validarConfiguracionActividad(codigoTipo, actividad.configuracion).success;
-        const configOpcionesFallbackValida =
-          codigoTipo === "cuestionario" &&
-          opcionesLista.length >= 2 &&
-          opcionesLista.filter((op: any) => op.correcta).length === 1;
-        return {
-          id: actividad.id,
-          titulo: actividad.titulo,
-          consigna: actividad.consigna,
-          requiereOpciones: codigoTipo === "cuestionario",
-          configuracionValida: configDirectaValida || configOpcionesFallbackValida,
-          opciones: opcionesLista,
-        };
-      }),
+    return evaluarCompletitudDesdeDatos({
+      tema: temaResult.data,
+      grupos: gruposResult.data ?? [],
+      pasos: pasosResult.data ?? [],
+      actividades: actividadesResult.data ?? [],
+      versiculo: versiculoResult.data,
+      portada: portadaResult.data,
       revisionAprobada,
-      narracionSemillasValida,
     });
-
-    const criterios = [
-      { codigo: "informacion", etiqueta: "Información general", completo: Boolean(tema.titulo && tema.slug && tema.objetivo && tema.resumen && tema.senda_id) },
-      { codigo: "portada", etiqueta: "Portada", completo: Boolean(tema.portada_recurso_id) },
-      { codigo: "publico", etiqueta: "Público objetivo", completo: grupos.length > 0 },
-      { codigo: "crecer", etiqueta: "Recorrido CRECER", completo: matriz.valida, detalle: `${contenidosValidos}/${esperados} contenidos` },
-      { codigo: "actividades", etiqueta: "Actividades", completo: actividades.length > 0, detalle: `${actividades.length} actividades` },
-      { codigo: "configuracion", etiqueta: "Configuración", completo: Boolean(tema.version_biblica_id && tema.minutos_estimados > 0 && tema.xp_recompensa >= 0) },
-      { codigo: "publicacion", etiqueta: "Validación de publicación", completo: publicacion.valido, detalle: publicacion.errores.map((error) => error.codigo).join(", ") }
-    ];
-    const porcentaje = Math.round((criterios.filter((criterio) => criterio.completo).length / criterios.length) * 100);
-
-    return {
-      porcentaje,
-      listo_para_revision: criterios.every((criterio) => criterio.completo),
-      criterios,
-      estadisticas: {
-        grupos_edad: grupos.length,
-        pasos_creados: pasos.length,
-        contenidos_creados: contenidosValidos,
-        contenidos_esperados: esperados,
-        actividades: actividades.length
-      },
-      revisionAprobada,
-      errores_publicacion: publicacion.errores
-    };
   }
 
   async function calcularCompletitudTemasEnLote(temasData: any[]) {
@@ -206,7 +300,7 @@ export function crearAdminRepository({ supabase, drizzle }: AdminDb) {
     const temaIds = temasData.map(t => String(t.id));
 
     const [gruposResult, pasosResult, actividadesResult, versiculoResult] = await Promise.all([
-      supabase.from("tema_grupo_edad").select("tema_id, grupo_edad_id, grupo_edad:grupo_edad_id(codigo)").in("tema_id", temaIds),
+      supabase.from("tema_grupo_edad").select("tema_id, grupo_edad_id, grupo_edad:grupo_edad_id(codigo, nombre)").in("tema_id", temaIds),
       supabase.from("paso_tema").select("tema_id, id, tipo_paso_id, orden, tipo_paso:tipo_paso_id(codigo), contenidos:contenido_paso_tema(id, grupo_edad_id, titulo, cuerpo, recurso_audio_id)").in("tema_id", temaIds),
       supabase.from("actividad").select("tema_id, id, paso_id, grupo_edad_id, titulo, consigna, configuracion, tipo_actividad:tipo_actividad_id(codigo), opciones:opcion_actividad(correcta)").in("tema_id", temaIds),
       supabase.from("versiculo_clave").select("tema_id, texto, libro_id, capitulo, versiculo").in("tema_id", temaIds)
@@ -235,90 +329,20 @@ export function crearAdminRepository({ supabase, drizzle }: AdminDb) {
       const pasos = pasosMap.get(String(tema.id)) ?? [];
       const actividades = actMap.get(String(tema.id)) ?? [];
       const versiculoResultData = verMap.get(String(tema.id));
-      
       const portadaResultData = tema.portada_recurso ? { id: tema.portada_recurso.id, texto_alternativo: tema.portada_recurso.texto_alternativo } : null;
 
-      const esperados = Math.max(grupos.length * 6, 1);
-      const contenidosValidos = pasos.flatMap((paso: any) => paso.contenidos ?? []).filter((contenido: any) => contenido.titulo?.trim() && contenido.cuerpo?.trim()).length;
-      const gruposEdadIds = grupos.map((grupo: any) => grupo.grupo_edad_id);
-      const gruposSemillas = grupos.filter((grupo: any) => {
-        const edad = Array.isArray(grupo.grupo_edad) ? grupo.grupo_edad[0] : grupo.grupo_edad;
-        return edad?.codigo === "semillas";
-      }).map((grupo: any) => grupo.grupo_edad_id);
-      const celdas = pasos.flatMap((paso: any) => {
-        const tipoPaso = Array.isArray(paso.tipo_paso) ? paso.tipo_paso[0] : paso.tipo_paso;
-        const codigoMomento = tipoPaso?.codigo as MomentoCrecer | undefined;
-        if (!codigoMomento) return [];
-        return (paso.contenidos ?? []).map((contenido: any) => ({
-          grupoEdadId: contenido.grupo_edad_id,
-          codigoMomento,
-          completa: Boolean(contenido.titulo?.trim() && contenido.cuerpo?.trim()),
-          audioValida: Boolean(contenido.recurso_audio_id),
-          orden: paso.orden,
-        }));
-      });
-      const matriz = evaluarMatrizCrecer(gruposEdadIds, celdas);
-      const narracionSemillasValida = true;
-      const publicacion = validarPublicacion({
-        titulo: tema.titulo,
-        sendaId: tema.senda_id,
-        versionBiblicaId: tema.version_biblica_id,
-        versiculo: versiculoResultData
-          ? { texto: versiculoResultData.texto, libroId: String(versiculoResultData.libro_id), capitulo: versiculoResultData.capitulo, numero: versiculoResultData.versiculo }
-          : null,
-        portada: portadaResultData
-          ? { id: portadaResultData.id, alt: portadaResultData.texto_alternativo || tema.titulo }
-          : tema.portada_recurso_id
-            ? { id: tema.portada_recurso_id, alt: tema.titulo }
-            : null,
-        gruposEdadIds,
-        celdasCrecer: celdas,
-        actividades: actividades.map((actividad: any) => {
-          const codigoTipo = String((Array.isArray(actividad.tipo_actividad) ? actividad.tipo_actividad[0] : actividad.tipo_actividad)?.codigo ?? "");
-          const opcionesLista = Array.isArray(actividad.opciones) ? actividad.opciones : [];
-          const configDirectaValida = validarConfiguracionActividad(codigoTipo, actividad.configuracion).success;
-          const configOpcionesFallbackValida =
-            codigoTipo === "cuestionario" &&
-            opcionesLista.length >= 2 &&
-            opcionesLista.filter((op: any) => op.correcta).length === 1;
-          return {
-            id: actividad.id,
-            titulo: actividad.titulo,
-            consigna: actividad.consigna,
-            requiereOpciones: codigoTipo === "cuestionario",
-            configuracionValida: configDirectaValida || configOpcionesFallbackValida,
-            opciones: opcionesLista,
-          };
+      completitudMap.set(
+        String(tema.id),
+        evaluarCompletitudDesdeDatos({
+          tema,
+          grupos,
+          pasos,
+          actividades,
+          versiculo: versiculoResultData,
+          portada: portadaResultData,
+          revisionAprobada: true,
         }),
-        revisionAprobada: true, // Listado general no verifica revisión
-        narracionSemillasValida,
-      });
-
-      const criterios = [
-        { codigo: "informacion", etiqueta: "Información general", completo: Boolean(tema.titulo && tema.slug && tema.objetivo && tema.resumen && tema.senda_id) },
-        { codigo: "portada", etiqueta: "Portada", completo: Boolean(tema.portada_recurso_id) },
-        { codigo: "publico", etiqueta: "Público objetivo", completo: grupos.length > 0 },
-        { codigo: "crecer", etiqueta: "Recorrido CRECER", completo: matriz.valida, detalle: `${contenidosValidos}/${esperados} contenidos` },
-        { codigo: "actividades", etiqueta: "Actividades", completo: actividades.length > 0, detalle: `${actividades.length} actividades` },
-        { codigo: "configuracion", etiqueta: "Configuración", completo: Boolean(tema.version_biblica_id && tema.minutos_estimados > 0 && tema.xp_recompensa >= 0) },
-        { codigo: "publicacion", etiqueta: "Validación de publicación", completo: publicacion.valido, detalle: publicacion.errores.map((error: any) => error.codigo).join(", ") }
-      ];
-      const porcentaje = Math.round((criterios.filter((criterio) => criterio.completo).length / criterios.length) * 100);
-
-      completitudMap.set(String(tema.id), {
-        porcentaje,
-        listo_para_revision: criterios.every((criterio) => criterio.completo),
-        criterios,
-        estadisticas: {
-          grupos_edad: grupos.length,
-          pasos_creados: pasos.length,
-          contenidos_creados: contenidosValidos,
-          contenidos_esperados: esperados,
-          actividades: actividades.length
-        },
-        revisionAprobada: true,
-        errores_publicacion: publicacion.errores
-      });
+      );
     });
 
     return completitudMap;
@@ -628,18 +652,18 @@ export function crearAdminRepository({ supabase, drizzle }: AdminDb) {
     async obtenerTema(temaId: string) {
       const { data, error } = await supabase
         .from("tema")
-        .select("*, path:senda_id(id, codigo, nombre, color_hex), created_by:creado_por(id, nombre_visible), portada_recurso:portada_recurso_id(id, url_publica, texto_alternativo, titulo), grupos_edad:tema_grupo_edad(grupo_edad:grupo_edad_id(id, codigo, nombre))")
+        .select("*, path:senda_id(id, codigo, nombre, color_hex), created_by:creado_por(id, nombre_visible), portada_recurso:portada_recurso_id(id, url_publica, texto_alternativo, titulo), grupos_edad:tema_grupo_edad(grupo_edad:grupo_edad_id(id, codigo, nombre)), versiculo_clave(*)")
         .eq("id", temaId)
         .single();
       if (error || !data) throw new NotFoundError("Tema no encontrado");
-      return mapTheme(data as Record<string, unknown>);
+      return mapTheme(data as unknown as Record<string, unknown>);
     },
 
     async crearTema(body: CreateThemeInput, userId: string) {
       const { data: theme, error } = await supabase
         .from("tema")
         .insert({
-          senda_id: body.senda_id,
+          senda_id: body.senda_ids?.[0] ?? body.senda_id,
           titulo: body.titulo,
           slug: body.slug,
           objetivo: body.objetivo,
@@ -664,13 +688,29 @@ export function crearAdminRepository({ supabase, drizzle }: AdminDb) {
         throw ageError;
       }
       if (body.versiculo_clave?.texto?.trim()) {
-        await supabase.from("versiculo_clave").upsert({
+        const { error: verseError } = await supabase.from("versiculo_clave").upsert({
           tema_id: theme.id,
           libro_id: body.versiculo_clave.libro_id,
           capitulo: body.versiculo_clave.capitulo,
           versiculo: body.versiculo_clave.versiculo,
           texto: body.versiculo_clave.texto.trim()
         }, { onConflict: "tema_id" });
+        if (verseError) throw verseError;
+      }
+      try {
+        const { data: tiposPaso } = await supabase.from("tipo_paso_crecer").select("id, orden").order("orden");
+        if (Array.isArray(tiposPaso) && tiposPaso.length > 0) {
+          await supabase.from("paso_tema").insert(
+            tiposPaso.map((tp: any) => ({
+              tema_id: theme.id,
+              tipo_paso_id: tp.id,
+              orden: tp.orden ?? 1,
+              obligatorio: true
+            }))
+          );
+        }
+      } catch {
+        // Opcional en entornos mockeados sin tipo_paso_crecer
       }
       return mapTheme({
         ...(theme as Record<string, unknown>),
@@ -693,7 +733,7 @@ export function crearAdminRepository({ supabase, drizzle }: AdminDb) {
       const { data: theme, error } = await supabase
         .from("tema")
         .update({
-          ...(body.senda_id !== undefined ? { senda_id: body.senda_id } : {}),
+          ...(body.senda_ids?.[0] !== undefined || body.senda_id !== undefined ? { senda_id: body.senda_ids?.[0] ?? body.senda_id } : {}),
           ...(body.titulo !== undefined ? { titulo: body.titulo } : {}),
           ...(body.slug !== undefined ? { slug: body.slug } : {}),
           ...(body.objetivo !== undefined ? { objetivo: body.objetivo } : {}),
@@ -732,13 +772,14 @@ export function crearAdminRepository({ supabase, drizzle }: AdminDb) {
         }
       }
       if (body.versiculo_clave?.texto?.trim()) {
-        await supabase.from("versiculo_clave").upsert({
+        const { error: verseError } = await supabase.from("versiculo_clave").upsert({
           tema_id: temaId,
           libro_id: body.versiculo_clave.libro_id,
           capitulo: body.versiculo_clave.capitulo,
           versiculo: body.versiculo_clave.versiculo,
           texto: body.versiculo_clave.texto.trim()
         }, { onConflict: "tema_id" });
+        if (verseError) throw verseError;
       }
       return mapTheme({
         ...(theme as Record<string, unknown>),
@@ -978,6 +1019,15 @@ export function crearAdminRepository({ supabase, drizzle }: AdminDb) {
       if (theme.estado === "publicado") return mapTheme(theme as Record<string, unknown>);
       const completitud = await calcularCompletitudTema(temaId, { requiereRevisionAprobada: false });
       if (!completitud.listo_para_revision) throw new UnprocessableEntityError("El tema todavía no está completo para publicarse", completitud);
+      const franjasListasIds = (completitud.franjas_detalle ?? [])
+        .filter((f) => f.momentos_completos >= f.momentos_total)
+        .map((f) => f.grupo_edad_id);
+      if (
+        franjasListasIds.length > 0 &&
+        (completitud.franjas_detalle ?? []).some((f) => f.momentos_completos < f.momentos_total)
+      ) {
+        await this.actualizarTema(temaId, { grupo_edad_ids: franjasListasIds });
+      }
       if (theme.estado !== "aprobado") {
         await supabase.from("revision_contenido").insert({
           tema_id: temaId,
@@ -1215,6 +1265,54 @@ export function crearAdminRepository({ supabase, drizzle }: AdminDb) {
         .returning();
       if (!senda) throw new NotFoundError("Senda no encontrada");
       return senda;
+    },
+
+    async actualizarGrupoEdad(grupoId: string, body: UpdateGrupoEdadInput) {
+      if (!drizzle) {
+        const updateSupabase: {
+          nombre?: string;
+          descripcion?: string | null;
+          edad_minima?: number;
+          edad_maxima?: number;
+        } = {};
+        if (body.nombre !== undefined) updateSupabase.nombre = body.nombre;
+        if (body.descripcion !== undefined) updateSupabase.descripcion = body.descripcion;
+        if (body.edad_minima !== undefined) updateSupabase.edad_minima = body.edad_minima;
+        if (body.edad_maxima !== undefined) updateSupabase.edad_maxima = body.edad_maxima;
+
+        const { data: grupo, error } = await supabase
+          .from("grupo_edad")
+          .update(updateSupabase)
+          .eq("id", grupoId)
+          .select("id, codigo, nombre, descripcion, edad_minima, edad_maxima, orden")
+          .maybeSingle();
+        if (error) throw error;
+        if (!grupo) throw new NotFoundError("Franja de edad no encontrada");
+        return grupo;
+      }
+
+      const clienteDrizzle = requerirDrizzle();
+      const updateData: Partial<typeof schema.grupoEdad.$inferInsert> = {};
+      if (body.nombre !== undefined) updateData.nombre = body.nombre;
+      if (body.descripcion !== undefined) updateData.descripcion = body.descripcion;
+      if (body.edad_minima !== undefined) updateData.edadMinima = body.edad_minima;
+      if (body.edad_maxima !== undefined) updateData.edadMaxima = body.edad_maxima;
+
+      const [grupo] = await clienteDrizzle
+        .update(schema.grupoEdad)
+        .set(updateData)
+        .where(eq(schema.grupoEdad.id, grupoId))
+        .returning();
+      if (!grupo) throw new NotFoundError("Franja de edad no encontrada");
+      return {
+        id: grupo.id,
+        codigo: grupo.codigo,
+        nombre: grupo.nombre,
+        descripcion: grupo.descripcion,
+        edad_minima: grupo.edadMinima,
+        edad_maxima: grupo.edadMaxima,
+        orden: grupo.orden
+      };
     }
   };
 }

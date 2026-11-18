@@ -12,6 +12,7 @@ export type VersiculoClaveSolicitud = {
 
 export type CrearTemaSolicitud = {
   senda_id: string;
+  senda_ids?: string[];
   titulo: string;
   slug: string;
   objetivo: string;
@@ -26,6 +27,7 @@ export type CrearTemaSolicitud = {
 
 export type ActualizarTemaSolicitud = {
   senda_id?: string;
+  senda_ids?: string[];
   titulo?: string;
   slug?: string;
   objetivo?: string;
@@ -122,6 +124,23 @@ export function actualizarTema(
     metodo: "PATCH",
     cuerpo: datos,
   });
+}
+
+export async function asegurarGrupoEdadEnTema(
+  idTema: string,
+  grupoEdadId: string,
+  gruposActuales?: Array<{ id: string } | string> | null,
+): Promise<boolean> {
+  if (!idTema || !grupoEdadId) return false;
+  const fuente = Array.isArray(gruposActuales)
+    ? gruposActuales
+    : (await obtenerTemaAdmin(idTema)).grupos_edad ?? [];
+  const ids = fuente
+    .map((g) => (typeof g === "string" ? g : g?.id))
+    .filter((id): id is string => Boolean(id));
+  if (ids.includes(grupoEdadId)) return false;
+  await actualizarTema(idTema, { grupo_edad_ids: [...ids, grupoEdadId] });
+  return true;
 }
 
 export function guardarParlante(
@@ -596,10 +615,23 @@ export async function obtenerActividadesAdmin(params?: ObtenerActividadesAdminPa
 }
 
 
+export type FranjaCompletitud = {
+  grupo_edad_id: string;
+  codigo: string;
+  nombre: string;
+  momentos_completos: number;
+  momentos_total: number;
+  actividades: number;
+  lista_para_publicar: boolean;
+  incluida?: boolean;
+};
+
 export type CompletitudTema = {
   porcentaje: number;
   listo_para_revision: boolean;
   criterios: Array<{ codigo: string; etiqueta: string; completo: boolean; detalle?: string }>;
+  franjas_detalle?: FranjaCompletitud[];
+  errores_publicacion?: Array<{ codigo: string; ruta?: string; mensaje?: string }>;
   estadisticas: {
     grupos_edad: number;
     pasos_creados: number;
@@ -608,6 +640,62 @@ export type CompletitudTema = {
     actividades: number;
   };
 };
+
+export function formatearDetalleValidacionPublicacion(detalle?: string | null): string {
+  if (!detalle) return "";
+  if (!/[A-Z]{3,}_[A-Z]{3,}/.test(detalle)) return detalle;
+
+  const mensajes: string[] = [];
+  const agregar = (texto: string) => {
+    if (!mensajes.includes(texto)) mensajes.push(texto);
+  };
+
+  for (const token of detalle.split(/[\s,·]+/).map((t) => t.trim()).filter(Boolean)) {
+    if (token === "NARRACION_SEMILLAS_REQUERIDA") continue;
+    if (token === "TITULO_REQUERIDO" || token === "SENDA_REQUERIDA" || token === "VERSION_BIBLICA_REQUERIDA") {
+      agregar("completa la información general");
+    } else if (token === "VERSICULO_REQUERIDO" || token === "REFERENCIA_BIBLICA_REQUERIDA") {
+      agregar("agrega el versículo clave con cita bíblica");
+    } else if (token === "PORTADA_REQUERIDA") {
+      agregar("elige una imagen de portada");
+    } else if (token === "ALT_REQUERIDO") {
+      agregar("agrega texto alternativo o sube otra portada con descripción");
+    } else if (token === "FRANJA_REQUERIDA") {
+      agregar("selecciona al menos una franja de edad");
+    } else if (token.startsWith("CRECER_")) {
+      agregar("completa los 6 momentos CRECER en al menos una franja");
+    } else if (token === "ACTIVIDAD_REQUERIDA") {
+      agregar("agrega al menos 1 actividad");
+    } else if (token === "REVISION_REQUERIDA") {
+      agregar("requiere aprobación editorial previa");
+    } else if (token === "MARKDOWN_INSEGURO") {
+      agregar("revisa el formato HTML o enlaces del texto");
+    } else if (token.includes("ACTIVIDAD") || token === "RESPUESTA_CORRECTA_REQUERIDA" || token === "MEDIA_INVALIDA") {
+      agregar("revisa una actividad pendiente en el Paso 4");
+    }
+  }
+
+  return mensajes.length ? `Pendiente: ${mensajes.join("; ")}` : "Listo para publicar";
+}
+
+export function formatearErrorPublicacionApi(error: unknown, fallback = "No se pudo publicar"): string {
+  if (error && typeof error === "object") {
+    const record = error as {
+      message?: unknown;
+      detalles?: { errores_publicacion?: Array<{ codigo?: string; mensaje?: string }> } | null;
+    };
+    const errores = record.detalles?.errores_publicacion;
+    if (Array.isArray(errores) && errores.length > 0) {
+      const codigos = errores.map((e) => e.codigo || e.mensaje || "").filter(Boolean).join(", ");
+      const texto = formatearDetalleValidacionPublicacion(codigos);
+      if (texto) return texto;
+    }
+    if (typeof record.message === "string" && record.message.trim()) {
+      return record.message;
+    }
+  }
+  return error instanceof Error ? error.message : fallback;
+}
 
 export type TemaListadoAdmin = Tema & { completitud: CompletitudTema };
 
@@ -698,6 +786,7 @@ export async function obtenerEstudioTemaAdmin(idTema: string): Promise<EstudioTe
     porcentaje: typeof rawComp?.porcentaje === "number" ? rawComp.porcentaje : 0,
     listo_para_revision: Boolean(rawComp?.listo_para_revision),
     criterios: Array.isArray(rawComp?.criterios) ? rawComp.criterios : [],
+    franjas_detalle: Array.isArray(rawComp?.franjas_detalle) ? rawComp.franjas_detalle : undefined,
     estadisticas: {
       grupos_edad: rawComp?.estadisticas?.grupos_edad ?? gruposCount,
       pasos_creados: rawComp?.estadisticas?.pasos_creados ?? pasos.length,
@@ -895,6 +984,27 @@ export type ActualizarSendaSolicitud = Partial<CrearSendaSolicitud>;
 
 export function actualizarSendaAdmin(id: string, datos: ActualizarSendaSolicitud) {
   return peticion<SendaAdmin>(`/administracion/sendas/${id}`, {
+    metodo: "PATCH",
+    cuerpo: datos,
+  });
+}
+
+export type ActualizarGrupoEdadSolicitud = {
+  nombre?: string;
+  descripcion?: string | null;
+  edad_minima?: number;
+  edad_maxima?: number;
+};
+
+export function actualizarGrupoEdadAdmin(id: string, datos: ActualizarGrupoEdadSolicitud) {
+  return peticion<{
+    id: string;
+    codigo: string;
+    nombre: string;
+    descripcion: string | null;
+    edad_minima: number;
+    edad_maxima: number;
+  }>(`/administracion/grupos-etarios/${id}`, {
     metodo: "PATCH",
     cuerpo: datos,
   });

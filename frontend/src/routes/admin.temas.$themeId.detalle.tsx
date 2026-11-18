@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Activity,
   ArrowLeft,
@@ -10,14 +10,24 @@ import {
   CheckCircle2,
   Circle,
   Clock3,
+  Eye,
+  FilePenLine,
   Layers3,
   Loader2,
   Lock,
   Quote,
+  ShieldCheck,
   Sparkles,
 } from "lucide-react";
+import { toast } from "sonner";
 
-import { obtenerEstudioTemaAdmin } from "../features/admin/admin.api";
+import {
+  despublicarTema,
+  formatearDetalleValidacionPublicacion,
+  formatearErrorPublicacionApi,
+  obtenerEstudioTemaAdmin,
+  publicarTema,
+} from "../features/admin/admin.api";
 import { ThemeWorkflowStepper, type ThemeWorkflowStep } from "../features/admin/componentes/temas/theme-workflow-stepper";
 import { resolverPortadaTemaAdmin, usePortadasFirmadasAdmin } from "../features/admin/admin-theme-cover";
 import { obtenerNombreLibroBiblico } from "../features/catalog/catalog.api";
@@ -53,11 +63,40 @@ function criterioCompleto(
 function AdminThemeStudioPage() {
   const { themeId } = Route.useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const estudioQuery = useQuery({
     queryKey: ["admin", "theme", themeId, "studio"],
     queryFn: () => obtenerEstudioTemaAdmin(themeId),
   });
   const portadasFirmadas = usePortadasFirmadasAdmin(estudioQuery.data ? [estudioQuery.data.tema] : []);
+
+  const invalidateTheme = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["admin", "theme", themeId] }),
+      queryClient.invalidateQueries({ queryKey: ["admin", "theme", themeId, "studio"] }),
+      queryClient.invalidateQueries({ queryKey: ["admin", "themes"] }),
+      queryClient.invalidateQueries({ queryKey: ["admin", "dashboard"] }),
+      queryClient.invalidateQueries({ queryKey: ["temas"] }),
+    ]);
+  };
+
+  const publishMutation = useMutation({
+    mutationFn: () => publicarTema(themeId),
+    onSuccess: async () => {
+      await invalidateTheme();
+      toast.success("¡Tema publicado exitosamente! Ya está disponible para los estudiantes.");
+    },
+    onError: (err) => toast.error(formatearErrorPublicacionApi(err, "No se pudo publicar el tema")),
+  });
+
+  const unpublishMutation = useMutation({
+    mutationFn: () => despublicarTema(themeId),
+    onSuccess: async () => {
+      await invalidateTheme();
+      toast.success("El tema pasó a Borradores");
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "No se pudo cambiar a borrador"),
+  });
 
   if (estudioQuery.isLoading) {
     return (
@@ -101,11 +140,16 @@ function AdminThemeStudioPage() {
       : null;
   const parteHistoria = versiculo?.parte_historia ?? referencia?.parte_historia ?? null;
 
-  const paso1Listo = criterioCompleto(completitud?.criterios, "ficha_base");
+  const paso1Listo =
+    criterioCompleto(completitud?.criterios, "ficha_base") ||
+    criterioCompleto(completitud?.criterios, "informacion");
   const paso2Listo = criterioCompleto(completitud?.criterios, "portada");
   const contenidosCreados = completitud?.estadisticas?.contenidos_creados ?? 0;
   const contenidosEsperados = completitud?.estadisticas?.contenidos_esperados ?? 6;
-  const paso3Listo = criterioCompleto(completitud?.criterios, "contenido_crecer");
+  const paso3Listo =
+    criterioCompleto(completitud?.criterios, "contenido_crecer") ||
+    criterioCompleto(completitud?.criterios, "crecer") ||
+    Boolean(completitud?.franjas_detalle?.some((f) => f.momentos_completos >= 6));
   const paso4Listo = actividades.length > 0;
   const paso5Listo = tema.estado === "publicado";
 
@@ -207,6 +251,10 @@ function AdminThemeStudioPage() {
     },
   ];
 
+  const sendasLabel = Array.isArray(tema.sendas) && tema.sendas.length > 0
+    ? tema.sendas.map((s) => s.nombre).join(" · ")
+    : tema.senda?.nombre ?? "Sin senda";
+
   const nextStepConfig = roadmapSteps.find((s) => s.step === nextStep) ?? roadmapSteps[0]!;
   const nextStepShortLabel = nextStepConfig.title.split(".")[0] ?? `Paso ${nextStep}`;
 
@@ -223,13 +271,72 @@ function AdminThemeStudioPage() {
         completitud={completitud}
       />
 
+      {tema.estado === "publicado" ? (
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-emerald-200 bg-emerald-50/85 px-5 py-4 text-emerald-950 dark:border-emerald-500/35 dark:bg-emerald-950/35 dark:text-emerald-100">
+          <div className="flex items-start gap-3">
+            <CheckCircle2 size={20} className="mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+            <div>
+              <strong className="block text-sm font-extrabold">
+                Tema publicado y activo para los estudiantes
+              </strong>
+              <p className="mt-0.5 text-xs opacity-90">
+                Esta lección ya es visible en la aplicación estudiantil
+                {tema.publicado_en
+                  ? ` desde el ${new Date(tema.publicado_en).toLocaleDateString("es-EC", { day: "numeric", month: "long", year: "numeric" })}.`
+                  : "."}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              className="admin-secondary-button !py-2 !px-3 text-xs"
+              onClick={() => navigate({ to: "/admin/temas/$themeId/preview", params: { themeId } })}
+            >
+              <Eye size={15} /> Ver como estudiante
+            </button>
+            <button
+              type="button"
+              className="admin-secondary-button !py-2 !px-3 text-xs"
+              disabled={unpublishMutation.isPending}
+              onClick={() => unpublishMutation.mutate()}
+            >
+              <FilePenLine size={15} /> {unpublishMutation.isPending ? "Cambiando..." : "Pasar a borrador"}
+            </button>
+          </div>
+        </div>
+      ) : completitud?.listo_para_revision ? (
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-violet-200 bg-violet-50/85 px-5 py-4 text-violet-950 dark:border-violet-500/35 dark:bg-violet-950/35 dark:text-violet-100">
+          <div className="flex items-start gap-3">
+            <ShieldCheck size={20} className="mt-0.5 shrink-0 text-violet-600 dark:text-violet-300" />
+            <div>
+              <strong className="block text-sm font-extrabold">
+                ¡Este tema cumple los requisitos y está listo para publicar!
+              </strong>
+              <p className="mt-0.5 text-xs opacity-90">
+                Puedes publicarlo ahora mismo o revisar la vista previa antes de hacerlo visible.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="admin-primary-button"
+            disabled={publishMutation.isPending}
+            onClick={() => publishMutation.mutate()}
+          >
+            {publishMutation.isPending ? <Loader2 className="animate-spin" size={16} /> : <ShieldCheck size={16} />}
+            {publishMutation.isPending ? "Publicando..." : "Publicar ahora"}
+          </button>
+        </div>
+      ) : null}
+
       <section className="admin-theme-studio__hero">
         <div className="admin-theme-studio__copy">
           <div className="admin-theme-studio__badges">
             <span className="admin-theme-studio__badge">
               <Circle size={8} fill="currentColor" /> {ESTADOS_TEXTO[tema.estado] ?? tema.estado}
             </span>
-            <span className="admin-theme-studio__badge">{tema.senda?.nombre ?? "Sin senda"}</span>
+            <span className="admin-theme-studio__badge">{sendasLabel}</span>
             <span className="admin-theme-studio__badge">{completitud?.porcentaje ?? 0}% completado</span>
           </div>
           <h2>{tema.titulo}</h2>
@@ -243,6 +350,16 @@ function AdminThemeStudioPage() {
               <span>Continuar en {nextStepShortLabel}</span>
               <ArrowRight size={17} />
             </button>
+            {tema.estado !== "publicado" && completitud?.listo_para_revision ? (
+              <button
+                type="button"
+                disabled={publishMutation.isPending}
+                onClick={() => publishMutation.mutate()}
+              >
+                <ShieldCheck size={16} />
+                <span>{publishMutation.isPending ? "Publicando..." : "Publicar ahora"}</span>
+              </button>
+            ) : null}
           </div>
         </div>
         <div className="admin-theme-studio__cover">
@@ -305,8 +422,38 @@ function AdminThemeStudioPage() {
           </section>
 
           <section className="admin-studio-card">
-            <h3>Avance de momentos CRECER por edad</h3>
-            <p>Resumen visual de qué momentos tienen contenido guardado.</p>
+            <h3>Avance de momentos CRECER por franja de edad</h3>
+            <p>Basta completar los 6 momentos y al menos 1 actividad en una sola franja para poder publicar el tema para esa audiencia.</p>
+            {completitud?.franjas_detalle?.length ? (
+              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {completitud.franjas_detalle.map((franja) => (
+                  <div
+                    key={franja.grupo_edad_id}
+                    className={`rounded-xl border p-3.5 text-xs ${
+                      franja.momentos_completos >= franja.momentos_total
+                        ? "border-emerald-200 bg-emerald-50/70 text-emerald-900 dark:border-emerald-500/35 dark:bg-emerald-950/35 dark:text-emerald-100"
+                        : "border-slate-200 bg-slate-50/70 text-slate-700 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200"
+                    }`}
+                  >
+                    <strong className="block font-extrabold">{franja.nombre}</strong>
+                    <span className="mt-1 block opacity-85">
+                      {franja.momentos_completos}/{franja.momentos_total} momentos · {franja.actividades} act.
+                    </span>
+                    <small className="mt-1 block font-bold">
+                      {tema.estado === "publicado" && franja.lista_para_publicar
+                        ? "Publicada y activa"
+                        : franja.lista_para_publicar
+                          ? "Lista para publicar"
+                          : franja.momentos_completos >= franja.momentos_total
+                            ? "Solo falta 1 actividad"
+                            : franja.incluida === false && franja.momentos_completos === 0
+                              ? "Disponible (sin contenido aún)"
+                              : "En construcción"}
+                    </small>
+                  </div>
+                ))}
+              </div>
+            ) : null}
             <div className="admin-age-matrix mt-3">
               <table>
                 <thead>
@@ -318,7 +465,10 @@ function AdminThemeStudioPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {grupos.map((grupo, idx) => {
+                  {(completitud?.franjas_detalle?.length
+                    ? completitud.franjas_detalle.map((f) => ({ id: f.grupo_edad_id, nombre: f.nombre }))
+                    : grupos
+                  ).map((grupo, idx) => {
                     const gId = typeof grupo === "string" ? grupo : grupo.id;
                     const gNombre = typeof grupo === "string" ? grupo : grupo.nombre;
                     return (
@@ -365,18 +515,23 @@ function AdminThemeStudioPage() {
               <strong>{completitud?.porcentaje ?? 0}%</strong>
             </div>
             <div className="admin-completeness-list">
-              {(completitud?.criterios ?? []).map((criterio) => (
-                <div
-                  key={criterio.codigo}
-                  className={`admin-completeness-item ${criterio.completo ? "admin-completeness-item--complete" : ""}`}
-                >
-                  <span>
-                    {criterio.etiqueta}
-                    {criterio.detalle ? <small className="ml-1 opacity-70">· {criterio.detalle}</small> : null}
-                  </span>
-                  {criterio.completo ? <CheckCircle2 size={16} /> : <Circle size={15} />}
-                </div>
-              ))}
+              {(completitud?.criterios ?? []).map((criterio) => {
+                const detalleFormateado = criterio.codigo === "publicacion"
+                  ? formatearDetalleValidacionPublicacion(criterio.detalle)
+                  : criterio.detalle;
+                return (
+                  <div
+                    key={criterio.codigo}
+                    className={`admin-completeness-item ${criterio.completo ? "admin-completeness-item--complete" : ""}`}
+                  >
+                    <span>
+                      {criterio.etiqueta}
+                      {detalleFormateado ? <small className="ml-1 opacity-80">· {detalleFormateado}</small> : null}
+                    </span>
+                    {criterio.completo ? <CheckCircle2 size={16} /> : <Circle size={15} />}
+                  </div>
+                );
+              })}
             </div>
           </section>
 

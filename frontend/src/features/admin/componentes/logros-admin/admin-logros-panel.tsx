@@ -5,7 +5,7 @@ import in1Img from "@/assets/images/Ilustraciones/in1.webp";
 import in2Img from "@/assets/images/Ilustraciones/in2.webp";
 import { Paginacion } from "@/componentes/ui/paginacion";
 import { subirArchivo } from "@/features/media/media.api";
-import { useResolvedMediaUrl } from "@/features/media/use-resolved-media-url";
+import { ResolvedMediaImage } from "@/features/media/resolved-media-image";
 import type {
   CodigoCriterioLogro,
   LogroAdminResumen,
@@ -167,7 +167,7 @@ export function AdminLogrosPanel({ onNuevoLogro }: AdminLogrosPanelProps = {}) {
             />
           </label>
 
-          <label>
+          <label className="block min-w-0">
             <span className="sr-only">Filtrar por criterio</span>
             <select
               aria-label="Filtrar por criterio"
@@ -221,15 +221,15 @@ export function AdminLogrosPanel({ onNuevoLogro }: AdminLogrosPanelProps = {}) {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[780px] text-left text-sm">
+            <table className="w-full min-w-[660px] lg:min-w-0 text-left text-sm">
               <thead className="bg-slate-50 text-[11px] font-black uppercase tracking-wide text-slate-500">
                 <tr>
-                  <th className="px-4 py-3">Insignia</th>
-                  <th className="px-4 py-3">Cómo se gana</th>
-                  <th className="px-4 py-3 text-center">Premio</th>
-                  <th className="px-4 py-3 text-center">Ganado por</th>
-                  <th className="px-4 py-3">Estado</th>
-                  <th className="px-4 py-3 text-right">Acciones</th>
+                  <th className="px-3.5 py-3">Insignia</th>
+                  <th className="px-3.5 py-3">Cómo se gana</th>
+                  <th className="px-3.5 py-3 text-center">Premio</th>
+                  <th className="px-3.5 py-3 text-center">Ganado por</th>
+                  <th className="px-3.5 py-3">Estado</th>
+                  <th className="px-3.5 py-3 text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -359,38 +359,18 @@ function IconoLogroAdmin({ url, codigo }: { url: string | null; codigo: string }
     codigo === "amor_de_dios" || codigo === "explorador_palabra" || codigo.includes("2")
       ? in2Img
       : in1Img;
-  const resolved = useResolvedMediaUrl({
-    rawUrl: url,
-    useFallbackOnError: false,
-  });
-  const [src, setSrc] = useState(resolved.src || url || fallback);
-  const [hasError, setHasError] = useState(false);
-
-  useEffect(() => {
-    setSrc(resolved.src || url || fallback);
-    setHasError(false);
-  }, [resolved.src, url, fallback]);
-
-  if (hasError) {
-    return (
-      <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-700">
-        <Medal className="size-5" aria-hidden="true" />
-      </div>
-    );
-  }
 
   return (
-    <img
-      src={src}
+    <ResolvedMediaImage
+      rawUrl={url}
+      fallbackSrc={fallback}
       alt=""
-      onError={() => {
-        if (src !== fallback) {
-          setSrc(fallback);
-        } else {
-          setHasError(true);
-        }
-      }}
       className="size-11 shrink-0 rounded-xl border border-slate-200/70 object-cover"
+      renderFallback={() => (
+        <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-emerald-50 text-emerald-700">
+          <Medal className="size-5" aria-hidden="true" />
+        </div>
+      )}
     />
   );
 }
@@ -413,7 +393,7 @@ function FilaLogro({
 
   return (
     <tr className="group hover:bg-slate-50/80">
-      <td className="px-4 py-3.5">
+      <td className="px-3.5 py-3">
         <div className="flex items-center gap-3">
           <IconoLogroAdmin url={logro.url_icono ?? (logro as { icono_url?: string }).icono_url ?? null} codigo={logro.codigo} />
           <div className="min-w-0">
@@ -430,18 +410,18 @@ function FilaLogro({
           </div>
         </div>
       </td>
-      <td className="px-4 py-3.5 text-slate-700">
+      <td className="px-3.5 py-3 text-slate-700">
         <span className="admin-logros-rule-pill">{reglaAmigable}</span>
       </td>
-      <td className="whitespace-nowrap px-4 py-3.5 text-center">
+      <td className="whitespace-nowrap px-3.5 py-3 text-center">
         <span className="admin-logros-xp-pill">
           {bonoXp > 0 ? `+${bonoXp} XP` : "Sin XP"}
         </span>
       </td>
-      <td className="whitespace-nowrap px-4 py-3.5 text-center font-semibold text-slate-700">
+      <td className="whitespace-nowrap px-3.5 py-3 text-center font-semibold text-slate-700">
         {otorgados.toLocaleString("es-EC")} {otorgados === 1 ? "niño" : "niños"}
       </td>
-      <td className="whitespace-nowrap px-4 py-3.5">
+      <td className="whitespace-nowrap px-3.5 py-3">
         <span
           className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${
             logro.activo ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"
@@ -453,7 +433,7 @@ function FilaLogro({
           {formatearFechaCorta(logro.creado_en)}
         </span>
       </td>
-      <td className="px-4 py-3.5">
+      <td className="px-3.5 py-3">
         <div className="flex items-center justify-end gap-1">
           <button
             type="button"

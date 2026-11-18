@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Flame,
   FolderOpen,
+  ImageOff,
   ImagePlus,
   Link2,
   Loader2,
@@ -28,7 +29,8 @@ import {
   validarArchivoMultimediaCliente,
   type RecursoMultimedia,
 } from "@/features/media/media.api";
-import { useResolvedMediaUrl } from "@/features/media/use-resolved-media-url";
+import { ResolvedMediaImage } from "@/features/media/resolved-media-image";
+import { esUrlDirectaValida } from "@/features/media/use-resolved-media-url";
 import { MediaGalleryDialog } from "../medios/media-gallery-dialog";
 import type { CodigoCriterioLogro, LogroAdminResumen } from "../../admin-logros.api";
 import {
@@ -290,10 +292,6 @@ export function FormularioLogro({
   const presetSeleccionado = INSIGNIAS_PREDEFINIDAS.find((preset) =>
     esPresetActivo(preset, urlActualLimpia),
   );
-  const imagenResuelta = useResolvedMediaUrl({
-    rawUrl: !presetSeleccionado && urlActualLimpia ? urlActualLimpia : null,
-    useFallbackOnError: false,
-  });
 
   if (!abierto) return null;
 
@@ -452,7 +450,9 @@ export function FormularioLogro({
 
       const urlParaGuardar = resolverUrlGuardableDesdeRecurso(recurso);
       actualizar("url_icono", urlParaGuardar);
-      setPreviewLocalSubida(recurso.url_publica || previewTemporal);
+      setPreviewLocalSubida(
+        esUrlDirectaValida(recurso.url_publica) ? recurso.url_publica.trim() : previewTemporal,
+      );
       setNombreImagenPersonalizada(recurso.titulo || archivo.name);
       setRecursoSeleccionadoId(recurso.id);
       setMostrarUrlExterna(false);
@@ -540,13 +540,10 @@ export function FormularioLogro({
   const titulo = modo === "crear" ? "Nuevo logro" : `Editar ${logro?.nombre ?? "logro"}`;
   const fallbackIcono = codigoCalculado.includes("2") ? in2Img : in1Img;
   const tieneImagenPersonalizada = Boolean(urlActualLimpia) && !presetSeleccionado;
-  const previewSrc = errorImagen
-    ? fallbackIcono
-    : previewLocalSubida ||
-      (urlActualLimpia ? presetSeleccionado?.previewSrc : undefined) ||
-      imagenResuelta.src ||
-      urlActualLimpia ||
-      fallbackIcono;
+  const urlCustomRaw = previewLocalSubida || (tieneImagenPersonalizada ? urlActualLimpia : null);
+  const recursoIdCustom = previewLocalSubida ? null : recursoSeleccionadoId;
+  const urlPreviewRaw = previewLocalSubida || (!presetSeleccionado && urlActualLimpia ? urlActualLimpia : null);
+  const fallbackPreviewSrc = presetSeleccionado?.previewSrc || fallbackIcono;
 
   const reglaTexto = describirReglaLogro(valores.codigo_criterio, valores.valor_criterio);
   const criterioSeleccionado =
@@ -818,19 +815,30 @@ export function FormularioLogro({
 
         {/* Tarjeta si ya hay una imagen subida/personalizada activa */}
         {tieneImagenPersonalizada ? (
-          <div className="admin-logros-custom-preview">
+          <div className={`admin-logros-custom-preview ${errorImagen ? "is-error" : ""}`}>
             <div className="admin-logros-custom-preview__info">
-              <img
-                src={previewSrc}
+              <ResolvedMediaImage
+                resourceId={recursoIdCustom}
+                rawUrl={urlCustomRaw}
                 alt="Medalla personalizada"
                 className="admin-logros-custom-preview__img"
+                onImageErrorChange={setErrorImagen}
+                renderFallback={({ isLoading }) => (
+                  <span className="admin-logros-custom-preview__fallback" aria-hidden="true">
+                    {isLoading ? <Loader2 className="size-5 animate-spin" /> : <ImageOff className="size-5" />}
+                  </span>
+                )}
               />
               <div className="min-w-0">
                 <p className="admin-logros-label truncate">
-                  {nombreImagenPersonalizada || "Imagen personalizada activa"}
+                  {errorImagen
+                    ? "No pudimos cargar esta imagen"
+                    : nombreImagenPersonalizada || "Imagen personalizada activa"}
                 </p>
                 <p className="admin-logros-hint">
-                  Esta imagen aparecerá como medalla del logro.
+                  {errorImagen
+                    ? "Sube otra imagen, elige de la biblioteca o selecciona un diseño listo."
+                    : "Esta imagen aparecerá como medalla del logro."}
                 </p>
               </div>
             </div>
@@ -1032,10 +1040,11 @@ export function FormularioLogro({
 
       <article className="admin-logros-preview-card">
         <div className="admin-logros-preview-card__art">
-          <img
-            src={previewSrc}
+          <ResolvedMediaImage
+            resourceId={recursoIdCustom}
+            rawUrl={urlPreviewRaw}
+            fallbackSrc={fallbackPreviewSrc}
             alt="Vista previa de insignia"
-            onError={() => setErrorImagen(true)}
           />
         </div>
         <div className="min-w-0">
@@ -1124,7 +1133,9 @@ export function FormularioLogro({
           limpiarObjectUrlTemporal();
           const urlGuardable = resolverUrlGuardableDesdeRecurso(encontrado);
           actualizar("url_icono", urlGuardable);
-          setPreviewLocalSubida(encontrado.url_publica);
+          setPreviewLocalSubida(
+            esUrlDirectaValida(encontrado.url_publica) ? encontrado.url_publica.trim() : null,
+          );
           setNombreImagenPersonalizada(encontrado.titulo || "Imagen de biblioteca");
           setRecursoSeleccionadoId(encontrado.id);
           setMostrarUrlExterna(false);
@@ -1188,10 +1199,10 @@ export function FormularioLogro({
         aria-label="Cerrar diálogo"
         onClick={onCerrar}
       />
-      <form onSubmit={enviar} noValidate className="admin-logros-modal-card">
+      <form onSubmit={enviar} noValidate className="admin-logros-modal-card admin-logros-modal-card--wide">
         <header className="admin-logros-modal-head">
-          <div>
-            <h2 id="formulario-logro-titulo" className="admin-logros-title text-xl">
+          <div className="min-w-0">
+            <h2 id="formulario-logro-titulo" className="admin-logros-title text-xl truncate">
               {titulo}
             </h2>
             <p className="admin-logros-subtitle mt-0.5 text-sm">
@@ -1201,14 +1212,17 @@ export function FormularioLogro({
           <button
             type="button"
             onClick={onCerrar}
-            className="admin-logros-secondary-btn min-h-0 p-2"
+            className="admin-logros-close-btn"
             aria-label="Cerrar"
           >
             <X className="size-5" aria-hidden="true" />
           </button>
         </header>
 
-        <div className="admin-logros-modal-body">{pasosContenido}</div>
+        <div className="admin-logros-modal-body admin-logros-modal-body--split">
+          <div className="admin-logros-modal-scroll">{pasosContenido}</div>
+          <div className="admin-logros-modal-aside">{tarjetaVistaPrevia}</div>
+        </div>
 
         <footer className="admin-logros-modal-foot">
           {alertaPieFormulario}

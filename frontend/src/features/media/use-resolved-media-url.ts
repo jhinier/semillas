@@ -26,7 +26,7 @@ import logoOriginalImg from "@/assets/images/logos/Logo_original.webp";
 import defaultTemaImg from "@/assets/images/temas/default-tema.webp";
 
 const UUID_EXTRACT_REGEX = /([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})/i;
-const MEDIA_ENDPOINT_URL_REGEX = /\/media\/([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/url$/i;
+const MEDIA_ENDPOINT_URL_REGEX = /\/media\/([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/url(?:\?.*)?$/i;
 
 const ILUSTRACIONES_POOL = [
   tema1Img,

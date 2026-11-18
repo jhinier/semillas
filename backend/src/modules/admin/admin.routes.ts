@@ -24,7 +24,8 @@ import {
   bulkUserActionSchema,
   upsertStepContentSchema,
   createSendaSchema,
-  updateSendaSchema
+  updateSendaSchema,
+  updateGrupoEdadSchema
 } from "./admin.schemas";
 import { crearAdminRepository } from "./admin.repository";
 import { crearAdminUsersRepository } from "./admin-users.repository";
@@ -59,6 +60,10 @@ export function crearModuloAdmin(
       temas: crearCasosUsoTemas(repositorio),
       usuarios: crearCasosUsoUsuarios(repositorioUsuarios),
       sendas: crearCasosUsoSendas(repositorio),
+      grupos: {
+        actualizar: (grupoId: string, body: Parameters<typeof repositorio.actualizarGrupoEdad>[1]) =>
+          repositorio.actualizarGrupoEdad(grupoId, body)
+      },
       governance
     };
   }
@@ -75,6 +80,7 @@ export function crearModuloAdmin(
   adminRoutes.post("/sendas", zValidator("json", createSendaSchema), async (c) => responderExito(await obtenerCasosUso(c).sendas.crear(c.req.valid("json")), 201));
   adminRoutes.get("/sendas/:id", async (c) => responderExito(await obtenerCasosUso(c).sendas.obtener(c.req.param("id"))));
   adminRoutes.patch("/sendas/:id", zValidator("json", updateSendaSchema), async (c) => responderExito(await obtenerCasosUso(c).sendas.actualizar(c.req.param("id"), c.req.valid("json"))));
+  adminRoutes.patch("/grupos-etarios/:grupo_id", zValidator("json", updateGrupoEdadSchema), async (c) => responderExito(await obtenerCasosUso(c).grupos.actualizar(c.req.param("grupo_id"), c.req.valid("json"))));
   adminRoutes.get("/resumen/detallado", async (c) => responderExito(await obtenerCasosUso(c).resumen.ejecutarDetallado()));
   adminRoutes.get("/revisiones", zValidator("query", reviewListQuerySchema), async (c) =>
     responderExito(await obtenerCasosUso(c).governance.listarRevisiones(c.req.valid("query")))

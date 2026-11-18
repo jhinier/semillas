@@ -21,8 +21,11 @@ import { toast } from "sonner";
 import {
   archivarTema,
   actualizarTema,
+  despublicarTema,
   duplicarTema,
   enviarTemaRevision,
+  formatearDetalleValidacionPublicacion,
+  formatearErrorPublicacionApi,
   obtenerEstudioTemaAdmin,
   publicarTema,
   type ActualizarTemaSolicitud,
@@ -31,6 +34,15 @@ import {
   ThemeWorkflowStepper,
   type ThemeWorkflowStep,
 } from "../features/admin/componentes/temas/theme-workflow-stepper";
+import {
+  AdminStudioField,
+  AvisoSeccionObligatoria,
+  claseContenedorSelectorPaso1,
+  claseTarjetaSelectorPaso1,
+  enfocarCampoPaso1,
+  obtenerAccionesPendientesPublicacion,
+  validarCamposObligatoriosPaso1,
+} from "../features/admin/componentes/temas";
 import {
   LIBROS_BIBLICOS_CATALOGO,
   obtenerGruposEdad,
@@ -90,6 +102,7 @@ function ThemeMetadataEditorPage() {
     titulo: "",
     slug: "",
     senda_id: "",
+    senda_ids: [] as string[],
     objetivo: "",
     resumen: "",
     version_biblica_id: "",
@@ -130,10 +143,19 @@ function ThemeMetadataEditorPage() {
     if (!tema) return;
     const versiculoActual = tema.versiculo_clave;
     const referenciaActual = tema.referencia_biblica;
+    const sendasIniciales =
+      Array.isArray(tema.senda_ids) && tema.senda_ids.length > 0
+        ? tema.senda_ids
+        : Array.isArray(tema.sendas) && tema.sendas.length > 0
+          ? tema.sendas.map((s) => s.id)
+          : tema.senda_id
+            ? [tema.senda_id]
+            : [];
     setForm({
       titulo: tema.titulo,
       slug: tema.slug,
-      senda_id: tema.senda_id,
+      senda_id: sendasIniciales[0] ?? tema.senda_id,
+      senda_ids: sendasIniciales,
       objetivo: tema.objetivo,
       resumen: tema.resumen ?? "",
       version_biblica_id: tema.version_biblica_id ?? "",
@@ -174,10 +196,16 @@ function ThemeMetadataEditorPage() {
 
   const payload = useMemo<ActualizarTemaSolicitud>(() => {
     const versiculoLimpio = form.versiculo_texto.trim();
+    const sendasElegidas = form.senda_ids.length
+      ? form.senda_ids
+      : form.senda_id
+        ? [form.senda_id]
+        : [];
     return {
       titulo: form.titulo.trim(),
       slug: form.slug.trim() || slugify(form.titulo) || undefined,
-      senda_id: form.senda_id,
+      senda_id: sendasElegidas[0] ?? form.senda_id,
+      senda_ids: sendasElegidas.length ? sendasElegidas : undefined,
       objetivo: form.objetivo.trim(),
       resumen: form.resumen.trim(),
       version_biblica_id: form.version_biblica_id,
@@ -224,11 +252,13 @@ function ThemeMetadataEditorPage() {
 
   const saveAndGoStep2Mutation = useMutation({
     mutationFn: async () => {
-      if (form.titulo.trim().length < 3) {
-        throw new Error("Escribe un título de al menos 3 letras.");
-      }
-      if (!form.grupo_edad_ids.length) {
-        throw new Error("Selecciona al menos una edad destinataria.");
+      const validacionActual = validarCamposObligatoriosPaso1(form);
+      if (!validacionActual.esValido) {
+        const primero = validacionActual.pendientes[0];
+        if (primero) enfocarCampoPaso1(primero.id);
+        throw new Error(
+          `Antes de continuar completa: ${validacionActual.pendientes.map((item) => item.mensajeToast).join(", ")}.`,
+        );
       }
       if (dirty) {
         await actualizarTema(themeId, payload);
@@ -316,11 +346,25 @@ function ThemeMetadataEditorPage() {
     onSuccess: async () => {
       await invalidate();
       setDirty(false);
-      toast.success("¡Tema publicado exitosamente!");
+      toast.success(
+        tema?.estado === "publicado"
+          ? "¡Publicación actualizada!"
+          : "¡Tema publicado exitosamente! Ya está visible para los estudiantes.",
+      );
+    },
+    onError: (error) =>
+      toast.error(formatearErrorPublicacionApi(error)),
+  });
+
+  const unpublishMutation = useMutation({
+    mutationFn: () => despublicarTema(themeId),
+    onSuccess: async () => {
+      await invalidate();
+      toast.success("El tema pasó a Borradores");
     },
     onError: (error) =>
       toast.error(
-        error instanceof Error ? error.message : "No se pudo publicar",
+        error instanceof Error ? error.message : "No se pudo pasar a borrador",
       ),
   });
 
@@ -414,6 +458,9 @@ function ThemeMetadataEditorPage() {
   const currentStep: ThemeWorkflowStep =
     activeTab === "portada" ? 2 : activeTab === "publicacion" ? 5 : 1;
   const hayPortada = Boolean(selectedCoverResource?.id);
+  const paso1Validacion = validarCamposObligatoriosPaso1(form);
+  const faltaVersiculoOBiblia = paso1Validacion.pendientesVersiculo.length > 0;
+  const accionesPendientes = obtenerAccionesPendientesPublicacion(completitud);
 
   return (
     <div className="admin-theme-studio">
@@ -459,79 +506,187 @@ function ThemeMetadataEditorPage() {
         <main className="admin-editor-main">
           {activeTab === "general" ? (
             <>
-              <section className="admin-editor-section">
+              <section
+                className={`admin-editor-section ${paso1Validacion.pendientesGeneral.length > 0 ? "admin-editor-section--attention" : ""}`}
+              >
                 <div className="admin-editor-section__header">
                   <div>
                     <h2>Paso 1. Información general</h2>
                     <p>Estos datos ayudan a organizar el tema por senda y grupo de edad.</p>
                   </div>
+                  <AvisoSeccionObligatoria
+                    cantidadFaltantes={paso1Validacion.pendientesGeneral.length}
+                    singular="Falta 1 campo obligatorio"
+                    plural="campos obligatorios por completar"
+                  />
                 </div>
                 <div className="admin-form-grid">
-                  <Field label="Título del tema" wide>
+                  <AdminStudioField
+                    htmlFor="tema-titulo"
+                    label="Título del tema"
+                    required
+                    invalid={paso1Validacion.tituloInvalido}
+                    help={
+                      paso1Validacion.tituloInvalido
+                        ? `Obligatorio: escribe un título de al menos 3 letras (llevas ${paso1Validacion.tituloLargo} de 3).`
+                        : undefined
+                    }
+                    wide
+                  >
                     <input
+                      id="tema-titulo"
                       value={form.titulo}
                       maxLength={120}
                       onChange={(event) =>
                         updateForm("titulo", event.target.value)
                       }
+                      aria-invalid={paso1Validacion.tituloInvalido || undefined}
                     />
-                  </Field>
-                  <Field label="Senda">
-                    <select
-                      value={form.senda_id}
-                      onChange={(event) =>
-                        updateForm("senda_id", event.target.value)
-                      }
+                  </AdminStudioField>
+                  <AdminStudioField
+                    esGrupo
+                    label="Sendas a las que pertenece"
+                    required
+                    invalid={paso1Validacion.sendaInvalida}
+                    help={
+                      paso1Validacion.sendaInvalida
+                        ? "Obligatorio: selecciona al menos una senda."
+                        : "Puedes elegir una o más sendas donde aparecerá este tema."
+                    }
+                    wide
+                  >
+                    <div
+                      id="tema-sendas"
+                      className={claseContenedorSelectorPaso1(paso1Validacion.sendaInvalida)}
                     >
-                      {sendasQuery.data?.map((senda) => (
-                        <option key={senda.id} value={senda.id}>
-                          {senda.nombre}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Versión de la Biblia">
+                      {sendasQuery.data?.map((senda) => {
+                        const actualIds = form.senda_ids.length
+                          ? form.senda_ids
+                          : form.senda_id
+                            ? [form.senda_id]
+                            : [];
+                        const selected = actualIds.includes(senda.id);
+                        const isPrimary = actualIds[0] === senda.id;
+
+                        const toggleSenda = () => {
+                          const nextIds = selected
+                            ? actualIds.filter((id) => id !== senda.id)
+                            : [...actualIds, senda.id];
+                          setForm((current) => ({
+                            ...current,
+                            senda_ids: nextIds,
+                            senda_id: nextIds[0] ?? "",
+                          }));
+                          setDirty(true);
+                        };
+
+                        return (
+                          <button
+                            key={senda.id}
+                            type="button"
+                            onClick={toggleSenda}
+                            className={claseTarjetaSelectorPaso1(selected, paso1Validacion.sendaInvalida)}
+                          >
+                            <span className="flex items-center justify-between gap-2 font-bold text-slate-800 dark:text-slate-100">
+                              <span className="flex items-center gap-2 min-w-0">
+                                <span
+                                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                  style={{ backgroundColor: senda.color_hex }}
+                                  aria-hidden="true"
+                                />
+                                <span className="truncate">{senda.nombre}</span>
+                              </span>
+                              {selected ? (
+                                <CheckCircle2
+                                  size={18}
+                                  className="shrink-0 text-violet-600 dark:text-violet-300"
+                                />
+                              ) : (
+                                <CircleIcon />
+                              )}
+                            </span>
+                            <small className="mt-1.5 block text-slate-500 dark:text-slate-300">
+                              {selected ? (isPrimary ? "Senda principal" : "Senda adicional") : "Clic para incluir"}
+                            </small>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </AdminStudioField>
+                  <AdminStudioField
+                    htmlFor="tema-version"
+                    label="Versión de la Biblia"
+                    required
+                    invalid={paso1Validacion.versionBiblicaInvalida}
+                    help={
+                      paso1Validacion.versionBiblicaInvalida
+                        ? "Obligatorio: selecciona una versión de la Biblia."
+                        : undefined
+                    }
+                  >
                     <select
+                      id="tema-version"
                       value={form.version_biblica_id}
                       onChange={(event) =>
                         updateForm("version_biblica_id", event.target.value)
                       }
+                      aria-invalid={paso1Validacion.versionBiblicaInvalida || undefined}
                     >
+                      <option value="">Selecciona una versión</option>
                       {versionesQuery.data?.map((version) => (
                         <option key={version.id} value={version.id}>
                           {version.nombre}
                         </option>
                       ))}
                     </select>
-                  </Field>
-                  <Field
+                  </AdminStudioField>
+                  <AdminStudioField
+                    htmlFor="tema-resumen"
                     label="Resumen breve"
-                    help="Se muestra en la lista de temas y búsquedas."
+                    required
+                    invalid={paso1Validacion.resumenInvalido}
+                    help={
+                      paso1Validacion.resumenInvalido
+                        ? `Obligatorio: escribe al menos 10 letras (llevas ${paso1Validacion.resumenLargo} de 10).`
+                        : "Se muestra en la lista de temas y búsquedas."
+                    }
                     wide
                   >
                     <textarea
+                      id="tema-resumen"
                       rows={3}
                       value={form.resumen}
                       onChange={(event) =>
                         updateForm("resumen", event.target.value)
                       }
+                      aria-invalid={paso1Validacion.resumenInvalido || undefined}
                     />
-                  </Field>
-                  <Field
+                  </AdminStudioField>
+                  <AdminStudioField
+                    htmlFor="tema-objetivo"
                     label="Objetivo de aprendizaje"
-                    help="¿Qué aprenderá o aplicará el estudiante?"
+                    required
+                    invalid={paso1Validacion.objetivoInvalido}
+                    help={
+                      paso1Validacion.objetivoInvalido
+                        ? `Obligatorio: explica en al menos 10 letras qué aprenderá el estudiante (llevas ${paso1Validacion.objetivoLargo} de 10).`
+                        : "¿Qué aprenderá o aplicará el estudiante?"
+                    }
                     wide
                   >
                     <textarea
+                      id="tema-objetivo"
                       rows={4}
                       value={form.objetivo}
                       onChange={(event) =>
                         updateForm("objetivo", event.target.value)
                       }
+                      aria-invalid={paso1Validacion.objetivoInvalido || undefined}
                     />
-                  </Field>
-                  <Field label="Duración aproximada (min)">
+                  </AdminStudioField>
+                  <AdminStudioField htmlFor="tema-minutos" label="Duración aproximada (min)">
                     <input
+                      id="tema-minutos"
                       type="number"
                       min={1}
                       max={120}
@@ -543,9 +698,10 @@ function ThemeMetadataEditorPage() {
                         )
                       }
                     />
-                  </Field>
-                  <Field label="Puntos (XP) al completar">
+                  </AdminStudioField>
+                  <AdminStudioField htmlFor="tema-xp" label="Puntos (XP) al completar">
                     <input
+                      id="tema-xp"
                       type="number"
                       min={0}
                       max={500}
@@ -554,9 +710,23 @@ function ThemeMetadataEditorPage() {
                         updateForm("xp_recompensa", Number(event.target.value))
                       }
                     />
-                  </Field>
-                  <Field label="Edades destinatarias" wide>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  </AdminStudioField>
+                  <AdminStudioField
+                    esGrupo
+                    label="Edades destinatarias"
+                    required
+                    invalid={paso1Validacion.edadesInvalidas}
+                    help={
+                      paso1Validacion.edadesInvalidas
+                        ? "Obligatorio: elige al menos un grupo de edad."
+                        : undefined
+                    }
+                    wide
+                  >
+                    <div
+                      id="tema-edades"
+                      className={claseContenedorSelectorPaso1(paso1Validacion.edadesInvalidas)}
+                    >
                       {edadesQuery.data?.map((grupo) => {
                         const selected = form.grupo_edad_ids.includes(grupo.id);
                         return (
@@ -573,7 +743,7 @@ function ThemeMetadataEditorPage() {
                                   : [...form.grupo_edad_ids, grupo.id],
                               )
                             }
-                            className={`rounded-2xl border p-4 text-left transition ${selected ? "border-violet-500 bg-violet-50 dark:border-violet-400 dark:bg-violet-950/60" : "border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900"}`}
+                            className={claseTarjetaSelectorPaso1(selected, paso1Validacion.edadesInvalidas)}
                           >
                             <span className="flex items-center justify-between font-bold text-slate-800 dark:text-slate-100">
                               {grupo.nombre}
@@ -593,24 +763,39 @@ function ThemeMetadataEditorPage() {
                         );
                       })}
                     </div>
-                  </Field>
+                  </AdminStudioField>
                 </div>
               </section>
 
-              <section className="admin-editor-section">
+              <section
+                className={`admin-editor-section ${faltaVersiculoOBiblia ? "admin-editor-section--attention" : ""}`}
+              >
                 <div className="admin-editor-section__header">
                   <div>
                     <h2>Historia bíblica y versículo clave</h2>
-                    <p>Selecciona la cita bíblica principal del tema.</p>
+                    <p>Selecciona la cita bíblica principal y escribe el versículo del tema.</p>
                   </div>
+                  <AvisoSeccionObligatoria
+                    cantidadFaltantes={paso1Validacion.pendientesVersiculo.length}
+                    singular="Falta completar versículo obligatorio"
+                    plural="campos del versículo por completar"
+                  />
                 </div>
                 <div className="admin-form-grid">
-                  <Field label="Libro de la Biblia">
+                  <AdminStudioField
+                    htmlFor="tema-libro"
+                    label="Libro de la Biblia"
+                    required
+                    invalid={paso1Validacion.libroInvalido}
+                    help={paso1Validacion.libroInvalido ? "Obligatorio: selecciona un libro." : undefined}
+                  >
                     <select
+                      id="tema-libro"
                       value={form.libro_id}
                       onChange={(event) =>
                         updateForm("libro_id", Number(event.target.value))
                       }
+                      aria-invalid={paso1Validacion.libroInvalido || undefined}
                     >
                       {LIBROS_BIBLICOS_CATALOGO.map((libro) => (
                         <option key={libro.id} value={libro.id}>
@@ -618,60 +803,91 @@ function ThemeMetadataEditorPage() {
                         </option>
                       ))}
                     </select>
-                  </Field>
+                  </AdminStudioField>
                   <div className="grid grid-cols-2 gap-3">
-                    <Field label="Capítulo">
+                    <AdminStudioField
+                      htmlFor="tema-capitulo"
+                      label="Capítulo"
+                      required
+                      invalid={paso1Validacion.capituloInvalido}
+                      help={paso1Validacion.capituloInvalido ? "Obligatorio (1–150)" : undefined}
+                    >
                       <input
+                        id="tema-capitulo"
                         type="number"
                         min={1}
                         max={150}
-                        value={form.capitulo}
+                        value={form.capitulo > 0 ? form.capitulo : ""}
                         onChange={(event) =>
                           updateForm(
                             "capitulo",
-                            Math.max(1, Number(event.target.value) || 1),
+                            event.target.value === "" ? 0 : Number(event.target.value),
                           )
                         }
+                        aria-invalid={paso1Validacion.capituloInvalido || undefined}
                       />
-                    </Field>
-                    <Field label="Versículo">
+                    </AdminStudioField>
+                    <AdminStudioField
+                      htmlFor="tema-versiculo"
+                      label="Versículo"
+                      required
+                      invalid={paso1Validacion.versiculoNumInvalido}
+                      help={paso1Validacion.versiculoNumInvalido ? "Obligatorio (1–176)" : undefined}
+                    >
                       <input
+                        id="tema-versiculo"
                         type="number"
                         min={1}
                         max={176}
-                        value={form.versiculo}
+                        value={form.versiculo > 0 ? form.versiculo : ""}
                         onChange={(event) =>
                           updateForm(
                             "versiculo",
-                            Math.max(1, Number(event.target.value) || 1),
+                            event.target.value === "" ? 0 : Number(event.target.value),
                           )
                         }
+                        aria-invalid={paso1Validacion.versiculoNumInvalido || undefined}
                       />
-                    </Field>
+                    </AdminStudioField>
                   </div>
-                  <Field
+                  <AdminStudioField
+                    htmlFor="tema-parte-historia"
                     label="Escena o historia bíblica (opcional)"
                     wide
                   >
                     <input
+                      id="tema-parte-historia"
                       value={form.parte_historia}
                       maxLength={220}
-                      placeholder={`Ejemplo: Historia de ${libroNombre} ${form.capitulo}`}
+                      placeholder={`Ejemplo: Historia de ${libroNombre} ${form.capitulo || 1}`}
                       onChange={(event) =>
                         updateForm("parte_historia", event.target.value)
                       }
                     />
-                  </Field>
-                  <Field label="Texto completo del versículo clave" wide>
+                  </AdminStudioField>
+                  <AdminStudioField
+                    htmlFor="tema-versiculo-texto"
+                    label="Texto completo del versículo clave"
+                    required
+                    invalid={paso1Validacion.versiculoTextoInvalido}
+                    help={
+                      paso1Validacion.versiculoTextoInvalido
+                        ? `Obligatorio: escribe el texto del versículo (mínimo 3 letras, llevas ${paso1Validacion.versiculoTextoLargo} de 3).`
+                        : "Se mostrará al estudiante al iniciar y completar el tema."
+                    }
+                    wide
+                  >
                     <textarea
+                      id="tema-versiculo-texto"
                       rows={3}
                       value={form.versiculo_texto}
                       placeholder="Escribe aquí el texto del versículo..."
                       onChange={(event) =>
                         updateForm("versiculo_texto", event.target.value)
                       }
+                      aria-invalid={paso1Validacion.versiculoTextoInvalido || undefined}
                     />
-                  </Field>
+                  </AdminStudioField>
                 </div>
 
                 <div className="admin-step-footer-bar">
@@ -766,6 +982,34 @@ function ThemeMetadataEditorPage() {
                   </p>
                 </div>
               </div>
+
+              {tema.estado === "publicado" ? (
+                <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 text-emerald-950 dark:border-emerald-500/35 dark:bg-emerald-950/35 dark:text-emerald-100">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 size={20} className="mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                    <div>
+                      <strong className="block text-sm font-extrabold">
+                        Este tema ya está publicado
+                      </strong>
+                      <p className="mt-0.5 text-xs opacity-90">
+                        Los estudiantes ya pueden verlo y estudiar su contenido
+                        {tema.publicado_en
+                          ? ` desde el ${new Date(tema.publicado_en).toLocaleDateString("es-EC", { day: "numeric", month: "long", year: "numeric" })}.`
+                          : "."}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="admin-secondary-button !py-2 !px-3 text-xs"
+                    disabled={unpublishMutation.isPending}
+                    onClick={() => unpublishMutation.mutate()}
+                  >
+                    <FilePenLine size={15} /> {unpublishMutation.isPending ? "Cambiando..." : "Pasar a borrador"}
+                  </button>
+                </div>
+              ) : null}
+
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="rounded-3xl bg-slate-50 p-5">
                   <span className="admin-eyebrow">Estado actual</span>
@@ -792,19 +1036,132 @@ function ThemeMetadataEditorPage() {
               </div>
 
               <div className="admin-completeness-list mt-5">
-                {(completitud?.criterios ?? []).map((item) => (
-                  <div
-                    key={item.codigo}
-                    className={`admin-completeness-item ${item.completo ? "admin-completeness-item--complete" : ""}`}
-                  >
-                    <span>
-                      {item.etiqueta}
-                      {item.detalle ? ` · ${item.detalle}` : ""}
-                    </span>
-                    {item.completo ? <Check size={16} /> : <span>Pendiente</span>}
-                  </div>
-                ))}
+                {(completitud?.criterios ?? []).map((item) => {
+                  const detalle = item.codigo === "publicacion"
+                    ? formatearDetalleValidacionPublicacion(item.detalle)
+                    : item.detalle;
+                  return (
+                    <div
+                      key={item.codigo}
+                      className={`admin-completeness-item ${item.completo ? "admin-completeness-item--complete" : ""}`}
+                    >
+                      <span>
+                        {item.etiqueta}
+                        {detalle ? ` · ${detalle}` : ""}
+                      </span>
+                      {item.completo ? <Check size={16} /> : <span>Pendiente</span>}
+                    </div>
+                  );
+                })}
               </div>
+
+              {completitud?.franjas_detalle?.length ? (
+                <div className="mt-5 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <strong className="block text-sm font-extrabold text-slate-900 dark:text-slate-100">
+                      Estado por franja de edad
+                    </strong>
+                    <button
+                      type="button"
+                      className="text-xs font-bold text-violet-600 hover:underline dark:text-violet-300"
+                      onClick={() =>
+                        navigate({
+                          to: "/admin/temas/$themeId/crecer",
+                          params: { themeId },
+                        })
+                      }
+                    >
+                      Completar otras edades en CRECER →
+                    </button>
+                  </div>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    Basta con que al menos una franja tenga los 6 momentos CRECER y 1 actividad para poder publicar para esa franja.
+                  </p>
+                  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    {completitud.franjas_detalle.map((franja) => (
+                      <div
+                        key={franja.grupo_edad_id}
+                        className={`rounded-xl border p-3.5 text-xs ${
+                          franja.momentos_completos >= franja.momentos_total
+                            ? "border-emerald-200 bg-emerald-50/70 text-emerald-900 dark:border-emerald-500/35 dark:bg-emerald-950/35 dark:text-emerald-100"
+                            : "border-slate-200 bg-slate-50/70 text-slate-700 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200"
+                        }`}
+                      >
+                        <strong className="block font-extrabold">{franja.nombre}</strong>
+                        <span className="mt-0.5 block opacity-85">
+                          {franja.momentos_completos}/{franja.momentos_total} momentos · {franja.actividades} act.
+                        </span>
+                        <small className="mt-1 block font-bold">
+                          {tema.estado === "publicado" && franja.lista_para_publicar
+                            ? "Publicada y activa"
+                            : franja.lista_para_publicar
+                              ? "Lista para publicar"
+                              : franja.momentos_completos >= franja.momentos_total
+                                ? "Solo falta 1 actividad"
+                                : franja.incluida === false && franja.momentos_completos === 0
+                                  ? "Disponible (sin contenido aún)"
+                                  : "En construcción"}
+                        </small>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {tema.estado !== "publicado" && !completitud?.listo_para_revision ? (
+                <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/90 p-4 text-xs text-amber-950 dark:border-amber-500/35 dark:bg-amber-950/35 dark:text-amber-100">
+                  <strong className="block text-sm font-extrabold">
+                    ¿Por qué todavía no se habilita “Publicar ahora”?
+                  </strong>
+                  <ul className="mt-2 list-disc space-y-1 pl-5 opacity-95">
+                    {(completitud?.criterios ?? [])
+                      .filter((c) => !c.completo)
+                      .map((c) => {
+                        const detalle = c.codigo === "publicacion"
+                          ? formatearDetalleValidacionPublicacion(c.detalle)
+                          : c.detalle;
+                        return (
+                          <li key={c.codigo}>
+                            <strong>{c.etiqueta}</strong>
+                            {detalle ? `: ${detalle}` : " pendiente"}
+                          </li>
+                        );
+                      })}
+                  </ul>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {accionesPendientes.map((accion) => (
+                      <button
+                        key={accion.paso}
+                        type="button"
+                        className="admin-secondary-button !py-1.5 !px-3 text-xs"
+                        onClick={() => {
+                          if (accion.paso === 1) {
+                            setActiveTab("general");
+                            return;
+                          }
+                          if (accion.paso === 2) {
+                            setActiveTab("portada");
+                            return;
+                          }
+                          if (accion.paso === 3) {
+                            navigate({
+                              to: "/admin/temas/$themeId/crecer",
+                              params: { themeId },
+                            });
+                            return;
+                          }
+                          navigate({
+                            to: "/admin/temas/$themeId/activities",
+                            params: { themeId },
+                          });
+                        }}
+                      >
+                        {accion.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
 
               <div className="admin-step-footer-bar">
                 <div className="flex flex-wrap gap-2">
@@ -834,24 +1191,35 @@ function ThemeMetadataEditorPage() {
                   </button>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    className="admin-secondary-button"
-                    disabled={
-                      !completitud?.listo_para_revision ||
-                      reviewMutation.isPending ||
-                      tema.estado === "revision"
-                    }
-                    onClick={() => reviewMutation.mutate()}
-                  >
-                    <Send size={17} /> Enviar a revisión
-                  </button>
+                <div className="flex flex-wrap gap-3">
+                  {tema.estado !== "publicado" ? (
+                    <button
+                      type="button"
+                      className="admin-secondary-button"
+                      disabled={
+                        !completitud?.listo_para_revision ||
+                        reviewMutation.isPending ||
+                        tema.estado === "revision"
+                      }
+                      onClick={() => reviewMutation.mutate()}
+                    >
+                      <Send size={17} /> Enviar a revisión
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="admin-secondary-button"
+                      disabled={unpublishMutation.isPending}
+                      onClick={() => unpublishMutation.mutate()}
+                    >
+                      <FilePenLine size={16} /> Pasar a borrador
+                    </button>
+                  )}
                   <button
                     type="button"
                     className="admin-primary-button"
                     disabled={
-                      !completitud?.listo_para_revision ||
+                      (!completitud?.listo_para_revision && tema.estado !== "publicado") ||
                       publishMutation.isPending
                     }
                     onClick={() => publishMutation.mutate()}
@@ -862,7 +1230,9 @@ function ThemeMetadataEditorPage() {
                       <ShieldCheck size={17} />
                     )}{" "}
                     {tema.estado === "publicado"
-                      ? "Actualizar publicación"
+                      ? dirty
+                        ? "Guardar y actualizar publicación"
+                        : "Ya publicado"
                       : "Publicar ahora"}
                   </button>
                 </div>
@@ -924,26 +1294,6 @@ function ThemeMetadataEditorPage() {
         </aside>
       </div>
     </div>
-  );
-}
-
-function Field({
-  label,
-  help,
-  wide,
-  children,
-}: {
-  label: string;
-  help?: string;
-  wide?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className={`admin-field ${wide ? "admin-field--wide" : ""}`}>
-      <span>{label}</span>
-      {children}
-      {help ? <small>{help}</small> : null}
-    </label>
   );
 }
 

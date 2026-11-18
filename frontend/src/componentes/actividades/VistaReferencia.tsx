@@ -1,5 +1,6 @@
 import { Eye } from "lucide-react";
 import type { JSX } from "react";
+import { ResolvedMediaImage } from "@/features/media/resolved-media-image";
 
 interface VistaReferenciaProps {
   imagen: string;
@@ -13,8 +14,10 @@ export function VistaReferencia({ imagen, onAmpliar }: VistaReferenciaProps): JS
       onClick={onAmpliar}
     >
       <div className="relative group w-full">
-        <img
-          src={imagen}
+        <ResolvedMediaImage
+          rawUrl={imagen}
+          fallbackHint="referencia"
+          useIlustracionFallback
           alt="Referencia"
           className="w-full h-auto aspect-video rounded-xl object-cover border-2 border-white shadow-sm transition-transform group-hover:scale-[1.02]"
         />

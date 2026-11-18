@@ -19,6 +19,7 @@ export type ThemePreviewMode = "overview" | "lesson";
 
 type UseThemePreviewPageOptions = {
   themeId: string;
+  initialAgeGroupId?: string;
 };
 
 type PreviewStepLike = {
@@ -30,6 +31,8 @@ type PreviewStepLike = {
     titulo?: string | null;
     cuerpo?: string | null;
     instruccion_corta?: string | null;
+    recurso_id?: string | null;
+    recurso_audio_id?: string | null;
   }> | null;
   preguntas?: Array<{
     id?: string;
@@ -86,10 +89,10 @@ export function obtenerCodigosPasosCompletosPreview(
 }
 
 
-export function useThemePreviewPage({ themeId }: UseThemePreviewPageOptions) {
+export function useThemePreviewPage({ themeId, initialAgeGroupId }: UseThemePreviewPageOptions) {
   const navigate = useNavigate();
   const [previewMode, setPreviewMode] = useState<ThemePreviewMode>("overview");
-  const [selectedAgeGroupId, setSelectedAgeGroupId] = useState("");
+  const [selectedAgeGroupId, setSelectedAgeGroupId] = useState(initialAgeGroupId ?? "");
   const [activeStepCode, setActiveStepCode] = useState("conectar");
 
   const themeQuery = useQuery({
@@ -110,15 +113,33 @@ export function useThemePreviewPage({ themeId }: UseThemePreviewPageOptions) {
   const theme = themeQuery.data;
   const ageGroups = theme?.grupos_edad ?? [];
 
-  useEffect(() => {
-    if (selectedAgeGroupId || ageGroups.length === 0) return;
-    setSelectedAgeGroupId(ageGroups[0]?.id ?? "");
-  }, [ageGroups, selectedAgeGroupId]);
-
   const steps = useMemo(
     () => [...(stepsQuery.data ?? [])].sort((a, b) => a.orden - b.orden),
     [stepsQuery.data],
   );
+
+  const activities = useMemo(
+    () => (activitiesQuery.data?.actividades ?? []) as ActividadAdmin[],
+    [activitiesQuery.data],
+  );
+
+  useEffect(() => {
+    if (ageGroups.length === 0) return;
+    if (selectedAgeGroupId && ageGroups.some((g) => g.id === selectedAgeGroupId)) return;
+    if (initialAgeGroupId && ageGroups.some((g) => g.id === initialAgeGroupId)) {
+      setSelectedAgeGroupId(initialAgeGroupId);
+      return;
+    }
+    // Elegir primero una franja que ya tenga momentos CRECER o actividades cargadas
+    const conContenido = ageGroups.find((group) => {
+      const tienePaso = steps.some((step) =>
+        step.contenidos?.some((c) => c.grupo_edad_id === group.id && Boolean(c.cuerpo?.trim())),
+      );
+      const tieneAct = activities.some((act) => act.grupo_edad_id === group.id);
+      return tienePaso || tieneAct;
+    });
+    setSelectedAgeGroupId((conContenido ?? ageGroups[0])?.id ?? "");
+  }, [ageGroups, initialAgeGroupId, selectedAgeGroupId, steps, activities]);
 
   const selectedAgeGroup = useMemo(
     () => ageGroups.find((group) => group.id === selectedAgeGroupId) ?? null,
@@ -139,10 +160,6 @@ export function useThemePreviewPage({ themeId }: UseThemePreviewPageOptions) {
       .sort((a, b) => a.orden - b.orden);
   }, [selectedAgeGroupId, selectedStep]);
 
-  const activities = useMemo(
-    () => (activitiesQuery.data?.actividades ?? []) as ActividadAdmin[],
-    [activitiesQuery.data],
-  );
   const filteredActivities = useMemo(
     () => filtrarActividadesPreview(
       activities,
@@ -152,7 +169,14 @@ export function useThemePreviewPage({ themeId }: UseThemePreviewPageOptions) {
     [activities, selectedAgeGroupId, selectedStep?.id],
   );
   const ageActivities = filteredActivities.byAge;
-  const selectedStepActivities = filteredActivities.byStep;
+  const selectedStepActivities = useMemo(() => {
+    if (filteredActivities.byStep.length > 0) return filteredActivities.byStep;
+    const stepIdsExistentes = new Set(steps.map((s) => s.id));
+    if (activeStepCode === "conectar") {
+      return ageActivities.filter((a) => !a.paso_id || !stepIdsExistentes.has(a.paso_id));
+    }
+    return filteredActivities.byStep;
+  }, [activeStepCode, ageActivities, filteredActivities.byStep, steps]);
 
   const completedStepCodes = useMemo(
     () => obtenerCodigosPasosCompletosPreview(steps, selectedAgeGroupId),

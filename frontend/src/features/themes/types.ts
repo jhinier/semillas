@@ -11,6 +11,7 @@ export type TemaUI = {
   titulo: string;
   descripcion: string;
   senda: string;
+  sendas?: string[];
   duracion: string;
   xp: number;
   progreso: number;

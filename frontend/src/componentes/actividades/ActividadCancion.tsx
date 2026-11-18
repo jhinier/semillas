@@ -3,6 +3,7 @@ import type { Actividad } from "../../shared/api/api";
 import { playSound } from "../../lib/audio";
 import { CompletadoCard } from "./CompletadoCard";
 import { Music, PlayCircle, Check, Star } from "lucide-react";
+import { useResolvedMediaUrl } from "@/features/media/use-resolved-media-url";
 
 interface ActividadCancionProps {
   actividad: Actividad;
@@ -14,6 +15,8 @@ interface ConfiguracionCancion {
   acciones?: string[];
   audio_url?: string;
   cancion_url?: string;
+  audio_recurso_id?: string | null;
+  cancion_url_recurso_id?: string | null;
 }
 
 export function ActividadCancion({ actividad, onComplete }: ActividadCancionProps) {
@@ -24,14 +27,19 @@ export function ActividadCancion({ actividad, onComplete }: ActividadCancionProp
   const letra = configuracion.letra ?? [];
   const acciones = configuracion.acciones ?? [];
   
-  // URL de video (tratamos de usar audio_url o cancion_url si son embebibles)
-  let rawUrl = (configuracion.audio_url as string) || (configuracion.cancion_url as string) || "";
+  const rawUrl = (configuracion.audio_url as string) || (configuracion.cancion_url as string) || "";
+  const isYoutube = rawUrl.includes("youtube.com") || rawUrl.includes("youtu.be");
+  const resolvedAudio = useResolvedMediaUrl({
+    resourceId: configuracion.cancion_url_recurso_id || configuracion.audio_recurso_id || null,
+    rawUrl: isYoutube ? null : rawUrl || null,
+    useFallbackOnError: false,
+  });
+  const playableAudioUrl = !isYoutube ? resolvedAudio.src || rawUrl : "";
   
-  // Parsear URL de Youtube
   let embedUrl = "";
   let isEmbeddable = false;
   
-  if (rawUrl.includes("youtube.com") || rawUrl.includes("youtu.be")) {
+  if (isYoutube) {
     const videoId = rawUrl.split("v=")[1]?.split("&")[0] || rawUrl.split("youtu.be/")[1]?.split("?")[0];
     if (videoId) {
       embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0&showinfo=0&modestbranding=1`;
@@ -92,36 +100,54 @@ export function ActividadCancion({ actividad, onComplete }: ActividadCancionProp
                     <div className="text-center">
                       <p className="font-black text-xl md:text-3xl text-amber-800 mb-1 md:mb-2">¡Hora de cantar!</p>
                       <p className="font-medium text-amber-700/80 max-w-md mx-auto text-sm md:text-base px-2">
-                        Toca uno de los botones para abrir la canción. ¡Canta bien fuerte!
+                        {playableAudioUrl
+                          ? "Reproduce el audio aquí mismo o ábrelo en una nueva pestaña. ¡Canta bien fuerte!"
+                          : "Toca uno de los botones para abrir la canción. ¡Canta bien fuerte!"}
                       </p>
                     </div>
-                    
-                    <div className="flex flex-col gap-3 w-full max-w-xs mt-2">
-                      {configuracion.audio_url && (
-                        <a 
-                          href={configuracion.audio_url as string} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="px-4 md:px-6 py-3 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl text-center transition-colors shadow-sm text-sm md:text-base"
-                        >
-                          🎵 Abrir Canción
-                        </a>
-                      )}
-                      {configuracion.cancion_url && (
-                        <a 
-                          href={configuracion.cancion_url as string} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="px-4 md:px-6 py-3 border-2 border-orange-300 hover:border-orange-400 hover:bg-orange-50 text-orange-700 font-bold rounded-xl text-center transition-colors shadow-sm text-sm md:text-base"
-                        >
-                          🔍 Buscar en YouTube
-                        </a>
-                      )}
-                      
-                      {!configuracion.audio_url && !configuracion.cancion_url && (
-                        <p className="text-amber-400 font-bold text-center">Enlace no disponible en la BD.</p>
-                      )}
-                    </div>
+
+                    {playableAudioUrl ? (
+                      <div className="w-full max-w-md space-y-3">
+                        <audio controls className="w-full" src={playableAudioUrl} preload="metadata" />
+                        <div className="flex justify-center">
+                          <a
+                            href={playableAudioUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs font-bold text-amber-800 underline"
+                          >
+                            Abrir audio en otra pestaña
+                          </a>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-3 w-full max-w-xs mt-2">
+                        {configuracion.audio_url && (
+                          <a 
+                            href={configuracion.audio_url as string} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="px-4 md:px-6 py-3 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl text-center transition-colors shadow-sm text-sm md:text-base"
+                          >
+                            🎵 Abrir Canción
+                          </a>
+                        )}
+                        {configuracion.cancion_url && (
+                          <a 
+                            href={configuracion.cancion_url as string} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="px-4 md:px-6 py-3 border-2 border-orange-300 hover:border-orange-400 hover:bg-orange-50 text-orange-700 font-bold rounded-xl text-center transition-colors shadow-sm text-sm md:text-base"
+                          >
+                            🔍 Abrir enlace
+                          </a>
+                        )}
+                        
+                        {!configuracion.audio_url && !configuracion.cancion_url && (
+                          <p className="text-amber-500 font-bold text-center">Esta actividad aún no tiene audio configurado.</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

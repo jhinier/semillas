@@ -1,5 +1,7 @@
 import * as React from "react";
 import { Share2 } from "lucide-react";
+import in1Img from "@/assets/images/Ilustraciones/in1.webp";
+import { ResolvedMediaImage } from "@/features/media/resolved-media-image";
 
 export interface CompartirInsigniaWidgetProps {
   nombreInsignia: string;
@@ -17,7 +19,14 @@ export const CompartirInsigniaWidget: React.FC<CompartirInsigniaWidgetProps> = (
   return (
     <section className="logros-share-card" aria-labelledby="logros-share-title">
       <div className="logros-share-card__preview">
-        <img src={imagenInsignia} alt="" aria-hidden="true" loading="lazy" decoding="async" />
+        <ResolvedMediaImage
+          rawUrl={imagenInsignia}
+          fallbackSrc={in1Img}
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          decoding="async"
+        />
       </div>
       <div className="logros-share-card__content">
         <p className="logros-share-card__eyebrow">Insignia obtenida</p>

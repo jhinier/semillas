@@ -7,6 +7,8 @@ export function CampoConfiguracion({
   type = "text",
   help,
   wide = false,
+  min,
+  max,
 }: {
   label: string;
   value: string;
@@ -14,6 +16,8 @@ export function CampoConfiguracion({
   type?: "text" | "number";
   help?: string;
   wide?: boolean;
+  min?: number;
+  max?: number;
 }) {
   return (
     <label className={`admin-field ${wide ? "admin-field--wide" : ""}`}>
@@ -21,6 +25,8 @@ export function CampoConfiguracion({
       <input
         type={type}
         value={value}
+        min={min}
+        max={max}
         onChange={(event) => onChange(event.target.value)}
       />
       {help ? <small>{help}</small> : null}

@@ -4,7 +4,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye, Loader2, Monitor, Moon, RotateCcw, Save, ShieldCheck, Sun, Type } from "lucide-react";
 import { toast } from "sonner";
 
-import { guardarAjustesAdmin, obtenerAjustesAdmin, type AjustesAdmin } from "@/features/admin/admin.api";
+import {
+  actualizarGrupoEdadAdmin,
+  guardarAjustesAdmin,
+  obtenerAjustesAdmin,
+  type AjustesAdmin,
+} from "@/features/admin/admin.api";
+import { obtenerGruposEdad } from "@/features/catalog/catalog.api";
 import { obtenerMiPerfil } from "@/features/perfil/profile.api";
 import {
   aplicarContraste,
@@ -78,6 +84,66 @@ function AdminAjustesPage() {
     staleTime: 1000 * 60 * 5,
   });
   const scopeId = meQuery.data?.perfil?.id || meQuery.data?.usuario?.id;
+  const ageGroupsQuery = useQuery({
+    queryKey: ["catalog", "age-groups"],
+    queryFn: obtenerGruposEdad,
+  });
+  const [franjasDraft, setFranjasDraft] = useState<
+    Record<string, { nombre: string; edad_minima: number; edad_maxima: number; descripcion: string }>
+  >({});
+
+  useEffect(() => {
+    if (!ageGroupsQuery.data?.length) return;
+    setFranjasDraft((prev) => {
+      const next = { ...prev };
+      for (const g of ageGroupsQuery.data!) {
+        if (!next[g.id]) {
+          next[g.id] = {
+            nombre: g.nombre,
+            edad_minima: g.edad_minima,
+            edad_maxima: g.edad_maxima,
+            descripcion: g.descripcion ?? "",
+          };
+        }
+      }
+      return next;
+    });
+  }, [ageGroupsQuery.data]);
+
+  const saveFranjaMutation = useMutation({
+    mutationFn: async (grupoId: string) => {
+      const item = franjasDraft[grupoId];
+      if (!item || item.nombre.trim().length < 2) {
+        throw new Error("Escribe un nombre válido para la franja.");
+      }
+      if (item.edad_minima > item.edad_maxima) {
+        throw new Error("La edad mínima no puede ser mayor que la edad máxima.");
+      }
+      return actualizarGrupoEdadAdmin(grupoId, {
+        nombre: item.nombre.trim(),
+        edad_minima: Number(item.edad_minima),
+        edad_maxima: Number(item.edad_maxima),
+        descripcion: item.descripcion.trim() || null,
+      });
+    },
+    onSuccess: async (updated) => {
+      setFranjasDraft((prev) => ({
+        ...prev,
+        [updated.id]: {
+          nombre: updated.nombre,
+          edad_minima: updated.edad_minima,
+          edad_maxima: updated.edad_maxima,
+          descripcion: updated.descripcion ?? "",
+        },
+      }));
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["catalog", "age-groups"] }),
+        queryClient.invalidateQueries({ queryKey: ["me"] }),
+      ]);
+      toast.success(`Franja “${updated.nombre}” actualizada`);
+    },
+    onError: (err) => toast.error(err instanceof Error ? err.message : "No se pudo actualizar la franja"),
+  });
 
   const [temaVisual, setTemaVisual] = useState<TemaVisual>(() => {
     const raw = leerPreferenciaPerfil("semillas-pref-tema", scopeId, "claro");
@@ -348,6 +414,119 @@ function AdminAjustesPage() {
                 </button>
               </div>
             </div>
+          </section>
+
+          <section className="admin-editor-section">
+            <div className="admin-editor-section__header">
+              <div>
+                <h2>Franjas de edad (rangos y descripciones)</h2>
+                <p>Edita nombres, rangos de edades y enfoque de cada grupo sin entrar a la base de datos.</p>
+              </div>
+            </div>
+
+            {ageGroupsQuery.isLoading ? (
+              <div className="flex items-center gap-2 py-4 text-sm text-slate-500">
+                <Loader2 className="animate-spin" size={16} /> Cargando franjas de edad...
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {(ageGroupsQuery.data ?? []).map((grupo) => {
+                  const draftItem = franjasDraft[grupo.id] ?? {
+                    nombre: grupo.nombre,
+                    edad_minima: grupo.edad_minima,
+                    edad_maxima: grupo.edad_maxima,
+                    descripcion: grupo.descripcion ?? "",
+                  };
+                  const savingThis = saveFranjaMutation.isPending && saveFranjaMutation.variables === grupo.id;
+
+                  return (
+                    <div
+                      key={grupo.id}
+                      className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-900/60"
+                    >
+                      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <strong className="text-sm font-extrabold text-slate-900 dark:text-slate-100">
+                            {draftItem.nombre || grupo.nombre}
+                          </strong>
+                          <span className="ml-2 rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-bold text-violet-700 dark:bg-violet-950/60 dark:text-violet-300">
+                            Código: {grupo.codigo}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={savingThis}
+                          onClick={() => saveFranjaMutation.mutate(grupo.id)}
+                          className="admin-primary-button !py-1.5 !px-3 text-xs"
+                        >
+                          {savingThis ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Guardar franja
+                        </button>
+                      </div>
+
+                      <div className="admin-form-grid">
+                        <label className="admin-field">
+                          <span>Nombre visible</span>
+                          <input
+                            value={draftItem.nombre}
+                            onChange={(e) =>
+                              setFranjasDraft((prev) => ({
+                                ...prev,
+                                [grupo.id]: { ...draftItem, nombre: e.target.value },
+                              }))
+                            }
+                          />
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <label className="admin-field">
+                            <span>Edad mínima</span>
+                            <input
+                              type="number"
+                              min={1}
+                              max={99}
+                              value={draftItem.edad_minima}
+                              onChange={(e) =>
+                                setFranjasDraft((prev) => ({
+                                  ...prev,
+                                  [grupo.id]: { ...draftItem, edad_minima: Number(e.target.value) },
+                                }))
+                              }
+                            />
+                          </label>
+                          <label className="admin-field">
+                            <span>Edad máxima</span>
+                            <input
+                              type="number"
+                              min={1}
+                              max={99}
+                              value={draftItem.edad_maxima}
+                              onChange={(e) =>
+                                setFranjasDraft((prev) => ({
+                                  ...prev,
+                                  [grupo.id]: { ...draftItem, edad_maxima: Number(e.target.value) },
+                                }))
+                              }
+                            />
+                          </label>
+                        </div>
+                        <label className="admin-field admin-field--wide">
+                          <span>Descripción / Enfoque</span>
+                          <input
+                            value={draftItem.descripcion}
+                            placeholder="Ej: Descubre a Dios con historias y actividades sencillas."
+                            onChange={(e) =>
+                              setFranjasDraft((prev) => ({
+                                ...prev,
+                                [grupo.id]: { ...draftItem, descripcion: e.target.value },
+                              }))
+                            }
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </section>
         </main>
 

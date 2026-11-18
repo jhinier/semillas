@@ -8,7 +8,13 @@ export type Afirmacion = { id: string; texto: string; es_verdadero: boolean };
 export type Par = { id: string; izquierda: string; derecha: string };
 export type Tarjeta = { id: string; texto: string };
 export type OpcionConCorrecta = { id: string; texto: string; correcta: boolean };
-export type EscenaEditor = { id: string; texto: string; imagen_url: string; opciones: OpcionConCorrecta[] };
+export type EscenaEditor = {
+  id: string;
+  texto: string;
+  imagen_url: string;
+  imagen_recurso_id?: string | null;
+  opciones: OpcionConCorrecta[];
+};
 
 let siguienteIdFila = 0;
 
@@ -83,6 +89,7 @@ export function obtenerEscenas(valor: unknown): EscenaEditor[] {
     id: typeof escena.id === "string" && escena.id.trim() ? escena.id : `escena-${indice + 1}`,
     texto: typeof escena.texto === "string" ? escena.texto : "",
     imagen_url: typeof escena.imagen_url === "string" ? escena.imagen_url : "",
+    imagen_recurso_id: typeof escena.imagen_recurso_id === "string" ? escena.imagen_recurso_id : null,
     opciones: obtenerOpcionesConCorrecta(escena.opciones).length
       ? obtenerOpcionesConCorrecta(escena.opciones)
       : [{ id: `escena-${indice + 1}-opcion-1`, texto: "", correcta: true }],

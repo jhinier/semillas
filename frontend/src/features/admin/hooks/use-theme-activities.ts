@@ -3,7 +3,9 @@ import { toast } from "sonner";
 
 import {
   actualizarActividad,
+  asegurarGrupoEdadEnTema,
   crearActividad,
+  guardarParlante,
 } from "../admin.api";
 import {
   normalizarConfiguracionActividad,
@@ -13,14 +15,46 @@ import {
 import type { ActivityDraft } from "../types";
 import { esObjetoPlano } from "../types";
 
+export async function resolverPasoTemaParaActividad({
+  themeId,
+  pasoIdSeleccionado,
+  grupoEdadId,
+  pasoNombre,
+}: {
+  themeId: string;
+  pasoIdSeleccionado: string;
+  grupoEdadId: string;
+  pasoNombre?: string | null;
+}): Promise<string> {
+  if (!pasoIdSeleccionado.startsWith("crecer:")) {
+    return pasoIdSeleccionado;
+  }
+
+  const tipoPasoId = pasoIdSeleccionado.slice("crecer:".length);
+  const res = (await guardarParlante(themeId, {
+    tipo_paso_id: tipoPasoId,
+    grupo_edad_id: grupoEdadId,
+    titulo: (pasoNombre || "Momento CRECER").replace(/\s*\(se creará al guardar\)\s*$/i, "").trim() || "Momento CRECER",
+    cuerpo: "     ",
+  })) as { paso?: { id?: string }; id?: string };
+
+  const resolvedId = res?.paso?.id ?? res?.id;
+  if (!resolvedId) {
+    throw new Error("No se pudo preparar el momento CRECER seleccionado.");
+  }
+  return resolvedId;
+}
+
 interface UseThemeActivitiesMutationProps {
   themeId: string;
   draft: ActivityDraft;
   configText: string;
   codigoTipoActividad: string;
+  pasoNombreSeleccionado?: string | null;
   ordenActual: number;
   esModoEditar: boolean;
   actividadId?: string;
+  gruposTemaActuales?: Array<{ id: string } | string> | null;
 }
 
 export function useThemeActivitiesMutation({
@@ -28,9 +62,11 @@ export function useThemeActivitiesMutation({
   draft,
   configText,
   codigoTipoActividad,
+  pasoNombreSeleccionado,
   ordenActual,
   esModoEditar,
   actividadId,
+  gruposTemaActuales,
 }: UseThemeActivitiesMutationProps) {
   return useMutation({
     mutationFn: async () => {
@@ -89,9 +125,54 @@ export function useThemeActivitiesMutation({
       });
       if (errorConfiguracion) throw new Error(errorConfiguracion);
 
+      if (codigoTipoActividad === "actividad_video" || codigoTipoActividad === "video") {
+        const respuestaCorrecta =
+          typeof configuracion.respuesta_correcta === "number" && Number.isInteger(configuracion.respuesta_correcta)
+            ? configuracion.respuesta_correcta
+            : 0;
+        const rawOpciones = Array.isArray(configuracion.opciones) ? configuracion.opciones : [];
+        configuracion = {
+          ...configuracion,
+          respuesta_correcta: respuestaCorrecta,
+          opciones: rawOpciones
+            .map((item, idx) => {
+              const texto =
+                typeof item === "string"
+                  ? item.trim()
+                  : esObjetoPlano(item) && typeof item.texto === "string"
+                    ? item.texto.trim()
+                    : "";
+              return texto ? { texto, correcta: idx === respuestaCorrecta } : null;
+            })
+            .filter((item): item is { texto: string; correcta: boolean } => item !== null),
+        };
+      }
+
+      if (codigoTipoActividad === "cancion") {
+        const audioUrl =
+          typeof configuracion.audio_url === "string" && configuracion.audio_url.trim()
+            ? configuracion.audio_url.trim()
+            : typeof configuracion.cancion_url === "string"
+              ? configuracion.cancion_url.trim()
+              : "";
+        if (audioUrl) {
+          configuracion = {
+            ...configuracion,
+            audio_url: audioUrl,
+          };
+        }
+      }
+
+      const pasoIdResuelto = await resolverPasoTemaParaActividad({
+        themeId,
+        pasoIdSeleccionado: draft.paso_id,
+        grupoEdadId: draft.grupo_edad_id,
+        pasoNombre: pasoNombreSeleccionado,
+      });
+
       const payload = {
         tema_id: themeId,
-        paso_id: draft.paso_id,
+        paso_id: pasoIdResuelto,
         grupo_edad_id: draft.grupo_edad_id,
         tipo_actividad_id: draft.tipo_actividad_id,
         titulo: draft.titulo.trim(),
@@ -112,8 +193,14 @@ export function useThemeActivitiesMutation({
             orden: index + 1,
           })),
       };
-      if (esModoEditar && actividadId) return actualizarActividad(actividadId, payload);
-      return crearActividad(payload);
+      if (esModoEditar && actividadId) {
+        const res = await actualizarActividad(actividadId, payload);
+        await asegurarGrupoEdadEnTema(themeId, draft.grupo_edad_id, gruposTemaActuales);
+        return res;
+      }
+      const creada = await crearActividad(payload);
+      await asegurarGrupoEdadEnTema(themeId, draft.grupo_edad_id, gruposTemaActuales);
+      return creada;
     },
     onSuccess: () => {
       toast.success(esModoEditar ? "Actividad actualizada" : "Actividad creada");

@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   ArrowRight,
@@ -7,6 +7,7 @@ import {
   Copy,
   Eye,
   FilePenLine,
+  FolderPlus,
   Gamepad2,
   Loader2,
   MoreHorizontal,
@@ -17,14 +18,21 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import {
+  asegurarGrupoEdadEnTema,
+  crearActividad,
   duplicarActividad,
   eliminarActividad,
+  obtenerActividadesAdmin,
+  obtenerPasosAdmin,
   type ActividadAdmin,
 } from "@/features/admin/admin.api";
+import { resolverPasoTemaParaActividad } from "@/features/admin/hooks/use-theme-activities";
+import { normalizarConfiguracionActividad } from "@/features/admin/componentes/temas/activity-configuration";
+import { obtenerPasosCrecer } from "@/features/catalog/catalog.api";
 import {
   type ActivityLibraryStatus,
   getActivityLibraryStatus,
@@ -51,8 +59,127 @@ function AdminActivitiesPage() {
   const [showThemePicker, setShowThemePicker] = useState(false);
   const [themeSearch, setThemeSearch] = useState("");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [cloneSource, setCloneSource] = useState<ActividadAdmin | null>(null);
+  const [targetThemeId, setTargetThemeId] = useState("");
+  const [targetAgeId, setTargetAgeId] = useState("");
+  const [targetStepId, setTargetStepId] = useState("");
+  const [cloneTitle, setCloneTitle] = useState("");
+  const [cloning, setCloning] = useState(false);
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["admin", "activities"] });
+
+  const targetStepsQuery = useQuery({
+    queryKey: ["admin", "theme", targetThemeId, "steps"],
+    queryFn: () => obtenerPasosAdmin(targetThemeId),
+    enabled: Boolean(cloneSource && targetThemeId),
+  });
+  const crecerStepsQuery = useQuery({
+    queryKey: ["catalog", "crecer-steps"],
+    queryFn: obtenerPasosCrecer,
+    staleTime: 1000 * 60 * 60,
+    enabled: Boolean(cloneSource),
+  });
+
+  const targetTheme = useMemo(
+    () => page.temasBase.find((t) => t.id === targetThemeId) ?? null,
+    [page.temasBase, targetThemeId],
+  );
+  const targetAgeOptions = page.ageGroupsBase;
+
+  const targetStepOptions = useMemo(() => {
+    const existing = targetStepsQuery.data ?? [];
+    const catalog = [...(crecerStepsQuery.data ?? [])].sort((a, b) => a.orden - b.orden);
+    if (!catalog.length) return existing.map((s) => ({ id: s.id, nombre: s.tipo_paso?.nombre ?? "Momento" }));
+    return catalog.map((tipo) => {
+      const match = existing.find((s) => s.tipo_paso?.id === tipo.id || s.tipo_paso?.codigo === tipo.codigo);
+      return {
+        id: match?.id ?? `crecer:${tipo.id}`,
+        nombre: match ? (match.tipo_paso?.nombre ?? tipo.nombre) : `${tipo.nombre} (se creará al copiar)`,
+      };
+    });
+  }, [crecerStepsQuery.data, targetStepsQuery.data]);
+
+  useEffect(() => {
+    if (!cloneSource) return;
+    if (!targetAgeOptions.some((g) => g.id === targetAgeId)) {
+      setTargetAgeId(targetAgeOptions[0]?.id ?? "");
+    }
+  }, [cloneSource, targetAgeId, targetAgeOptions]);
+
+  useEffect(() => {
+    if (!cloneSource) return;
+    if (!targetStepOptions.some((s) => s.id === targetStepId)) {
+      setTargetStepId(targetStepOptions[0]?.id ?? "");
+    }
+  }, [cloneSource, targetStepId, targetStepOptions]);
+
+  const openCloneDialog = (activity: ActividadAdmin) => {
+    const otroTema = page.temasBase.find((t) => t.id !== activity.tema_id) ?? page.temasBase[0];
+    setCloneSource(activity);
+    setTargetThemeId(otroTema?.id ?? activity.tema_id);
+    setTargetAgeId(activity.grupo_edad_id || page.ageGroupsBase[0]?.id || "");
+    setTargetStepId("");
+    setCloneTitle(activity.titulo);
+  };
+
+  const confirmarClonarEnTema = async () => {
+    if (!cloneSource || !targetThemeId || !targetAgeId || !targetStepId) {
+      toast.error("Elige el tema, la franja de edad y el momento CRECER destino.");
+      return;
+    }
+
+    try {
+      setCloning(true);
+      const pasoSeleccionado = targetStepOptions.find((s) => s.id === targetStepId);
+      const pasoIdResuelto = await resolverPasoTemaParaActividad({
+        themeId: targetThemeId,
+        pasoIdSeleccionado: targetStepId,
+        grupoEdadId: targetAgeId,
+        pasoNombre: pasoSeleccionado?.nombre,
+      });
+      const existentesDestino = await obtenerActividadesAdmin({
+        tema_id: targetThemeId,
+        grupo_edad_id: targetAgeId,
+        limit: 200,
+      });
+
+      const codigo = cloneSource.tipo_actividad?.codigo ?? "";
+      const opcionesPayload = (cloneSource.opciones ?? []).map((opt, idx) => ({
+        etiqueta: opt.etiqueta ?? String.fromCharCode(65 + idx),
+        texto: opt.texto,
+        correcta: opt.correcta,
+        orden: opt.orden || idx + 1,
+        ...(opt.retroalimentacion ? { retroalimentacion: opt.retroalimentacion } : {}),
+      }));
+      const configNorm = normalizarConfiguracionActividad(codigo, cloneSource.configuracion ?? {}, opcionesPayload);
+
+      await crearActividad({
+        tema_id: targetThemeId,
+        paso_id: pasoIdResuelto,
+        grupo_edad_id: targetAgeId,
+        tipo_actividad_id: cloneSource.tipo_actividad_id,
+        titulo: cloneTitle.trim() || cloneSource.titulo,
+        consigna: cloneSource.consigna,
+        retroalimentacion: cloneSource.retroalimentacion ?? undefined,
+        orden: existentesDestino.actividades.length + 1,
+        xp_recompensa: cloneSource.xp_recompensa,
+        limite_tiempo_seg: cloneSource.limite_tiempo_seg,
+        dificultad: (cloneSource.dificultad as "facil" | "normal" | "dificil") ?? "facil",
+        obligatorio: cloneSource.obligatorio,
+        configuracion: configNorm,
+        opciones: opcionesPayload,
+      });
+
+      await asegurarGrupoEdadEnTema(targetThemeId, targetAgeId, targetTheme?.grupos_edad);
+      await invalidate();
+      setCloneSource(null);
+      toast.success(`Actividad copiada al tema “${targetTheme?.titulo ?? "destino"}”`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo copiar la actividad");
+    } finally {
+      setCloning(false);
+    }
+  };
   const duplicateMutation = useMutation({
     mutationFn: duplicarActividad,
     onSuccess: async () => {
@@ -171,11 +298,13 @@ function AdminActivitiesPage() {
                   <div className="activity-library-row__actions">
                     <button type="button" onClick={() => openEditor(activity, "preview")} aria-label="Vista previa"><Eye size={16} /></button>
                     <button type="button" onClick={() => openEditor(activity)} aria-label="Editar"><Pencil size={16} /></button>
+                    <button type="button" onClick={() => openCloneDialog(activity)} aria-label="Usar en otro tema" title="Usar en otro tema"><FolderPlus size={16} /></button>
                     <div className="activity-library-row__menu">
                       <button type="button" onClick={() => setOpenMenuId(openMenuId === activity.id ? null : activity.id)} aria-label="Más acciones"><MoreHorizontal size={17} /></button>
                       {openMenuId === activity.id ? (
                         <div role="menu">
-                          <button type="button" role="menuitem" onClick={() => { setOpenMenuId(null); duplicateMutation.mutate(activity.id); }}><Copy size={15} /> Duplicar</button>
+                          <button type="button" role="menuitem" onClick={() => { setOpenMenuId(null); openCloneDialog(activity); }}><FolderPlus size={15} /> Usar en otro tema</button>
+                          <button type="button" role="menuitem" onClick={() => { setOpenMenuId(null); duplicateMutation.mutate(activity.id); }}><Copy size={15} /> Duplicar aquí</button>
                           <button type="button" role="menuitem" className="activity-library-row__delete" onClick={() => {
                             setOpenMenuId(null);
                             if (window.confirm(`¿Eliminar “${activity.titulo}”? Esta acción no se puede deshacer.`)) deleteMutation.mutate(activity.id);
@@ -204,8 +333,13 @@ function AdminActivitiesPage() {
       {showThemePicker ? (
         <div className="activity-theme-picker-backdrop" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) setShowThemePicker(false); }}>
           <section className="activity-theme-picker" role="dialog" aria-modal="true" aria-labelledby="activity-theme-picker-title">
-            <header><div><span className="admin-eyebrow">Nueva actividad</span><h2 id="activity-theme-picker-title">Elige el tema</h2><p>La actividad se crea dentro de un tema para conservar la franja y el recorrido CRECER.</p></div><button type="button" onClick={() => setShowThemePicker(false)} aria-label="Cerrar"><X size={19} /></button></header>
-            <label className="activity-library-search"><Search size={17} /><input autoFocus value={themeSearch} onChange={(event) => setThemeSearch(event.target.value)} placeholder="Buscar tema…" /></label>
+            <header><div><span className="admin-eyebrow">Nueva actividad</span><h2 id="activity-theme-picker-title">¿En qué tema la quieres crear?</h2><p>Cada actividad pertenece a una lección y franja de edad para integrarse en su recorrido CRECER. Cuando quieras reutilizarla, podrás copiarla a otros temas.</p></div><button type="button" onClick={() => setShowThemePicker(false)} aria-label="Cerrar"><X size={19} /></button></header>
+            <div className="activity-theme-picker__toolbar">
+              <label className="activity-library-search flex-1 min-w-[220px]"><Search size={17} /><input autoFocus value={themeSearch} onChange={(event) => setThemeSearch(event.target.value)} placeholder="Buscar tema…" /></label>
+              <button type="button" className="admin-secondary-button !py-2 !px-3.5 text-xs shrink-0" onClick={() => navigate({ to: "/admin/temas/new" })}>
+                <Plus size={14} /> Crear tema nuevo
+              </button>
+            </div>
             <div className="activity-theme-picker__list">
               {matchingThemes.map((theme) => (
                 <button key={theme.id} type="button" onClick={() => navigate({ to: "/admin/temas/$themeId/activities", params: { themeId: theme.id }, search: { form: "nueva", tab: "contexto" } })}>
@@ -213,6 +347,73 @@ function AdminActivitiesPage() {
                 </button>
               ))}
               {!matchingThemes.length ? <div className="activity-theme-picker__empty"><Search size={20} /><p>No se encontraron temas.</p></div> : null}
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {cloneSource ? (
+        <div className="activity-theme-picker-backdrop" role="presentation" onMouseDown={(event) => { if (event.currentTarget === event.target) setCloneSource(null); }}>
+          <section className="activity-theme-picker max-w-lg w-full" role="dialog" aria-modal="true" aria-labelledby="clone-activity-title">
+            <header>
+              <div>
+                <span className="admin-eyebrow">Reutilizar actividad</span>
+                <h2 id="clone-activity-title">Usar en otro tema o franja</h2>
+                <p>Copia “{cloneSource.titulo}” con sus preguntas y configuración hacia el tema destino.</p>
+              </div>
+              <button type="button" onClick={() => setCloneSource(null)} aria-label="Cerrar"><X size={19} /></button>
+            </header>
+            <div className="activity-theme-picker__body text-sm">
+              <label className="block space-y-1.5">
+                <span className="text-xs font-bold uppercase tracking-wide text-slate-500">Título en el destino</span>
+                <input
+                  value={cloneTitle}
+                  onChange={(e) => setCloneTitle(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent px-3.5 py-2.5 text-sm"
+                />
+              </label>
+              <label className="block space-y-1.5">
+                <span className="text-xs font-bold uppercase tracking-wide text-slate-500">Tema destino</span>
+                <select
+                  value={targetThemeId}
+                  onChange={(e) => setTargetThemeId(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent px-3.5 py-2.5 text-sm"
+                >
+                  {page.temasBase.map((theme) => (
+                    <option key={theme.id} value={theme.id}>{theme.titulo}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="block space-y-1.5">
+                <span className="text-xs font-bold uppercase tracking-wide text-slate-500">Franja de edad destino</span>
+                <select
+                  value={targetAgeId}
+                  onChange={(e) => setTargetAgeId(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent px-3.5 py-2.5 text-sm"
+                >
+                  {targetAgeOptions.map((group) => (
+                    <option key={group.id} value={group.id}>{group.nombre}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="block space-y-1.5">
+                <span className="text-xs font-bold uppercase tracking-wide text-slate-500">Momento CRECER</span>
+                <select
+                  value={targetStepId}
+                  onChange={(e) => setTargetStepId(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent px-3.5 py-2.5 text-sm"
+                >
+                  {targetStepOptions.map((step) => (
+                    <option key={step.id} value={step.id}>{step.nombre}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="activity-theme-picker__footer">
+              <button type="button" className="admin-secondary-button" onClick={() => setCloneSource(null)}>Cancelar</button>
+              <button type="button" className="admin-primary-button" disabled={cloning} onClick={() => void confirmarClonarEnTema()}>
+                {cloning ? "Copiando..." : "Copiar actividad al tema"}
+              </button>
             </div>
           </section>
         </div>

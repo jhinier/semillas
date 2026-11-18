@@ -1,5 +1,6 @@
 import { X } from "lucide-react";
 import type { JSX } from "react";
+import { ResolvedMediaImage } from "@/features/media/resolved-media-image";
 
 interface ImagenAmpliadaModalProps {
   imagen: string;
@@ -28,8 +29,10 @@ export function ImagenAmpliadaModal({
         >
           <X size={28} />
         </button>
-        <img
-          src={imagen}
+        <ResolvedMediaImage
+          rawUrl={imagen}
+          fallbackHint="referencia"
+          useIlustracionFallback
           alt="Referencia ampliada"
           className="w-full h-auto max-h-[85vh] object-contain rounded-2xl shadow-2xl"
         />

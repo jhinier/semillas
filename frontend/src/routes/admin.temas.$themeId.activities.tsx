@@ -11,12 +11,16 @@ import {
   Loader2,
   Pencil,
   Plus,
+  Search,
   Trash2,
+  X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import {
+  asegurarGrupoEdadEnTema,
+  crearActividad,
   duplicarActividad,
   eliminarActividad,
   obtenerActividadAdmin,
@@ -36,8 +40,15 @@ import {
   tieneContenidoEnBorrador,
   type ActivityDraft,
 } from "../features/admin/types";
-import { useThemeActivitiesMutation } from "../features/admin/hooks/use-theme-activities";
-import { obtenerGruposEdad, obtenerTiposActividad } from "../features/catalog/catalog.api";
+import {
+  resolverPasoTemaParaActividad,
+  useThemeActivitiesMutation,
+} from "../features/admin/hooks/use-theme-activities";
+import {
+  obtenerGruposEdad,
+  obtenerPasosCrecer,
+  obtenerTiposActividad,
+} from "../features/catalog/catalog.api";
 import { obtenerRecursosMultimedia, subirArchivo } from "../features/media/media.api";
 import {
   normalizarConfiguracionActividad,
@@ -74,7 +85,13 @@ function AdminThemeActivitiesPage() {
   const [draft, setDraft] = useState<ActivityDraft>(emptyDraft);
   const [configText, setConfigText] = useState("{}");
   const [isDirty, setIsDirty] = useState(false);
+  const [showReuseDialog, setShowReuseDialog] = useState(false);
+  const [reuseSearch, setReuseSearch] = useState("");
+  const [reuseTypeCode, setReuseTypeCode] = useState("");
+  const [reuseTargetStepId, setReuseTargetStepId] = useState("");
+  const [copyingId, setCopyingId] = useState<string | null>(null);
   const newFormInitialized = useRef(false);
+  const pendingTemplateRef = useRef<ActivityDraft | null>(null);
   const editFormInitializedId = useRef<string | null>(null);
   const ageSelectedByUser = useRef(false);
 
@@ -104,6 +121,16 @@ function AdminThemeActivitiesPage() {
     queryKey: ["admin", "theme", themeId, "steps"],
     queryFn: () => obtenerPasosAdmin(themeId),
   });
+  const crecerStepsQuery = useQuery({
+    queryKey: ["catalog", "crecer-steps"],
+    queryFn: obtenerPasosCrecer,
+    staleTime: 1000 * 60 * 60,
+  });
+  const reusableActivitiesQuery = useQuery({
+    queryKey: ["admin", "activities", "reusable"],
+    queryFn: () => obtenerActividadesAdmin({ limit: 500 }),
+    enabled: showReuseDialog,
+  });
   const activitiesQuery = useQuery({
     queryKey: ["admin", "theme", themeId, "activities", selectedAge],
     queryFn: () =>
@@ -120,9 +147,43 @@ function AdminThemeActivitiesPage() {
   });
 
   const allowedGroups = useMemo(() => {
-    const ids = new Set(themeQuery.data?.grupos_edad?.map((group) => group.id) ?? []);
-    return ids.size ? (groupsQuery.data ?? []).filter((group) => ids.has(group.id)) : groupsQuery.data ?? [];
-  }, [groupsQuery.data, themeQuery.data?.grupos_edad]);
+    return groupsQuery.data ?? [];
+  }, [groupsQuery.data]);
+
+  const combinedSteps = useMemo(() => {
+    const existing = stepsQuery.data ?? [];
+    const catalog = [...(crecerStepsQuery.data ?? [])].sort((a, b) => a.orden - b.orden);
+    if (!catalog.length) return existing;
+    return catalog.map((tipo) => {
+      const match = existing.find(
+        (step) => step.tipo_paso?.id === tipo.id || step.tipo_paso?.codigo === tipo.codigo,
+      );
+      if (match) return match;
+      return {
+        id: `crecer:${tipo.id}`,
+        tema_id: themeId,
+        tipo_paso_id: tipo.id,
+        orden: tipo.orden,
+        obligatorio: true,
+        tipo_paso: {
+          id: tipo.id,
+          codigo: tipo.codigo,
+          nombre: `${tipo.nombre} (se creará al guardar)`,
+          descripcion: tipo.descripcion ?? null,
+          orden: tipo.orden,
+          color_hex: tipo.color_hex ?? null,
+        },
+        contenidos: [],
+        preguntas: [],
+      };
+    });
+  }, [crecerStepsQuery.data, stepsQuery.data, themeId]);
+
+  useEffect(() => {
+    if (!reuseTargetStepId && combinedSteps.length > 0) {
+      setReuseTargetStepId(combinedSteps[0]!.id);
+    }
+  }, [combinedSteps, reuseTargetStepId]);
 
   const activityCountsByAge = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -136,22 +197,34 @@ function AdminThemeActivitiesPage() {
 
   useEffect(() => {
     if (ageSelectedByUser.current || search.form === "editar" || !allowedGroups.length) return;
+    const includedIds = new Set(themeQuery.data?.grupos_edad?.map((g) => g.id) ?? []);
     const groupWithActivities = allowedGroups.find((group) => (activityCountsByAge[group.id] ?? 0) > 0);
+    const defaultIncluded = allowedGroups.find((group) => includedIds.has(group.id));
     if (!selectedAge) {
-      setSelectedAge((groupWithActivities ?? allowedGroups[0])?.id ?? "");
+      setSelectedAge((groupWithActivities ?? defaultIncluded ?? allowedGroups[0])?.id ?? "");
       return;
     }
     if ((activityCountsByAge[selectedAge] ?? 0) === 0 && groupWithActivities) {
       setSelectedAge(groupWithActivities.id);
     }
-  }, [activityCountsByAge, allowedGroups, search.form, selectedAge]);
+  }, [activityCountsByAge, allowedGroups, search.form, selectedAge, themeQuery.data?.grupos_edad]);
 
   useEffect(() => {
     if (search.form !== "nueva") {
       newFormInitialized.current = false;
       return;
     }
-    if (newFormInitialized.current || !selectedAge || !stepsQuery.data?.length || !typesQuery.data?.length) return;
+    if (newFormInitialized.current || !selectedAge || !combinedSteps.length || !typesQuery.data?.length) return;
+
+    if (pendingTemplateRef.current) {
+      const template = pendingTemplateRef.current;
+      pendingTemplateRef.current = null;
+      setDraft(template);
+      setConfigText(JSON.stringify(template.configuracion, null, 2));
+      setIsDirty(true);
+      newFormInitialized.current = true;
+      return;
+    }
 
     const firstType = typesQuery.data[0];
     const baseOptions = defaultOptions.map((option) => ({ ...option }));
@@ -159,7 +232,7 @@ function AdminThemeActivitiesPage() {
     setDraft({
       ...emptyDraft,
       grupo_edad_id: selectedAge,
-      paso_id: stepsQuery.data[0]?.id ?? "",
+      paso_id: combinedSteps[0]?.id ?? "",
       tipo_actividad_id: firstType?.id ?? "",
       configuracion: initialConfig,
       opciones: baseOptions,
@@ -167,7 +240,7 @@ function AdminThemeActivitiesPage() {
     setConfigText(JSON.stringify(initialConfig, null, 2));
     setIsDirty(false);
     newFormInitialized.current = true;
-  }, [search.form, selectedAge, stepsQuery.data, typesQuery.data]);
+  }, [search.form, selectedAge, combinedSteps, typesQuery.data]);
 
   useEffect(() => {
     if (search.form !== "editar") {
@@ -247,6 +320,7 @@ function AdminThemeActivitiesPage() {
   const invalidate = async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["admin", "theme", themeId, "activities"] }),
+      queryClient.invalidateQueries({ queryKey: ["admin", "theme", themeId, "steps"] }),
       queryClient.invalidateQueries({ queryKey: ["admin", "theme", themeId, "studio"] }),
       queryClient.invalidateQueries({ queryKey: ["admin", "themes"] }),
       queryClient.invalidateQueries({ queryKey: ["admin", "dashboard"] }),
@@ -329,17 +403,127 @@ function AdminThemeActivitiesPage() {
     setConfigText(JSON.stringify(nextConfig, null, 2));
   };
 
+  const pasoSeleccionado = combinedSteps.find((step) => step.id === draft.paso_id);
+
   const saveMutation = useThemeActivitiesMutation({
     themeId,
     draft,
     configText,
     codigoTipoActividad: selectedType?.codigo ?? "",
+    pasoNombreSeleccionado: pasoSeleccionado?.tipo_paso?.nombre,
     ordenActual: search.form === "editar"
       ? activities.find((activity) => activity.id === search.actividadId)?.orden ?? activities.length
       : activities.length,
     esModoEditar: search.form === "editar",
     actividadId: search.actividadId,
+    gruposTemaActuales: themeQuery.data?.grupos_edad,
   });
+
+  const reusableActivities = useMemo(() => {
+    const lista = reusableActivitiesQuery.data?.actividades ?? [];
+    const q = reuseSearch.trim().toLocaleLowerCase("es");
+    return lista.filter((act) => {
+      if (reuseTypeCode && act.tipo_actividad?.codigo !== reuseTypeCode) return false;
+      if (!q) return true;
+      return (
+        act.titulo.toLocaleLowerCase("es").includes(q) ||
+        act.consigna.toLocaleLowerCase("es").includes(q) ||
+        (act.tema?.titulo ?? "").toLocaleLowerCase("es").includes(q)
+      );
+    });
+  }, [reusableActivitiesQuery.data?.actividades, reuseSearch, reuseTypeCode]);
+
+  const usarComoPlantilla = (source: ActividadAdmin) => {
+    const codigo =
+      source.tipo_actividad?.codigo ??
+      typesQuery.data?.find((t) => t.id === source.tipo_actividad_id)?.codigo ??
+      "";
+    const opcionesBase = (source.opciones ?? []).length
+      ? source.opciones.map((opt, idx) => ({
+          etiqueta: opt.etiqueta ?? String.fromCharCode(65 + idx),
+          texto: opt.texto,
+          correcta: opt.correcta,
+          orden: opt.orden || idx + 1,
+        }))
+      : defaultOptions.map((o) => ({ ...o }));
+    const configNorm = normalizarConfiguracionActividad(codigo, source.configuracion ?? {}, opcionesBase);
+
+    pendingTemplateRef.current = {
+      paso_id: reuseTargetStepId || combinedSteps[0]?.id || "",
+      grupo_edad_id: selectedAge || allowedGroups[0]?.id || "",
+      tipo_actividad_id: source.tipo_actividad_id,
+      titulo: source.titulo,
+      consigna: source.consigna,
+      retroalimentacion: source.retroalimentacion ?? "",
+      xp_recompensa: source.xp_recompensa,
+      limite_tiempo_seg: source.limite_tiempo_seg,
+      dificultad: (source.dificultad as ActivityDraft["dificultad"]) ?? "facil",
+      obligatorio: source.obligatorio,
+      configuracion: configNorm,
+      opciones: opcionesBase,
+    };
+    setShowReuseDialog(false);
+    navigate({ search: { form: "nueva", tab: "contenido" } });
+  };
+
+  const copiarDirectoDesdeBiblioteca = async (source: ActividadAdmin) => {
+    const grupoDestino = selectedAge || allowedGroups[0]?.id;
+    const pasoDestino = reuseTargetStepId || combinedSteps[0]?.id;
+    if (!grupoDestino || !pasoDestino) {
+      toast.error("Selecciona primero una franja de edad y un momento CRECER.");
+      return;
+    }
+
+    try {
+      setCopyingId(source.id);
+      const pasoObjetivo = combinedSteps.find((s) => s.id === pasoDestino);
+      const pasoIdResuelto = await resolverPasoTemaParaActividad({
+        themeId,
+        pasoIdSeleccionado: pasoDestino,
+        grupoEdadId: grupoDestino,
+        pasoNombre: pasoObjetivo?.tipo_paso?.nombre,
+      });
+
+      const codigo =
+        source.tipo_actividad?.codigo ??
+        typesQuery.data?.find((t) => t.id === source.tipo_actividad_id)?.codigo ??
+        "";
+      const opcionesPayload = (source.opciones ?? []).map((opt, idx) => ({
+        etiqueta: opt.etiqueta ?? String.fromCharCode(65 + idx),
+        texto: opt.texto,
+        correcta: opt.correcta,
+        orden: opt.orden || idx + 1,
+        ...(opt.retroalimentacion ? { retroalimentacion: opt.retroalimentacion } : {}),
+      }));
+      const configNorm = normalizarConfiguracionActividad(codigo, source.configuracion ?? {}, opcionesPayload);
+
+      await crearActividad({
+        tema_id: themeId,
+        paso_id: pasoIdResuelto,
+        grupo_edad_id: grupoDestino,
+        tipo_actividad_id: source.tipo_actividad_id,
+        titulo: source.titulo,
+        consigna: source.consigna,
+        retroalimentacion: source.retroalimentacion ?? undefined,
+        orden: activities.length + 1,
+        xp_recompensa: source.xp_recompensa,
+        limite_tiempo_seg: source.limite_tiempo_seg,
+        dificultad: (source.dificultad as ActivityDraft["dificultad"]) ?? "facil",
+        obligatorio: source.obligatorio,
+        configuracion: configNorm,
+        opciones: opcionesPayload,
+      });
+
+      await asegurarGrupoEdadEnTema(themeId, grupoDestino, themeQuery.data?.grupos_edad);
+      await invalidate();
+      setShowReuseDialog(false);
+      toast.success(`“${source.titulo}” se copió a esta franja`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo copiar la actividad");
+    } finally {
+      setCopyingId(null);
+    }
+  };
 
   const handleSave = async () => {
     await saveMutation.mutateAsync();
@@ -374,13 +558,20 @@ function AdminThemeActivitiesPage() {
       resource: await subirArchivo(file, type, `${draft.titulo || "Actividad"} - ${key}`),
     }),
     onSuccess: ({ key, resource }: { key: string; resource: Awaited<ReturnType<typeof subirArchivo>> }) => {
-      const next = {
-        ...draft.configuracion,
-        [key]: resource.url_publica,
-        [`${key}_recurso_id`]: resource.id,
-      };
-      setDraft((current) => ({ ...current, configuracion: next }));
-      setConfigText(JSON.stringify(next, null, 2));
+      setDraft((current) => {
+        const merged = {
+          ...current.configuracion,
+          [key]: resource.url_publica,
+          [`${key}_recurso_id`]: resource.id,
+        };
+        const nextConfig = normalizarConfiguracionActividad(
+          selectedType?.codigo ?? "",
+          merged,
+          current.opciones,
+        );
+        setConfigText(JSON.stringify(nextConfig, null, 2));
+        return { ...current, configuracion: nextConfig };
+      });
       setIsDirty(true);
       toast.success("Recurso agregado");
     },
@@ -415,10 +606,15 @@ function AdminThemeActivitiesPage() {
             <p><strong>{themeQuery.data.titulo}</strong> · agrega juegos o cuestionarios por edad y momento CRECER.</p>
           </div>
         </div>
-        {!isFormOpen && activities.length > 0 ? (
-          <button type="button" className="admin-primary-button" onClick={openNew}>
-            <Plus size={17} /> Agregar actividad
-          </button>
+        {!isFormOpen ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" className="admin-secondary-button" onClick={() => setShowReuseDialog(true)}>
+              <Copy size={16} /> Reutilizar existente
+            </button>
+            <button type="button" className="admin-primary-button" onClick={openNew}>
+              <Plus size={17} /> Agregar actividad
+            </button>
+          </div>
         ) : null}
       </header>
 
@@ -438,7 +634,7 @@ function AdminThemeActivitiesPage() {
             onChange={updateDraft}
             configText={configText}
             onConfigTextChange={updateConfigText}
-            steps={stepsQuery.data ?? []}
+            steps={combinedSteps}
             groups={allowedGroups}
             types={typesQuery.data ?? []}
             resources={mediaQuery.data ?? []}
@@ -484,8 +680,11 @@ function AdminThemeActivitiesPage() {
               <div className="admin-activity-empty-state">
                 <span><Gamepad2 size={25} /></span>
                 <h3>Esta franja todavía no tiene actividades</h3>
-                <p>Crea la primera experiencia y asígnala a un momento CRECER.</p>
-                <button type="button" className="admin-primary-button" onClick={openNew}><Plus size={17} /> Crear primera actividad</button>
+                <p>Crea una nueva actividad o reutiliza alguna que ya exista en otro tema o franja de edad.</p>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <button type="button" className="admin-primary-button" onClick={openNew}><Plus size={17} /> Crear nueva actividad</button>
+                  <button type="button" className="admin-secondary-button" onClick={() => setShowReuseDialog(true)}><Copy size={16} /> Reutilizar existente</button>
+                </div>
               </div>
             ) : (
               <div className="admin-activity-sequence-list">
@@ -495,7 +694,7 @@ function AdminThemeActivitiesPage() {
                     activity={activity}
                     index={index}
                     total={activities.length}
-                    steps={stepsQuery.data ?? []}
+                    steps={combinedSteps}
                     onMove={moveActivity}
                     onEdit={() => openEdit(activity.id)}
                     onPreview={() => openEdit(activity.id, "preview")}
@@ -538,6 +737,102 @@ function AdminThemeActivitiesPage() {
           </div>
         </>
       )}
+
+      {showReuseDialog ? (
+        <div
+          className="activity-theme-picker-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.currentTarget === event.target) setShowReuseDialog(false);
+          }}
+        >
+          <section className="activity-theme-picker max-w-2xl w-full" role="dialog" aria-modal="true" aria-labelledby="reuse-activity-title">
+            <header>
+              <div>
+                <span className="admin-eyebrow">Biblioteca de actividades</span>
+                <h2 id="reuse-activity-title">Reutilizar una actividad existente</h2>
+                <p>Elige una actividad ya creada para copiarla directo a esta franja o cargarla como plantilla editable.</p>
+              </div>
+              <button type="button" onClick={() => setShowReuseDialog(false)} aria-label="Cerrar"><X size={19} /></button>
+            </header>
+
+            <div className="activity-theme-picker__toolbar !flex-col !items-stretch gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <label className="activity-library-search sm:col-span-2">
+                  <Search size={16} />
+                  <input
+                    value={reuseSearch}
+                    onChange={(e) => setReuseSearch(e.target.value)}
+                    placeholder="Buscar por título, consigna o tema…"
+                  />
+                </label>
+                <select
+                  value={reuseTypeCode}
+                  onChange={(e) => setReuseTypeCode(e.target.value)}
+                  aria-label="Filtrar por tipo"
+                  className="min-h-[44px] rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent px-3.5 py-2.5 text-xs font-bold"
+                >
+                  <option value="">Todos los tipos</option>
+                  {(typesQuery.data ?? []).map((type) => (
+                    <option key={type.id} value={type.codigo}>{type.nombre}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 dark:border-slate-700 px-3.5 py-2.5 text-xs">
+                <span className="font-bold text-slate-600 dark:text-slate-300">Momento CRECER destino:</span>
+                <select
+                  value={reuseTargetStepId}
+                  onChange={(e) => setReuseTargetStepId(e.target.value)}
+                  className="rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent px-3 py-1.5 text-xs font-bold"
+                >
+                  {combinedSteps.map((step) => (
+                    <option key={step.id} value={step.id}>
+                      {step.tipo_paso?.nombre ?? "Momento"}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="activity-theme-picker__list max-h-96 overflow-y-auto space-y-2.5">
+              {reusableActivitiesQuery.isLoading ? (
+                <div className="admin-activity-loading"><Loader2 className="animate-spin" /><span>Cargando actividades…</span></div>
+              ) : reusableActivities.length === 0 ? (
+                <div className="activity-theme-picker__empty"><Search size={20} /><p>No encontramos actividades con ese filtro.</p></div>
+              ) : (
+                reusableActivities.slice(0, 30).map((act) => (
+                  <div key={act.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+                    <div className="min-w-0">
+                      <strong className="block truncate text-sm font-extrabold">{act.titulo}</strong>
+                      <small className="block truncate text-xs text-slate-500 dark:text-slate-400">
+                        {act.tipo_actividad?.nombre ?? "Actividad"} · {act.tema?.titulo ?? "Otro tema"} · {act.grupo_edad?.nombre ?? "Franja"}
+                      </small>
+                    </div>
+                    <div className="flex shrink-0 flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        className="admin-secondary-button !py-1.5 !px-3 text-xs"
+                        onClick={() => usarComoPlantilla(act)}
+                      >
+                        Editar como plantilla
+                      </button>
+                      <button
+                        type="button"
+                        disabled={copyingId === act.id}
+                        className="admin-primary-button !py-1.5 !px-3 text-xs"
+                        onClick={() => void copiarDirectoDesdeBiblioteca(act)}
+                      >
+                        {copyingId === act.id ? "Copiando..." : "Copiar aquí"}
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -91,6 +91,8 @@ export const TemaSchema = z.object({
   creado_en: z.string().nullable().optional(),
   actualizado_en: z.string().nullable().optional(),
   senda: SendaSchema.nullable().optional(),
+  senda_ids: z.array(z.string()).optional(),
+  sendas: z.array(SendaSchema).optional(),
   creado_por: z.object({ id: z.string(), nombre_visible: z.string() }).nullable().optional(),
   grupos_edad: z.array(z.object({ id: z.string(), codigo: z.string(), nombre: z.string() })).optional(),
   versiculo_clave: VersiculoClaveSchema.nullable().optional(),
@@ -102,6 +104,8 @@ export type Tema = z.infer<typeof TemaSchema>;
 // --- TemaDetalle (con relaciones) ---
 export const TemaDetalleSchema = TemaSchema.extend({
   senda: SendaSchema.nullable().optional(),
+  senda_ids: z.array(z.string()).optional(),
+  sendas: z.array(SendaSchema).optional(),
   creado_por: z.object({ id: z.string(), nombre_visible: z.string() }).nullable().optional(),
   grupos_edad: z.array(z.object({ id: z.string(), codigo: z.string(), nombre: z.string() })).optional(),
   versiculo_clave: VersiculoClaveSchema.nullable().optional(),

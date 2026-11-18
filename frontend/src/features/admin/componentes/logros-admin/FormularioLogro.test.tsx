@@ -83,4 +83,34 @@ describe("FormularioLogro", () => {
     expect(html).toContain('role="alert"');
     expect(html).toContain("Ya existe un logro con ese código");
   });
+
+  it("en presentación modal incluye la vista previa en vivo y resuelve rutas /media sin exponer JSON crudo en img", () => {
+    const html = renderToStaticMarkup(
+      <FormularioLogro
+        abierto
+        modo="editar"
+        logro={{
+          id: "l2",
+          codigo: "insignia-5",
+          nombre: "Insignia 5",
+          descripcion: "Quinta insignia de logro",
+          url_icono: "https://api.example.com/media/123e4567-e89b-12d3-a456-426614174000/url",
+          bono_xp: 200,
+          codigo_criterio: "actividades_completadas",
+          valor_criterio: 25,
+          activo: true,
+          creado_en: "2026-07-09T23:52:47.414+00:00",
+          otorgados: 0,
+        }}
+        guardando={false}
+        onCerrar={() => undefined}
+        onGuardar={() => undefined}
+      />,
+    );
+
+    expect(html).toContain("admin-logros-modal-card--wide");
+    expect(html).toContain("admin-logros-close-btn");
+    expect(html).toContain("Así lo verá el estudiante");
+    expect(html).not.toContain("/media/123e4567-e89b-12d3-a456-426614174000/url");
+  });
 });
