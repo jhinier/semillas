@@ -77,10 +77,12 @@ export type { ThemePreviewHeaderProps } from './theme-preview-header';
 export { ThemePreviewHeader } from './theme-preview-header';
 export { ThemeStatsGrid } from './theme-stats-grid';
 export {
+  esPaso1CompletoPublicacion,
   formatearFechaHoraTema,
   formatearFechaTema,
   obtenerAccionesPendientesPublicacion,
   obtenerEstadoTema,
+  resolverFranjasDelTema,
   validarCamposObligatoriosPaso1,
 } from './theme-view.utils';
 export type { Opcion, ActividadParaEditar } from './use-activity-form-state';

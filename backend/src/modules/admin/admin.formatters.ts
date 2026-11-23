@@ -129,6 +129,23 @@ export function mapStep(step: Record<string, unknown>) {
   };
 }
 
+/** Convierte configuraciones legadas serializadas como string JSON en objeto plano. */
+export function normalizarConfiguracionJson(valor: unknown): Record<string, unknown> {
+  if (typeof valor === "string") {
+    try {
+      const parsed = JSON.parse(valor) as unknown;
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+    } catch {
+      return {};
+    }
+  }
+  return valor && typeof valor === "object" && !Array.isArray(valor)
+    ? (valor as Record<string, unknown>)
+    : {};
+}
+
 export function mapActivity(activity: Record<string, unknown>) {
   const tipoActividadRaw = activity.tipo_actividad as Record<string, unknown> | undefined;
   const temaRaw = activity.tema as Record<string, unknown> | undefined;
@@ -152,7 +169,7 @@ export function mapActivity(activity: Record<string, unknown>) {
     limite_tiempo_seg: activity.limite_tiempo_seg ? Number(activity.limite_tiempo_seg) : null,
     dificultad: String(activity.dificultad ?? "facil"),
     obligatorio: Boolean(activity.obligatorio),
-    configuracion: (activity.configuracion ?? {}) as Record<string, unknown>,
+    configuracion: normalizarConfiguracionJson(activity.configuracion),
     estado:
       temaRaw?.estado === "publicado"
         ? "publicada"

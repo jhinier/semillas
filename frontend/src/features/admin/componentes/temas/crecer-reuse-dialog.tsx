@@ -193,7 +193,7 @@ export function CrecerReuseDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[120] grid place-items-center bg-slate-950/55 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[215] grid place-items-center bg-slate-950/55 p-4 backdrop-blur-sm"
       role="presentation"
       onMouseDown={(event) => {
         if (event.currentTarget === event.target && !isCopyingAgeGroup) onClose();

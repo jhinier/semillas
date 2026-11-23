@@ -16,7 +16,11 @@ import {
   WifiOff,
 } from "lucide-react";
 import { StateView } from "@/componentes/ui/state-view";
-import { obtenerNombreLibroBiblico } from "@/features/catalog/catalog.api";
+import {
+  obtenerNombreLibroBiblico,
+  tieneCacheLibrosBiblicos,
+  useLibrosBiblicos,
+} from "@/features/catalog/catalog.api";
 import { FASES_CRECER } from "@/features/crecer/crecer-fases";
 import { useTemaDetalle } from "@/features/themes/hooks/use-tema-detalle";
 import { useResolvedMediaUrl, obtenerIlustracionFallback } from "@/features/media/use-resolved-media-url";
@@ -32,8 +36,12 @@ export const Route = createFileRoute("/app/temas/$themeId")({
 function ThemeDetailPage() {
   const { themeId } = Route.useParams();
   const detalle = useTemaDetalle(themeId);
+  const librosQuery = useLibrosBiblicos();
   const theme = detalle.theme;
-  const isLoading = detalle.themeQuery.isLoading || detalle.meQuery.isLoading;
+  const isLoading =
+    detalle.themeQuery.isLoading ||
+    detalle.meQuery.isLoading ||
+    (librosQuery.isLoading && !tieneCacheLibrosBiblicos());
   const isError = detalle.themeQuery.isError && !theme;
 
   const fallbackHint = `${theme?.titulo ?? ""} ${theme?.senda?.nombre ?? ""}`;
@@ -48,7 +56,8 @@ function ThemeDetailPage() {
   const versiculo = theme?.versiculo_clave;
   const referencia = theme?.referencia_biblica;
   const libroNombre = obtenerNombreLibroBiblico(
-    versiculo?.libro_id ?? referencia?.libro_id ?? 43,
+    versiculo?.libro_id ?? referencia?.libro_id ?? null,
+    librosQuery.data,
   );
   const versiculoNumero =
     versiculo?.versiculo ??

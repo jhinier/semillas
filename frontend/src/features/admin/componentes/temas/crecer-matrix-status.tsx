@@ -60,13 +60,22 @@ export function CrecerMatrixStatus({
   getCell,
   onSelect,
 }: CrecerMatrixStatusProps) {
+  const totalMomentos = ageGroups.length * steps.length;
+  const esUnicaFranja = ageGroups.length === 1;
+
   return (
     <section className="admin-editor-section admin-crecer-matrix" aria-label="Matriz de cobertura CRECER">
       <div className="admin-crecer-matrix__header">
         <div>
-          <span className="admin-eyebrow">Mapa de avance (18 momentos)</span>
+          <span className="admin-eyebrow">
+            Mapa de avance ({totalMomentos} {totalMomentos === 1 ? "momento" : "momentos"})
+          </span>
           <h2>Tabla resumen por edad y momento</h2>
-          <p>Haz clic en cualquier casilla para saltar a ese momento. El recuadro morado indica cuál estás editando ahora.</p>
+          <p>
+            {esUnicaFranja
+              ? `Solo se verifica el método CRECER para ${ageGroups[0]?.nombre ?? "la franja elegida en Paso 1"}. Haz clic en cualquier casilla para saltar a ese momento.`
+              : "Haz clic en cualquier casilla para saltar a ese momento. El recuadro morado indica cuál estás editando ahora."}
+          </p>
         </div>
         <div className="admin-crecer-matrix__legend" aria-label="Leyenda de estados">
           {(Object.keys(statusLabels) as CrecerMatrixCellStatus[]).map((status) => (

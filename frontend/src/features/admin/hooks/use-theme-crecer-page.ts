@@ -12,7 +12,7 @@ import {
   type RecursoMultimedia,
 } from "../../media/media.api";
 import { obtenerUrlPortadaTema } from "../../themes/themes.api";
-import { obtenerEstadoTema } from "../componentes/temas/theme-view.utils";
+import { obtenerEstadoTema, resolverFranjasDelTema } from "../componentes/temas/theme-view.utils";
 
 interface UseThemeCrecerPageProps { themeId: string; }
 export type ReflectionQuestion = { pregunta: string; orden: number };
@@ -334,11 +334,17 @@ export function useThemeCrecerPage({ themeId }: UseThemeCrecerPageProps) {
     }
   }, [draftState]);
 
+  const themeAgeGroups = useMemo(
+    () => resolverFranjasDelTema(ageGroupsQuery.data, theme?.grupos_edad),
+    [ageGroupsQuery.data, theme?.grupos_edad],
+  );
+
   useEffect(() => {
-    if (selectedAgeGroupId || !ageGroupsQuery.data?.length) return;
-    const available = theme?.grupos_edad?.[0]?.id;
-    setSelectedAgeGroupId(available ?? ageGroupsQuery.data?.[0]?.id ?? "");
-  }, [ageGroupsQuery.data, selectedAgeGroupId, theme?.grupos_edad]);
+    if (!themeAgeGroups.length || themeQuery.isLoading) return;
+    if (!selectedAgeGroupId || !themeAgeGroups.some((g) => g.id === selectedAgeGroupId)) {
+      setSelectedAgeGroupId(themeAgeGroups[0]!.id);
+    }
+  }, [selectedAgeGroupId, themeAgeGroups, themeQuery.isLoading]);
 
   useEffect(() => {
     if (!stepsQuery.data || draftState.themeId !== themeId) return;
@@ -362,8 +368,8 @@ export function useThemeCrecerPage({ themeId }: UseThemeCrecerPageProps) {
   }, [draftState.themeId, stepsQuery.data, themeId]);
 
   const selectedAgeGroup = useMemo(
-    () => ageGroupsQuery.data?.find((ageGroup) => ageGroup.id === selectedAgeGroupId) ?? null,
-    [ageGroupsQuery.data, selectedAgeGroupId],
+    () => themeAgeGroups.find((ageGroup) => ageGroup.id === selectedAgeGroupId) ?? themeAgeGroups[0] ?? null,
+    [themeAgeGroups, selectedAgeGroupId],
   );
   const activeStep = crecerStepsQuery.data?.find((step) => step.codigo === activeStepCode);
   const activeStepRecord = useMemo(
@@ -488,7 +494,9 @@ export function useThemeCrecerPage({ themeId }: UseThemeCrecerPageProps) {
       const stepType = crecerStepsQuery.data?.find((step) => step.codigo === stepCode);
       if (!stepType || !ageGroupId) throw new Error("Selecciona una franja y un paso");
       const resultado = await persistirMomento(stepType.id, ageGroupId, draft);
-      await asegurarGrupoEdadEnTema(themeId, ageGroupId, theme?.grupos_edad);
+      if (!theme?.grupos_edad?.length) {
+        await asegurarGrupoEdadEnTema(themeId, ageGroupId, theme?.grupos_edad);
+      }
       return resultado;
     },
     onSuccess: async (_, variables) => {
@@ -679,7 +687,7 @@ export function useThemeCrecerPage({ themeId }: UseThemeCrecerPageProps) {
   );
 
   return {
-    theme, portadaUrl, estado, selectedAgeGroup, activeStep, activeStepContent, pasos, totalPasos, pasosCompletos, progreso,
+    theme, themeAgeGroups, portadaUrl, estado, selectedAgeGroup, activeStep, activeStepContent, pasos, totalPasos, pasosCompletos, progreso,
     selectedAgeGroupId, setSelectedAgeGroupId, activeStepCode, setActiveStepCode,
     title: currentDraft.title, setTitle,
     body: currentDraft.body, setBody,

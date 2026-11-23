@@ -27,7 +27,7 @@ function serializarPortada(portada: RegistroTema["portada"]) {
   };
 }
 
-function serializarTemaListado({ tema, senda, portada }: RegistroTema) {
+function serializarTemaListado({ tema, senda, portada, versiculo, referencia }: RegistroTema) {
   return {
     id: tema.id,
     senda_id: tema.sendaId,
@@ -55,7 +55,32 @@ function serializarTemaListado({ tema, senda, portada }: RegistroTema) {
           orden: senda.orden
         }
       : null,
-    portada_recurso: serializarPortada(portada)
+    portada_recurso: serializarPortada(portada),
+    ...(versiculo
+      ? {
+          versiculo_clave: {
+            id: versiculo.id,
+            tema_id: versiculo.temaId,
+            libro_id: versiculo.libroId,
+            capitulo: versiculo.capitulo,
+            versiculo: versiculo.versiculo,
+            texto: versiculo.texto,
+          },
+        }
+      : {}),
+    ...(referencia
+      ? {
+          referencia_biblica: {
+            id: referencia.id,
+            tema_id: referencia.temaId,
+            libro_id: referencia.libroId,
+            capitulo: referencia.capitulo,
+            versiculo_inicio: referencia.versiculoInicio,
+            versiculo_fin: referencia.versiculoFin,
+            principal: referencia.principal,
+          },
+        }
+      : {}),
   };
 }
 

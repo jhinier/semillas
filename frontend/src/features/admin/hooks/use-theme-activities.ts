@@ -8,6 +8,7 @@ import {
   guardarParlante,
 } from "../admin.api";
 import {
+  esCodigoCuestionario,
   normalizarConfiguracionActividad,
   sincronizarOpcionesCuestionario,
   validarActividadParaGuardar,
@@ -94,7 +95,7 @@ export function useThemeActivitiesMutation({
       );
       let opcionesPayload = draft.opciones;
 
-      if (codigoTipoActividad === "cuestionario") {
+      if (esCodigoCuestionario(codigoTipoActividad)) {
         const sincronizadas = sincronizarOpcionesCuestionario(
           configuracionAvanzada,
           draft.opciones
@@ -195,11 +196,15 @@ export function useThemeActivitiesMutation({
       };
       if (esModoEditar && actividadId) {
         const res = await actualizarActividad(actividadId, payload);
-        await asegurarGrupoEdadEnTema(themeId, draft.grupo_edad_id, gruposTemaActuales);
+        if (!gruposTemaActuales?.length) {
+          await asegurarGrupoEdadEnTema(themeId, draft.grupo_edad_id, gruposTemaActuales);
+        }
         return res;
       }
       const creada = await crearActividad(payload);
-      await asegurarGrupoEdadEnTema(themeId, draft.grupo_edad_id, gruposTemaActuales);
+      if (!gruposTemaActuales?.length) {
+        await asegurarGrupoEdadEnTema(themeId, draft.grupo_edad_id, gruposTemaActuales);
+      }
       return creada;
     },
     onSuccess: () => {

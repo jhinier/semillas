@@ -4,7 +4,7 @@ import type { ActivityDraft } from "../../types";
 import type { Actividad } from "@/shared/api/api";
 import { ActividadWrapper } from "@/features/crecer/componentes/actividad-wrapper";
 import { getActivityTypeDefinition } from "./activity-type-catalog";
-import { sincronizarOpcionesCuestionario } from "./activity-configuration";
+import { esCodigoCuestionario, sincronizarOpcionesCuestionario } from "./activity-configuration";
 
 interface ActivityDraftPreviewProps {
   draft: ActivityDraft;
@@ -20,10 +20,9 @@ export function crearActividadDesdeBorrador(
   typeName?: string | null,
 ): Actividad {
   const definition = getActivityTypeDefinition(typeCode);
-  const opcionesBase =
-    typeCode === "cuestionario"
-      ? sincronizarOpcionesCuestionario(draft.configuracion, draft.opciones).opciones
-      : draft.opciones;
+  const opcionesBase = esCodigoCuestionario(typeCode)
+    ? sincronizarOpcionesCuestionario(draft.configuracion, draft.opciones).opciones
+    : draft.opciones;
 
   return {
     id: "00000000-0000-4000-8000-000000000001",

@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useBlocker, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -16,7 +16,7 @@ import {
   ShieldCheck,
   Trash2,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   archivarTema,
@@ -44,10 +44,12 @@ import {
   validarCamposObligatoriosPaso1,
 } from "../features/admin/componentes/temas";
 import {
-  LIBROS_BIBLICOS_CATALOGO,
   obtenerGruposEdad,
+  obtenerLibrosBiblicosSincrono,
   obtenerNombreLibroBiblico,
   obtenerVersionesBiblicas,
+  resolverLibroPorDefectoId,
+  useLibrosBiblicos,
 } from "../features/catalog/catalog.api";
 import {
   obtenerRecursosMultimedia,
@@ -110,13 +112,16 @@ function ThemeMetadataEditorPage() {
     xp_recompensa: 100,
     grupo_edad_ids: [] as string[],
     portada_recurso_id: null as string | null,
-    libro_id: 43,
+    libro_id: 0,
     capitulo: 3,
     versiculo: 16,
     parte_historia: "",
     versiculo_texto: "",
   });
   const [dirty, setDirty] = useState(false);
+  const dirtyRef = useRef(false);
+  dirtyRef.current = dirty;
+  const hydratedTemaSignatureRef = useRef("");
 
   const estudioQuery = useQuery({
     queryKey: ["admin", "theme", themeId, "studio"],
@@ -131,6 +136,8 @@ function ThemeMetadataEditorPage() {
     queryKey: ["catalog", "bible-versions"],
     queryFn: obtenerVersionesBiblicas,
   });
+  const librosQuery = useLibrosBiblicos();
+  const libros = librosQuery.data ?? obtenerLibrosBiblicosSincrono();
   const recursosQuery = useQuery({
     queryKey: ["admin", "media"],
     queryFn: obtenerRecursosMultimedia,
@@ -139,8 +146,35 @@ function ThemeMetadataEditorPage() {
   const tema = estudioQuery.data?.tema;
   const completitud = estudioQuery.data?.completitud;
 
+  useBlocker({
+    shouldBlockFn: () => {
+      if (!dirtyRef.current) return false;
+      return !window.confirm(
+        "Tienes cambios sin guardar en los datos o franjas del Paso 1. ¿Deseas salir sin guardar?",
+      );
+    },
+    enableBeforeUnload: dirty,
+  });
+
   useEffect(() => {
     if (!tema) return;
+    const grupoIdsTema =
+      tema.grupos_edad?.map((grupo) =>
+        typeof grupo === "string" ? grupo : grupo.id,
+      ) ?? [];
+    const signature = [
+      tema.id,
+      tema.actualizado_en ?? "",
+      grupoIdsTema.join(","),
+      tema.portada_recurso_id ?? "",
+      tema.versiculo_clave?.texto ?? "",
+      String(tema.versiculo_clave?.libro_id ?? ""),
+    ].join("|");
+    if (hydratedTemaSignatureRef.current === signature) return;
+    if (dirtyRef.current && hydratedTemaSignatureRef.current.startsWith(`${tema.id}|`)) {
+      return;
+    }
+
     const versiculoActual = tema.versiculo_clave;
     const referenciaActual = tema.referencia_biblica;
     const sendasIniciales =
@@ -151,6 +185,8 @@ function ThemeMetadataEditorPage() {
           : tema.senda_id
             ? [tema.senda_id]
             : [];
+    const libroGuardado = versiculoActual?.libro_id ?? referenciaActual?.libro_id ?? 0;
+    hydratedTemaSignatureRef.current = signature;
     setForm({
       titulo: tema.titulo,
       slug: tema.slug,
@@ -161,12 +197,9 @@ function ThemeMetadataEditorPage() {
       version_biblica_id: tema.version_biblica_id ?? "",
       minutos_estimados: tema.minutos_estimados,
       xp_recompensa: tema.xp_recompensa,
-      grupo_edad_ids:
-        tema.grupos_edad?.map((grupo) =>
-          typeof grupo === "string" ? grupo : grupo.id,
-        ) ?? [],
+      grupo_edad_ids: grupoIdsTema,
       portada_recurso_id: tema.portada_recurso_id,
-      libro_id: versiculoActual?.libro_id ?? referenciaActual?.libro_id ?? 43,
+      libro_id: libroGuardado || resolverLibroPorDefectoId(librosQuery.data),
       capitulo: versiculoActual?.capitulo ?? referenciaActual?.capitulo ?? 3,
       versiculo:
         versiculoActual?.versiculo ?? referenciaActual?.versiculo_inicio ?? 16,
@@ -176,13 +209,26 @@ function ThemeMetadataEditorPage() {
         "",
       versiculo_texto: versiculoActual?.texto ?? "",
     });
+    dirtyRef.current = false;
     setDirty(false);
   }, [tema]);
+
+  // Si el tema no tenía versículo guardado y el catálogo remoto llega después, actualiza al ID real de Juan
+  useEffect(() => {
+    if (!tema || dirty || !librosQuery.data?.length) return;
+    const libroGuardado = tema.versiculo_clave?.libro_id ?? tema.referencia_biblica?.libro_id;
+    if (libroGuardado) return;
+    const defectoReal = resolverLibroPorDefectoId(librosQuery.data);
+    setForm((current) =>
+      current.libro_id === defectoReal ? current : { ...current, libro_id: defectoReal },
+    );
+  }, [tema, dirty, librosQuery.data]);
 
   const updateForm = <K extends keyof typeof form>(
     key: K,
     value: (typeof form)[K],
   ) => {
+    dirtyRef.current = true;
     setForm((current) => {
       const next = { ...current, [key]: value };
       if (key === "titulo" && typeof value === "string") {
@@ -215,7 +261,7 @@ function ThemeMetadataEditorPage() {
       portada_recurso_id: form.portada_recurso_id,
       versiculo_clave: versiculoLimpio
         ? {
-            libro_id: Number(form.libro_id) || 43,
+            libro_id: Number(form.libro_id) || resolverLibroPorDefectoId(libros),
             capitulo: Math.max(1, Number(form.capitulo) || 1),
             versiculo: Math.max(1, Number(form.versiculo) || 1),
             texto: versiculoLimpio,
@@ -223,7 +269,7 @@ function ThemeMetadataEditorPage() {
           }
         : undefined,
     };
-  }, [form]);
+  }, [form, libros]);
 
   const invalidate = async () => {
     await Promise.all([
@@ -237,11 +283,26 @@ function ThemeMetadataEditorPage() {
     ]);
   };
 
+  const aplicarTemaGuardadoEnCache = (updatedTema: Awaited<ReturnType<typeof actualizarTema>> | null | undefined) => {
+    if (!updatedTema) return;
+    if (Array.isArray(updatedTema.grupos_edad)) {
+      queryClient.setQueryData(["admin", "theme", themeId], updatedTema);
+      queryClient.setQueryData(
+        ["admin", "theme", themeId, "studio"],
+        (actual: { tema?: unknown } | undefined) =>
+          actual ? { ...actual, tema: { ...(actual.tema as object), ...updatedTema } } : actual,
+      );
+    }
+  };
+
   const saveMutation = useMutation({
     mutationFn: () => actualizarTema(themeId, payload),
-    onSuccess: async () => {
-      await invalidate();
+    onSuccess: async (updatedTema) => {
+      dirtyRef.current = false;
       setDirty(false);
+      hydratedTemaSignatureRef.current = "";
+      aplicarTemaGuardadoEnCache(updatedTema);
+      await invalidate();
       toast.success("Cambios guardados");
     },
     onError: (error) =>
@@ -261,12 +322,16 @@ function ThemeMetadataEditorPage() {
         );
       }
       if (dirty) {
-        await actualizarTema(themeId, payload);
+        return actualizarTema(themeId, payload);
       }
+      return null;
     },
-    onSuccess: async () => {
-      await invalidate();
+    onSuccess: async (updatedTema) => {
+      dirtyRef.current = false;
       setDirty(false);
+      hydratedTemaSignatureRef.current = "";
+      aplicarTemaGuardadoEnCache(updatedTema);
+      await invalidate();
       toast.success("Paso 1 guardado");
       setActiveTab("portada");
     },
@@ -330,8 +395,10 @@ function ThemeMetadataEditorPage() {
       return enviarTemaRevision(themeId);
     },
     onSuccess: async () => {
-      await invalidate();
+      dirtyRef.current = false;
       setDirty(false);
+      hydratedTemaSignatureRef.current = "";
+      await invalidate();
       toast.success("Tema enviado a revisión");
     },
     onError: (error) =>
@@ -344,8 +411,10 @@ function ThemeMetadataEditorPage() {
       return publicarTema(themeId);
     },
     onSuccess: async () => {
-      await invalidate();
+      dirtyRef.current = false;
       setDirty(false);
+      hydratedTemaSignatureRef.current = "";
+      await invalidate();
       toast.success(
         tema?.estado === "publicado"
           ? "¡Publicación actualizada!"
@@ -453,7 +522,7 @@ function ThemeMetadataEditorPage() {
   const coverUrl =
     coverPreviewMedia.src ||
     obtenerIlustracionFallback(form.titulo || tema.titulo);
-  const libroNombre = obtenerNombreLibroBiblico(form.libro_id);
+  const libroNombre = obtenerNombreLibroBiblico(form.libro_id, libros);
   const citaBiblica = `${libroNombre} ${form.capitulo || 1}:${form.versiculo || 1}`;
   const currentStep: ThemeWorkflowStep =
     activeTab === "portada" ? 2 : activeTab === "publicacion" ? 5 : 1;
@@ -551,7 +620,7 @@ function ThemeMetadataEditorPage() {
                     help={
                       paso1Validacion.sendaInvalida
                         ? "Obligatorio: selecciona al menos una senda."
-                        : "Puedes elegir una o más sendas donde aparecerá este tema."
+                        : "Solo define en qué senda espiritual (Padre, Hijo o Espíritu) aparecerá el tema. No define las franjas de CRECER."
                     }
                     wide
                   >
@@ -572,6 +641,7 @@ function ThemeMetadataEditorPage() {
                           const nextIds = selected
                             ? actualIds.filter((id) => id !== senda.id)
                             : [...actualIds, senda.id];
+                          dirtyRef.current = true;
                           setForm((current) => ({
                             ...current,
                             senda_ids: nextIds,
@@ -607,6 +677,59 @@ function ThemeMetadataEditorPage() {
                             </span>
                             <small className="mt-1.5 block text-slate-500 dark:text-slate-300">
                               {selected ? (isPrimary ? "Senda principal" : "Senda adicional") : "Clic para incluir"}
+                            </small>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </AdminStudioField>
+                  <AdminStudioField
+                    esGrupo
+                    label="Franjas de edad (CRECER y Actividades)"
+                    required
+                    invalid={paso1Validacion.edadesInvalidas}
+                    help={
+                      paso1Validacion.edadesInvalidas
+                        ? "Obligatorio: elige al menos una franja de edad."
+                        : `Seleccionada(s): ${form.grupo_edad_ids.length} ${form.grupo_edad_ids.length === 1 ? "franja" : "franjas"} (${form.grupo_edad_ids.length * 6} momentos en CRECER). Solo las edades marcadas aquí aparecerán en Paso 3 CRECER, Mapa de avance y Paso 4.`
+                    }
+                    wide
+                  >
+                    <div
+                      id="tema-edades"
+                      className={claseContenedorSelectorPaso1(paso1Validacion.edadesInvalidas)}
+                    >
+                      {edadesQuery.data?.map((grupo) => {
+                        const selected = form.grupo_edad_ids.includes(grupo.id);
+                        return (
+                          <button
+                            key={grupo.id}
+                            type="button"
+                            onClick={() =>
+                              updateForm(
+                                "grupo_edad_ids",
+                                selected
+                                  ? form.grupo_edad_ids.filter(
+                                      (id) => id !== grupo.id,
+                                    )
+                                  : [...form.grupo_edad_ids, grupo.id],
+                              )
+                            }
+                            className={claseTarjetaSelectorPaso1(selected, paso1Validacion.edadesInvalidas)}
+                          >
+                            <span className="flex items-center justify-between font-bold text-slate-800 dark:text-slate-100">
+                              {grupo.nombre}
+                              {selected ? (
+                                <CheckCircle2
+                                  size={18}
+                                  className="text-violet-600 dark:text-violet-300"
+                                />
+                              ) : (
+                                <CircleIcon />
+                              )}
+                            </span>
+                            <small className="mt-1 block text-slate-500 dark:text-slate-300">
+                              {grupo.edad_minima}–{grupo.edad_maxima} años · {selected ? "Incluida en CRECER (clic para quitar)" : "No incluida (clic para agregar)"}
                             </small>
                           </button>
                         );
@@ -711,59 +834,6 @@ function ThemeMetadataEditorPage() {
                       }
                     />
                   </AdminStudioField>
-                  <AdminStudioField
-                    esGrupo
-                    label="Edades destinatarias"
-                    required
-                    invalid={paso1Validacion.edadesInvalidas}
-                    help={
-                      paso1Validacion.edadesInvalidas
-                        ? "Obligatorio: elige al menos un grupo de edad."
-                        : undefined
-                    }
-                    wide
-                  >
-                    <div
-                      id="tema-edades"
-                      className={claseContenedorSelectorPaso1(paso1Validacion.edadesInvalidas)}
-                    >
-                      {edadesQuery.data?.map((grupo) => {
-                        const selected = form.grupo_edad_ids.includes(grupo.id);
-                        return (
-                          <button
-                            key={grupo.id}
-                            type="button"
-                            onClick={() =>
-                              updateForm(
-                                "grupo_edad_ids",
-                                selected
-                                  ? form.grupo_edad_ids.filter(
-                                      (id) => id !== grupo.id,
-                                    )
-                                  : [...form.grupo_edad_ids, grupo.id],
-                              )
-                            }
-                            className={claseTarjetaSelectorPaso1(selected, paso1Validacion.edadesInvalidas)}
-                          >
-                            <span className="flex items-center justify-between font-bold text-slate-800 dark:text-slate-100">
-                              {grupo.nombre}
-                              {selected ? (
-                                <CheckCircle2
-                                  size={18}
-                                  className="text-violet-600 dark:text-violet-300"
-                                />
-                              ) : (
-                                <CircleIcon />
-                              )}
-                            </span>
-                            <small className="mt-1 block text-slate-500 dark:text-slate-300">
-                              {grupo.edad_minima}–{grupo.edad_maxima} años
-                            </small>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </AdminStudioField>
                 </div>
               </section>
 
@@ -797,7 +867,7 @@ function ThemeMetadataEditorPage() {
                       }
                       aria-invalid={paso1Validacion.libroInvalido || undefined}
                     >
-                      {LIBROS_BIBLICOS_CATALOGO.map((libro) => (
+                      {libros.map((libro) => (
                         <option key={libro.id} value={libro.id}>
                           {libro.nombre} ({libro.testamento})
                         </option>
@@ -1064,20 +1134,23 @@ function ThemeMetadataEditorPage() {
                     <button
                       type="button"
                       className="text-xs font-bold text-violet-600 hover:underline dark:text-violet-300"
-                      onClick={() =>
-                        navigate({
-                          to: "/admin/temas/$themeId/crecer",
-                          params: { themeId },
-                        })
-                      }
+                      onClick={() => setActiveTab("general")}
                     >
-                      Completar otras edades en CRECER →
+                      Cambiar franjas en Paso 1 →
                     </button>
                   </div>
                   <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                    Basta con que al menos una franja tenga los 6 momentos CRECER y 1 actividad para poder publicar para esa franja.
+                    Solo se verifican las franjas elegidas en el Paso 1 (6 momentos CRECER y al menos 1 actividad para publicar).
                   </p>
-                  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div
+                    className={`mt-3 grid grid-cols-1 gap-3 ${
+                      completitud.franjas_detalle.length === 1
+                        ? "sm:grid-cols-1"
+                        : completitud.franjas_detalle.length === 2
+                          ? "sm:grid-cols-2"
+                          : "sm:grid-cols-3"
+                    }`}
+                  >
                     {completitud.franjas_detalle.map((franja) => (
                       <div
                         key={franja.grupo_edad_id}

@@ -22,7 +22,11 @@ import {
 
 import type { Actividad } from "@/shared/api/api";
 import { ContenidoMarkdown, limpiarMarkdownATextoPlano } from "@/componentes/ui/contenido-markdown";
-import { obtenerNombreLibroBiblico } from "@/features/catalog/catalog.api";
+import {
+  obtenerLibrosBiblicos,
+  obtenerLibrosBiblicosSincrono,
+  obtenerNombreLibroBiblico,
+} from "@/features/catalog/catalog.api";
 import { FASES_CRECER } from "@/features/crecer/crecer-fases";
 import { ActividadWrapper } from "@/features/crecer/componentes/actividad-wrapper";
 import { NarradorPaso } from "@/features/crecer/componentes/narrador-paso";
@@ -273,22 +277,31 @@ export function AdminStudentPreviewWorkspace({
             </button>
           </div>
 
-          <div className="admin-student-preview__age" role="group" aria-label="Franja de edad simulada">
-            <span>Simular para</span>
-            <div>
-              {ageGroups.map((group) => (
-                <button
-                  key={group.id}
-                  type="button"
-                  className={group.id === selectedAgeGroupId ? "is-active" : ""}
-                  aria-pressed={group.id === selectedAgeGroupId}
-                  onClick={() => onAgeGroupChange(group.id)}
-                >
-                  {group.nombre ?? "Franja"}
-                </button>
-              ))}
+          {ageGroups.length === 1 ? (
+            <div className="admin-student-preview__age" aria-label="Franja de edad del tema">
+              <span>Franja del tema</span>
+              <strong className="rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-extrabold text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200">
+                {ageGroups[0]!.nombre ?? "Franja"}
+              </strong>
             </div>
-          </div>
+          ) : (
+            <div className="admin-student-preview__age" role="group" aria-label="Franja de edad simulada">
+              <span>Simular para</span>
+              <div>
+                {ageGroups.map((group) => (
+                  <button
+                    key={group.id}
+                    type="button"
+                    className={group.id === selectedAgeGroupId ? "is-active" : ""}
+                    aria-pressed={group.id === selectedAgeGroupId}
+                    onClick={() => onAgeGroupChange(group.id)}
+                  >
+                    {group.nombre ?? "Franja"}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
@@ -979,12 +992,24 @@ function adaptarActividadParaPreview(actividad: ActividadAdmin): Actividad {
 }
 
 function GeneralVerseFooterCard({ theme }: { theme: PreviewTheme }) {
+  const [libros, setLibros] = useState(obtenerLibrosBiblicosSincrono);
+  useEffect(() => {
+    let active = true;
+    void obtenerLibrosBiblicos().then((lista) => {
+      if (active) setLibros(lista);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const versiculo = theme.versiculo_clave;
   const referencia = theme.referencia_biblica;
   if (!versiculo?.texto && !referencia?.libro_id) return null;
 
   const libroNombre = obtenerNombreLibroBiblico(
-    versiculo?.libro_id ?? referencia?.libro_id ?? 43,
+    versiculo?.libro_id ?? referencia?.libro_id ?? null,
+    libros,
   );
   const capitulo = versiculo?.capitulo ?? referencia?.capitulo ?? 1;
   const numVersiculo = versiculo?.versiculo ?? referencia?.versiculo_inicio ?? 1;

@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import {
+  ArrowRight,
   Check,
   Copy,
   FileAudio,
@@ -41,6 +42,9 @@ interface CrecerContentEditorProps {
   onUpload: (file: File, type: "imagen" | "audio" | "video", metadata: { titulo: string; textoAlternativo: string }) => void;
   onSave: () => void;
   onOpenReuse?: () => void;
+  nextStepLabel?: string | null;
+  onNextStep?: () => void;
+  stepNumber?: number;
   isPending: boolean;
   isUploading: boolean;
   isSuccess: boolean;
@@ -69,7 +73,7 @@ export function CrecerContentEditor(props: CrecerContentEditorProps) {
   return (
     <section className="admin-editor-section">
       <div className="admin-editor-section__header">
-        <div><h2>3. Escribe el contenido: {props.activeStep?.nombre ?? "Momento CRECER"}</h2><p>Editando para el grupo <strong>{props.selectedAgeGroup?.nombre ?? "seleccionado"}</strong>. El texto, la imagen y el audio se guardan juntos.</p></div>
+        <div><h2>{props.stepNumber ?? 3}. Escribe el contenido: {props.activeStep?.nombre ?? "Momento CRECER"}</h2><p>Editando para la franja <strong>{props.selectedAgeGroup?.nombre ?? "seleccionada"}</strong>. El texto, la imagen y el audio se guardan juntos.</p></div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           {props.onOpenReuse ? (
             <button
@@ -138,7 +142,27 @@ export function CrecerContentEditor(props: CrecerContentEditorProps) {
         ) : null}
       </div>
 
-      <div className="admin-save-bar mt-5">
+      {props.onNextStep ? (
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+          <button
+            type="button"
+            disabled={props.isPending || props.isUploading}
+            onClick={props.onNextStep}
+            className="admin-secondary-button"
+          >
+            {props.nextStepLabel
+              ? props.isDirty
+                ? `Guardar e ir a ${props.nextStepLabel}`
+                : `Siguiente momento: ${props.nextStepLabel}`
+              : props.isDirty
+                ? "Guardar y diseñar Actividades"
+                : "Continuar al Paso 4: Actividades"}
+            <ArrowRight size={16} />
+          </button>
+        </div>
+      ) : null}
+
+      <div className="admin-save-bar mt-4">
         <p aria-live="polite">
           {props.isUploading
             ? "Subiendo imagen o audio..."

@@ -24,6 +24,7 @@ interface CrecerStepSelectorProps {
   stepsData?: StepContent[] | null;
   onSelect: (codigo: string) => void;
   hasDraft?: (codigo: string) => boolean;
+  stepNumber?: number;
 }
 
 const MOMENTO_GUIA_FACIL: Record<string, { orden: number; explicacion: string }> = {
@@ -42,6 +43,7 @@ export function CrecerStepSelector({
   stepsData,
   onSelect,
   hasDraft,
+  stepNumber = 2,
 }: CrecerStepSelectorProps) {
   return (
     <section className="admin-crecer-control">
@@ -50,7 +52,7 @@ export function CrecerStepSelector({
           <BookOpenText size={18} />
         </div>
         <div>
-          <h2>2. Elige el momento (del 1 al 6)</h2>
+          <h2>{stepNumber}. Elige el momento (del 1 al 6)</h2>
           <p>Avanza en orden del 1 al 6 para completar la lección.</p>
         </div>
       </div>

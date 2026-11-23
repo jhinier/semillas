@@ -808,7 +808,9 @@
 }
 
 [data-theme="admin-dark"] .admin-logros-modal-foot,
-.dark .admin-logros-modal-foot {
+[data-theme="admin-dark"] .admin-logros-modal-aside,
+.dark .admin-logros-modal-foot,
+.dark .admin-logros-modal-aside {
   background: #0b1120;
   border-color: rgba(148, 163, 184, 0.18);
 }

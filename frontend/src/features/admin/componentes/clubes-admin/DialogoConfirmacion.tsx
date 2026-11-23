@@ -45,7 +45,7 @@ export function DialogoConfirmacion({ confirmacion, mutando, onConfirmar, onCanc
   const contenido = contenidoConfirmacion[confirmacion.tipo];
   const objetivo = confirmacion.nombreObjetivo ? ` ${confirmacion.nombreObjetivo}` : ` ${confirmacion.club.nombre}`;
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="confirmar-clubes-title" className="fixed inset-0 z-50 grid place-items-center p-6">
+    <div role="dialog" aria-modal="true" aria-labelledby="confirmar-clubes-title" className="fixed inset-0 z-[215] grid place-items-center p-6">
       <button type="button" aria-label="Cancelar confirmación" onClick={onCancelar} className="absolute inset-0 cursor-default bg-slate-950/45" />
       <div className="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
         <h3 id="confirmar-clubes-title" className="text-xl font-black text-slate-950">

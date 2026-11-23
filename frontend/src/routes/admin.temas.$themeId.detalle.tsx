@@ -28,9 +28,10 @@ import {
   obtenerEstudioTemaAdmin,
   publicarTema,
 } from "../features/admin/admin.api";
+import { esPaso1CompletoPublicacion } from "../features/admin/componentes/temas";
 import { ThemeWorkflowStepper, type ThemeWorkflowStep } from "../features/admin/componentes/temas/theme-workflow-stepper";
 import { resolverPortadaTemaAdmin, usePortadasFirmadasAdmin } from "../features/admin/admin-theme-cover";
-import { obtenerNombreLibroBiblico } from "../features/catalog/catalog.api";
+import { obtenerNombreLibroBiblico, useLibrosBiblicos } from "../features/catalog/catalog.api";
 import { obtenerIlustracionFallback } from "../features/media/use-resolved-media-url";
 
 export const Route = createFileRoute("/admin/temas/$themeId/detalle")({ component: AdminThemeStudioPage });
@@ -68,6 +69,7 @@ function AdminThemeStudioPage() {
     queryKey: ["admin", "theme", themeId, "studio"],
     queryFn: () => obtenerEstudioTemaAdmin(themeId),
   });
+  const librosQuery = useLibrosBiblicos();
   const portadasFirmadas = usePortadasFirmadasAdmin(estudioQuery.data ? [estudioQuery.data.tema] : []);
 
   const invalidateTheme = async () => {
@@ -127,7 +129,10 @@ function AdminThemeStudioPage() {
   const ultimaRevision = revisiones?.[0];
   const versiculo = tema.versiculo_clave;
   const referencia = tema.referencia_biblica;
-  const libroNombre = obtenerNombreLibroBiblico(versiculo?.libro_id ?? referencia?.libro_id ?? 43);
+  const libroNombre = obtenerNombreLibroBiblico(
+    versiculo?.libro_id ?? referencia?.libro_id ?? null,
+    librosQuery.data,
+  );
   const versiculoNumero =
     versiculo?.versiculo ??
     (versiculo as { versiculo_inicio?: number } | null)?.versiculo_inicio ??
@@ -140,9 +145,7 @@ function AdminThemeStudioPage() {
       : null;
   const parteHistoria = versiculo?.parte_historia ?? referencia?.parte_historia ?? null;
 
-  const paso1Listo =
-    criterioCompleto(completitud?.criterios, "ficha_base") ||
-    criterioCompleto(completitud?.criterios, "informacion");
+  const paso1Listo = esPaso1CompletoPublicacion(completitud, true);
   const paso2Listo = criterioCompleto(completitud?.criterios, "portada");
   const contenidosCreados = completitud?.estadisticas?.contenidos_creados ?? 0;
   const contenidosEsperados = completitud?.estadisticas?.contenidos_esperados ?? 6;
@@ -423,7 +426,7 @@ function AdminThemeStudioPage() {
 
           <section className="admin-studio-card">
             <h3>Avance de momentos CRECER por franja de edad</h3>
-            <p>Basta completar los 6 momentos y al menos 1 actividad en una sola franja para poder publicar el tema para esa audiencia.</p>
+            <p>Se verifica únicamente el recorrido CRECER y las actividades para las franjas elegidas en el Paso 1.</p>
             {completitud?.franjas_detalle?.length ? (
               <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
                 {completitud.franjas_detalle.map((franja) => (

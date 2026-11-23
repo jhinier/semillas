@@ -579,6 +579,22 @@ export type ObtenerActividadesAdminParams = {
   offset?: number;
 };
 
+function parsearConfiguracionObjeto(valor: unknown): Record<string, unknown> {
+  if (typeof valor === "string") {
+    try {
+      const parsed = JSON.parse(valor) as unknown;
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+    } catch {
+      return {};
+    }
+  }
+  return valor && typeof valor === "object" && !Array.isArray(valor)
+    ? (valor as Record<string, unknown>)
+    : {};
+}
+
 export async function obtenerActividadAdmin(idActividad: string): Promise<ActividadAdmin> {
   const res = await peticion<ActividadAdmin | { actividad?: ActividadAdmin }>(`/administracion/actividades/${idActividad}`);
   const raw = res && typeof res === "object" && "actividad" in res && res.actividad ? res.actividad : (res as ActividadAdmin);
@@ -586,7 +602,7 @@ export async function obtenerActividadAdmin(idActividad: string): Promise<Activi
   return {
     ...raw,
     opciones: Array.isArray(raw.opciones) ? raw.opciones : [],
-    configuracion: raw.configuracion && typeof raw.configuracion === "object" ? raw.configuracion : {},
+    configuracion: parsearConfiguracionObjeto(raw.configuracion),
   };
 }
 
@@ -608,7 +624,7 @@ export async function obtenerActividadesAdmin(params?: ObtenerActividadesAdminPa
   const actividades = rawList.map((act) => ({
     ...act,
     opciones: Array.isArray(act?.opciones) ? act.opciones : [],
-    configuracion: act?.configuracion && typeof act.configuracion === "object" ? act.configuracion : {},
+    configuracion: parsearConfiguracionObjeto(act?.configuracion),
   }));
   const total = !Array.isArray(res) && typeof res?.total === "number" ? res.total : actividades.length;
   return { actividades, total };
@@ -652,7 +668,7 @@ export function formatearDetalleValidacionPublicacion(detalle?: string | null): 
 
   for (const token of detalle.split(/[\s,·]+/).map((t) => t.trim()).filter(Boolean)) {
     if (token === "NARRACION_SEMILLAS_REQUERIDA") continue;
-    if (token === "TITULO_REQUERIDO" || token === "SENDA_REQUERIDA" || token === "VERSION_BIBLICA_REQUERIDA") {
+    if (token === "TITULO_REQUERIDO" || token === "OBJETIVO_REQUERIDO" || token === "SENDA_REQUERIDA" || token === "VERSION_BIBLICA_REQUERIDA") {
       agregar("completa la información general");
     } else if (token === "VERSICULO_REQUERIDO" || token === "REFERENCIA_BIBLICA_REQUERIDA") {
       agregar("agrega el versículo clave con cita bíblica");
@@ -670,7 +686,12 @@ export function formatearDetalleValidacionPublicacion(detalle?: string | null): 
       agregar("requiere aprobación editorial previa");
     } else if (token === "MARKDOWN_INSEGURO") {
       agregar("revisa el formato HTML o enlaces del texto");
-    } else if (token.includes("ACTIVIDAD") || token === "RESPUESTA_CORRECTA_REQUERIDA" || token === "MEDIA_INVALIDA") {
+    } else if (
+      token.includes("ACTIVIDAD") ||
+      token === "RESPUESTA_CORRECTA_REQUERIDA" ||
+      token === "MEDIA_INVALIDA" ||
+      token === "CONFIGURACION_ACTIVIDAD_INVALIDA"
+    ) {
       agregar("revisa una actividad pendiente en el Paso 4");
     }
   }

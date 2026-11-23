@@ -4,7 +4,7 @@ import type { Database, Json } from "../../db/database.types";
 import { schema, type DbClient } from "../../db/client";
 import { BadRequestError, NotFoundError, UnprocessableEntityError } from "../../shared/errors/http-error";
 import { z } from "zod";
-import { crearSlugCopia, crearTituloCopia, mapActivity, mapStep, mapTheme } from "./admin.formatters";
+import { crearSlugCopia, crearTituloCopia, mapActivity, mapStep, mapTheme, normalizarConfiguracionJson } from "./admin.formatters";
 import { actualizarAjustesSistemaSchema, createActivitySchema, createSendaSchema, createThemeSchema, reorderActivitiesSchema, resolveReviewSchema, submitReviewSchema, updateActivitySchema, updateGrupoEdadSchema, updateSendaSchema, updateThemeSchema, updateUserSchema, upsertStepContentSchema } from "./admin.schemas";
 import { evaluarMatrizCrecer, MOMENTOS, type MomentoCrecer } from "./publicacion/matriz-crecer";
 import { validarPublicacion } from "./publicacion/validar-publicacion";
@@ -92,23 +92,36 @@ function evaluarCompletitudDesdeDatos({
   revisionAprobada: boolean;
 }) {
   const esperados = Math.max(grupos.length * 6, 1);
+  const gruposEdadIds = grupos.map((grupo: any) => String(grupo.grupo_edad_id));
+  const gruposEdadIdsSet = new Set(gruposEdadIds);
   const contenidosValidos = pasos
     .flatMap((paso: any) => paso.contenidos ?? [])
-    .filter((contenido: any) => contenido.titulo?.trim() && contenido.cuerpo?.trim()).length;
-  const gruposEdadIds = grupos.map((grupo: any) => String(grupo.grupo_edad_id));
+    .filter((contenido: any) => {
+      if (gruposEdadIdsSet.size > 0 && !gruposEdadIdsSet.has(String(contenido.grupo_edad_id))) {
+        return false;
+      }
+      return Boolean(contenido.titulo?.trim() && contenido.cuerpo?.trim());
+    }).length;
 
   const celdas = pasos.flatMap((paso: any) => {
     const tipoPaso = Array.isArray(paso.tipo_paso) ? paso.tipo_paso[0] : paso.tipo_paso;
     const codigoMomento = tipoPaso?.codigo as MomentoCrecer | undefined;
     if (!codigoMomento) return [];
-    return (paso.contenidos ?? []).map((contenido: any) => ({
-      grupoEdadId: String(contenido.grupo_edad_id),
-      codigoMomento,
-      completa: Boolean(contenido.titulo?.trim() && contenido.cuerpo?.trim()),
-      audioValida: Boolean(contenido.recurso_audio_id),
-      orden: paso.orden,
-    }));
+    return (paso.contenidos ?? [])
+      .filter((contenido: any) => gruposEdadIdsSet.size === 0 || gruposEdadIdsSet.has(String(contenido.grupo_edad_id)))
+      .map((contenido: any) => ({
+        grupoEdadId: String(contenido.grupo_edad_id),
+        codigoMomento,
+        completa: Boolean(contenido.titulo?.trim() && contenido.cuerpo?.trim()),
+        audioValida: Boolean(contenido.recurso_audio_id),
+        orden: paso.orden,
+      }));
   });
+
+  const actividadesDeFranjas =
+    gruposEdadIdsSet.size > 0
+      ? actividades.filter((a: any) => !a.grupo_edad_id || gruposEdadIdsSet.has(String(a.grupo_edad_id)))
+      : actividades;
 
   const franjasDetalle = grupos.map((grupo: any) => {
     const gid = String(grupo.grupo_edad_id);
@@ -125,7 +138,10 @@ function evaluarCompletitudDesdeDatos({
       momentos_completos: momentosCompletos,
       momentos_total: MOMENTOS.length,
       actividades: actividadesGrupo,
-      lista_para_publicar: crecerCompleto && actividades.length > 0,
+      incluida: true,
+      lista_para_publicar:
+        crecerCompleto &&
+        (actividadesGrupo > 0 || (grupos.length <= 1 && actividades.length > 0)),
     };
   });
 
@@ -146,20 +162,34 @@ function evaluarCompletitudDesdeDatos({
         : null,
     gruposEdadIds,
     celdasCrecer: celdas,
-    actividades: actividades.map((actividad: any) => {
+    actividades: actividadesDeFranjas.map((actividad: any) => {
       const codigoTipo = String((Array.isArray(actividad.tipo_actividad) ? actividad.tipo_actividad[0] : actividad.tipo_actividad)?.codigo ?? "");
       const opcionesLista = Array.isArray(actividad.opciones) ? actividad.opciones : [];
-      const configDirectaValida = validarConfiguracionActividad(codigoTipo, actividad.configuracion).success;
+      const configNorm = normalizarConfiguracionJson(actividad.configuracion);
+      const configDirectaValida = validarConfiguracionActividad(codigoTipo, configNorm).success;
+      const esCuestionario = codigoTipo === "cuestionario" || codigoTipo === "quiz";
+      const preguntasLegadasValidas =
+        esCuestionario &&
+        Array.isArray(configNorm.preguntas) &&
+        configNorm.preguntas.length > 0 &&
+        configNorm.preguntas.every(
+          (p: any) =>
+            p &&
+            Array.isArray(p.opciones) &&
+            p.opciones.length >= 2 &&
+            typeof p.respuesta_correcta === "number",
+        );
       const configOpcionesFallbackValida =
-        codigoTipo === "cuestionario" &&
+        esCuestionario &&
         opcionesLista.length >= 2 &&
         opcionesLista.filter((op: any) => op.correcta).length === 1;
       return {
         id: actividad.id,
         titulo: actividad.titulo,
         consigna: actividad.consigna,
-        requiereOpciones: codigoTipo === "cuestionario",
-        configuracionValida: configDirectaValida || configOpcionesFallbackValida,
+        requiereOpciones: esCuestionario,
+        configuracionValida:
+          configDirectaValida || configOpcionesFallbackValida || preguntasLegadasValidas,
         opciones: opcionesLista,
       };
     }),
@@ -181,7 +211,7 @@ function evaluarCompletitudDesdeDatos({
     { codigo: "portada", etiqueta: "Portada", completo: Boolean(tema.portada_recurso_id) },
     { codigo: "publico", etiqueta: "Público objetivo", completo: grupos.length > 0 },
     { codigo: "crecer", etiqueta: "Recorrido CRECER", completo: algunaFranjaCrecerCompleta, detalle: crecimientoDetalle },
-    { codigo: "actividades", etiqueta: "Actividades", completo: actividades.length > 0, detalle: `${actividades.length} actividad(es)` },
+    { codigo: "actividades", etiqueta: "Actividades", completo: actividadesDeFranjas.length > 0, detalle: `${actividadesDeFranjas.length} actividad(es)` },
     { codigo: "configuracion", etiqueta: "Configuración", completo: Boolean(tema.version_biblica_id && tema.minutos_estimados > 0 && tema.xp_recompensa >= 0) },
     { codigo: "publicacion", etiqueta: "Validación de publicación", completo: publicacion.valido, detalle: publicacionDetalle },
   ];
@@ -198,7 +228,7 @@ function evaluarCompletitudDesdeDatos({
       pasos_creados: pasos.length,
       contenidos_creados: contenidosValidos,
       contenidos_esperados: esperados,
-      actividades: actividades.length,
+      actividades: actividadesDeFranjas.length,
     },
     revisionAprobada,
     errores_publicacion: publicacion.errores,
@@ -242,17 +272,52 @@ export function crearAdminRepository({ supabase, drizzle }: AdminDb) {
     if (error) throw error;
   }
 
-  async function validarConfiguracionActividadPersistida(tipoActividadId: string, configuracion: unknown) {
+  async function validarConfiguracionActividadPersistida(
+    tipoActividadId: string,
+    configuracion: unknown,
+    opciones?: Array<{
+      etiqueta: string;
+      texto: string;
+      correcta: boolean;
+      orden: number;
+      retroalimentacion?: string;
+    }>,
+  ) {
     const { data, error } = await supabase.from("tipo_actividad").select("codigo").eq("id", tipoActividadId).single();
     if (error || !data) throw new NotFoundError("Tipo de actividad no encontrado");
     if (!CODIGOS_ACTIVIDAD_CANONICOS.includes(data.codigo as typeof CODIGOS_ACTIVIDAD_CANONICOS[number])) {
       throw new BadRequestError("El tipo de actividad no usa un código canónico", { codigo: data.codigo });
     }
-    const resultado = validarConfiguracionActividad(data.codigo, configuracion);
+    const configObjeto = normalizarConfiguracionJson(configuracion);
+    const opcionesOrdenadas = Array.isArray(opciones) && opciones.length > 0
+      ? [...opciones]
+          .sort((a, b) => Number(a.orden ?? 0) - Number(b.orden ?? 0))
+          .map((op, idx) => ({
+            etiqueta: (op.etiqueta || String.fromCharCode(65 + idx)).slice(0, 5),
+            texto: String(op.texto ?? "").trim(),
+            correcta: Boolean(op.correcta),
+            orden: idx + 1,
+            ...(op.retroalimentacion !== undefined ? { retroalimentacion: op.retroalimentacion } : {}),
+          }))
+      : opciones;
+
+    const configSincronizada =
+      data.codigo === "cuestionario" && Array.isArray(opcionesOrdenadas) && opcionesOrdenadas.length > 0
+        ? {
+            ...configObjeto,
+            opciones: opcionesOrdenadas.map((op, idx) => ({
+              id: `opcion-${idx + 1}`,
+              texto: op.texto,
+              correcta: op.correcta,
+            })),
+          }
+        : configObjeto;
+
+    const resultado = validarConfiguracionActividad(data.codigo, configSincronizada);
     if (!resultado.success) {
       throw new BadRequestError("La configuración de la actividad es inválida", resultado.error.flatten());
     }
-    return resultado.data;
+    return { configuracion: resultado.data, opciones: opcionesOrdenadas };
   }
 
   async function calcularCompletitudTema(temaId: string, opciones: { requiereRevisionAprobada?: boolean } = {}) {
@@ -781,21 +846,25 @@ export function crearAdminRepository({ supabase, drizzle }: AdminDb) {
         }, { onConflict: "tema_id" });
         if (verseError) throw verseError;
       }
-      return mapTheme({
-        ...(theme as Record<string, unknown>),
-        ...(body.versiculo_clave?.texto?.trim()
-          ? {
-              versiculo_clave: {
-                tema_id: temaId,
-                libro_id: body.versiculo_clave.libro_id,
-                capitulo: body.versiculo_clave.capitulo,
-                versiculo: body.versiculo_clave.versiculo,
-                texto: body.versiculo_clave.texto.trim(),
-                parte_historia: body.versiculo_clave.parte_historia ?? null
+      try {
+        return await this.obtenerTema(temaId);
+      } catch {
+        return mapTheme({
+          ...(theme as Record<string, unknown>),
+          ...(body.versiculo_clave?.texto?.trim()
+            ? {
+                versiculo_clave: {
+                  tema_id: temaId,
+                  libro_id: body.versiculo_clave.libro_id,
+                  capitulo: body.versiculo_clave.capitulo,
+                  versiculo: body.versiculo_clave.versiculo,
+                  texto: body.versiculo_clave.texto.trim(),
+                  parte_historia: body.versiculo_clave.parte_historia ?? null
+                }
               }
-            }
-          : {})
-      });
+            : {})
+        });
+      }
     },
 
     async borrarTema(temaId: string) {
@@ -860,11 +929,16 @@ export function crearAdminRepository({ supabase, drizzle }: AdminDb) {
     },
 
     async crearActividad(body: CreateActivityInput) {
-      const configuracion = await validarConfiguracionActividadPersistida(body.tipo_actividad_id, body.configuracion);
-      const { data: activity, error } = await supabase.from("actividad").insert({ tema_id: body.tema_id, paso_id: body.paso_id ?? null, grupo_edad_id: body.grupo_edad_id, tipo_actividad_id: body.tipo_actividad_id, titulo: body.titulo, consigna: body.consigna, retroalimentacion: body.retroalimentacion ?? null, orden: body.orden, xp_recompensa: body.xp_recompensa, limite_tiempo_seg: body.limite_tiempo_seg ?? null, dificultad: body.dificultad, obligatorio: body.obligatorio, configuracion: configuracion as Json }).select("*").single();
+      const preparada = await validarConfiguracionActividadPersistida(
+        body.tipo_actividad_id,
+        body.configuracion,
+        body.opciones,
+      );
+      const opcionesFinales = preparada.opciones ?? body.opciones;
+      const { data: activity, error } = await supabase.from("actividad").insert({ tema_id: body.tema_id, paso_id: body.paso_id ?? null, grupo_edad_id: body.grupo_edad_id, tipo_actividad_id: body.tipo_actividad_id, titulo: body.titulo, consigna: body.consigna, retroalimentacion: body.retroalimentacion ?? null, orden: body.orden, xp_recompensa: body.xp_recompensa, limite_tiempo_seg: body.limite_tiempo_seg ?? null, dificultad: body.dificultad, obligatorio: body.obligatorio, configuracion: preparada.configuracion as Json }).select("*").single();
       if (error || !activity) throw error;
-      if (body.opciones.length > 0) {
-        const rows = body.opciones.map((opcion) => ({ actividad_id: activity.id, etiqueta: opcion.etiqueta, texto: opcion.texto, correcta: opcion.correcta, orden: opcion.orden, retroalimentacion: opcion.retroalimentacion ?? null }));
+      if (opcionesFinales.length > 0) {
+        const rows = opcionesFinales.map((opcion) => ({ actividad_id: activity.id, etiqueta: opcion.etiqueta, texto: opcion.texto, correcta: opcion.correcta, orden: opcion.orden, retroalimentacion: opcion.retroalimentacion ?? null }));
         const { error: optionsError } = await supabase.from("opcion_actividad").insert(rows);
         if (optionsError) {
           await supabase.from("actividad").delete().eq("id", activity.id);
@@ -875,11 +949,16 @@ export function crearAdminRepository({ supabase, drizzle }: AdminDb) {
     },
 
     async actualizarActividad(actividadId: string, body: UpdateActivityInput) {
-      const configuracion = body.configuracion === undefined ? undefined : await (async () => {
+      const preparada = body.configuracion === undefined ? undefined : await (async () => {
         const { data: actual, error } = await supabase.from("actividad").select("tipo_actividad_id").eq("id", actividadId).single();
         if (error || !actual) throw new NotFoundError("Actividad no encontrada");
-        return validarConfiguracionActividadPersistida(actual.tipo_actividad_id, body.configuracion);
+        return validarConfiguracionActividadPersistida(
+          body.tipo_actividad_id ?? actual.tipo_actividad_id,
+          body.configuracion,
+          body.opciones,
+        );
       })();
+      const opcionesFinales = preparada?.opciones ?? body.opciones;
       const { data: activity, error } = await supabase.from("actividad").update({
         ...(body.tema_id !== undefined ? { tema_id: body.tema_id } : {}),
         ...(body.paso_id !== undefined ? { paso_id: body.paso_id } : {}),
@@ -893,11 +972,11 @@ export function crearAdminRepository({ supabase, drizzle }: AdminDb) {
         ...(body.limite_tiempo_seg !== undefined ? { limite_tiempo_seg: body.limite_tiempo_seg } : {}),
         ...(body.dificultad !== undefined ? { dificultad: body.dificultad } : {}),
         ...(body.obligatorio !== undefined ? { obligatorio: body.obligatorio } : {}),
-        ...(configuracion !== undefined ? { configuracion: configuracion as Json } : {}),
+        ...(preparada !== undefined ? { configuracion: preparada.configuracion as Json } : {}),
         actualizado_en: new Date().toISOString()
       } as Database["public"]["Tables"]["actividad"]["Update"]).eq("id", actividadId).select("*").single();
       if (error || !activity) throw new NotFoundError("Actividad no encontrada");
-      if (body.opciones) {
+      if (opcionesFinales) {
         const { data: opcionesAnteriores, error: opcionesError } = await supabase
           .from("opcion_actividad")
           .select("etiqueta, texto, correcta, orden, retroalimentacion")
@@ -907,7 +986,7 @@ export function crearAdminRepository({ supabase, drizzle }: AdminDb) {
         const { error: delError } = await supabase.from("opcion_actividad").delete().eq("actividad_id", actividadId);
         if (delError) throw delError;
 
-        const rows = body.opciones.map((opcion) => ({ actividad_id: actividadId, etiqueta: opcion.etiqueta, texto: opcion.texto, correcta: opcion.correcta, orden: opcion.orden, retroalimentacion: opcion.retroalimentacion ?? null }));
+        const rows = opcionesFinales.map((opcion) => ({ actividad_id: actividadId, etiqueta: opcion.etiqueta, texto: opcion.texto, correcta: opcion.correcta, orden: opcion.orden, retroalimentacion: opcion.retroalimentacion ?? null }));
         const { error: insError } = rows.length > 0
           ? await supabase.from("opcion_actividad").insert(rows)
           : { error: null };
@@ -1064,10 +1143,12 @@ export function crearAdminRepository({ supabase, drizzle }: AdminDb) {
     },
 
     async duplicarTema(temaId: string, user: AdminUser) {
-      const [temaOrigenResult, pasosResult, actividadesResult] = await Promise.all([
+      const [temaOrigenResult, pasosResult, actividadesResult, versiculoResult, referenciasResult] = await Promise.all([
         supabase.from("tema").select("*, path:senda_id(id, codigo, nombre, color_hex), created_by:creado_por(id, nombre_visible), portada_recurso:portada_recurso_id(id, url_publica, texto_alternativo, titulo), grupos_edad:tema_grupo_edad(grupo_edad:grupo_edad_id(id, codigo, nombre))").eq("id", temaId).single(),
         supabase.from("paso_tema").select("*, contenidos:contenido_paso_tema(*), preguntas:pregunta_reflexion(*)").eq("tema_id", temaId).order("orden"),
-        supabase.from("actividad").select("*, opciones:opcion_actividad(*)").eq("tema_id", temaId).order("orden")
+        supabase.from("actividad").select("*, opciones:opcion_actividad(*)").eq("tema_id", temaId).order("orden"),
+        supabase.from("versiculo_clave").select("*").eq("tema_id", temaId).maybeSingle(),
+        supabase.from("referencia_biblica").select("*").eq("tema_id", temaId)
       ]);
       if (temaOrigenResult.error || !temaOrigenResult.data) throw new NotFoundError("Tema no encontrado");
       if (pasosResult.error) throw pasosResult.error;
@@ -1099,6 +1180,29 @@ export function crearAdminRepository({ supabase, drizzle }: AdminDb) {
         if (gruposEdad.length > 0) {
           const { error } = await supabase.from("tema_grupo_edad").insert(gruposEdad);
           if (error) throw error;
+        }
+        if (versiculoResult.data?.texto?.trim()) {
+          const { error: verseCopyError } = await supabase.from("versiculo_clave").insert({
+            tema_id: temaDuplicado.id,
+            libro_id: versiculoResult.data.libro_id,
+            capitulo: versiculoResult.data.capitulo,
+            versiculo: versiculoResult.data.versiculo,
+            texto: versiculoResult.data.texto.trim()
+          });
+          if (verseCopyError) throw verseCopyError;
+        }
+        if (Array.isArray(referenciasResult.data) && referenciasResult.data.length > 0) {
+          const { error: refCopyError } = await supabase.from("referencia_biblica").insert(
+            referenciasResult.data.map((ref: any) => ({
+              tema_id: temaDuplicado.id,
+              libro_id: ref.libro_id,
+              capitulo: ref.capitulo,
+              versiculo_inicio: ref.versiculo_inicio,
+              versiculo_fin: ref.versiculo_fin,
+              principal: ref.principal
+            }))
+          );
+          if (refCopyError) throw refCopyError;
         }
 
         const pasoIdMap = new Map<string, string>();

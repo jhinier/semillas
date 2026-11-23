@@ -39,14 +39,19 @@ function esOpcionCorrecta(opcion: unknown): boolean {
   return esRegistro(opcion) && (opcion.correcta === true || opcion.esCorrecta === true);
 }
 
+export function esCodigoCuestionario(codigo: string): boolean {
+  return codigo === "cuestionario" || codigo === "quiz";
+}
+
 export function sincronizarOpcionesCuestionario(
   configuracion: ConfiguracionActividad,
   opciones: OpcionActividad[],
+  { preferirOpcionesBorrador = false }: { preferirOpcionesBorrador?: boolean } = {},
 ): {
   configuracion: ConfiguracionActividad;
   opciones: OpcionActividad[];
 } {
-  const opcionesEnConfig = obtenerArreglo(configuracion.opciones)
+  let opcionesEnConfig = obtenerArreglo(configuracion.opciones)
     .filter(esRegistro)
     .map((item, indice) => ({
       id: typeof item.id === "string" && item.id.trim() ? item.id.trim() : `opcion-${indice + 1}`,
@@ -61,29 +66,46 @@ export function sincronizarOpcionesCuestionario(
       orden: indice + 1,
     }));
 
-  const opcionesEnBorrador = (opciones ?? []).map((item, indice) => ({
-    id: `opcion-${indice + 1}`,
-    etiqueta: item.etiqueta || String.fromCharCode(65 + indice),
-    texto: typeof item.texto === "string" ? item.texto : "",
-    correcta: item.correcta === true,
-    orden: indice + 1,
-  }));
+  if (opcionesEnConfig.length === 0 && Array.isArray(configuracion.preguntas) && esRegistro(configuracion.preguntas[0])) {
+    const primeraPregunta = configuracion.preguntas[0];
+    const indiceCorrecta = typeof primeraPregunta.respuesta_correcta === "number" ? primeraPregunta.respuesta_correcta : 0;
+    opcionesEnConfig = obtenerArreglo(primeraPregunta.opciones).map((raw, indice) => ({
+      id: `opcion-${indice + 1}`,
+      etiqueta: String.fromCharCode(65 + indice),
+      texto: typeof raw === "string" ? raw : esRegistro(raw) && typeof raw.texto === "string" ? raw.texto : "",
+      correcta: indice === indiceCorrecta,
+      orden: indice + 1,
+    }));
+  }
+
+  const opcionesEnBorrador = [...(opciones ?? [])]
+    .sort((a, b) => Number(a.orden ?? 0) - Number(b.orden ?? 0))
+    .map((item, indice) => ({
+      id: `opcion-${indice + 1}`,
+      etiqueta: item.etiqueta || String.fromCharCode(65 + indice),
+      texto: typeof item.texto === "string" ? item.texto : "",
+      correcta: item.correcta === true,
+      orden: indice + 1,
+    }));
 
   const configTieneTexto = opcionesEnConfig.some((item) => item.texto.trim().length > 0);
   const borradorTieneTexto = opcionesEnBorrador.some((item) => item.texto.trim().length > 0);
 
-  const fuenteBase = configTieneTexto
-    ? opcionesEnConfig
-    : borradorTieneTexto
+  const fuenteBase =
+    preferirOpcionesBorrador && borradorTieneTexto
       ? opcionesEnBorrador
-      : opcionesEnConfig.length >= 2
+      : configTieneTexto
         ? opcionesEnConfig
-        : opcionesEnBorrador.length >= 2
+        : borradorTieneTexto
           ? opcionesEnBorrador
-          : [
-              { id: "opcion-1", etiqueta: "A", texto: "", correcta: true, orden: 1 },
-              { id: "opcion-2", etiqueta: "B", texto: "", correcta: false, orden: 2 },
-            ];
+          : opcionesEnConfig.length >= 2
+            ? opcionesEnConfig
+            : opcionesEnBorrador.length >= 2
+              ? opcionesEnBorrador
+              : [
+                  { id: "opcion-1", etiqueta: "A", texto: "", correcta: true, orden: 1 },
+                  { id: "opcion-2", etiqueta: "B", texto: "", correcta: false, orden: 2 },
+                ];
 
   const esPlantillaVacia = !configTieneTexto && !borradorTieneTexto && opcionesEnConfig.length === 0 && opcionesEnBorrador.length === 0;
   const normalizadas = fuenteBase.map((item, indice) => ({
@@ -148,7 +170,7 @@ export function normalizarConfiguracionActividad(
   configuracion: ConfiguracionActividad,
   opciones: OpcionActividad[] = [],
 ): ConfiguracionActividad {
-  if (codigo === "cuestionario") {
+  if (esCodigoCuestionario(codigo)) {
     return sincronizarOpcionesCuestionario(configuracion, opciones).configuracion;
   }
 
@@ -320,7 +342,7 @@ export function validarActividadParaGuardar({
     if (!esEnteroEnRango(respuestaCorrecta, 0, opciones.length - 1)) return "La actividad de video requiere una respuesta correcta válida.";
   }
 
-  if (codigo === "cuestionario") {
+  if (esCodigoCuestionario(codigo)) {
     const { opciones: opcionesSincronizadas } = sincronizarOpcionesCuestionario(configuracion, opciones);
     const opcionesConTexto = opcionesSincronizadas.filter((opcion) => opcion.texto.trim().length > 0);
     if (opcionesConTexto.length < 2 || opcionesConTexto.length > 6) return "El cuestionario requiere entre 2 y 6 opciones no vacías.";
@@ -354,4 +376,47 @@ export function validarActividadParaGuardar({
   }
 
   return null;
+}
+
+/** Prepara opciones ordenadas y configuración normalizada sin duplicación al editar o clonar actividades. */
+export function prepararOpcionesYConfiguracionActividad(
+  codigo: string,
+  configuracion: ConfiguracionActividad,
+  opcionesOrigen: Array<{
+    etiqueta?: string | null;
+    texto: string;
+    correcta: boolean;
+    orden?: number;
+    retroalimentacion?: string | null;
+  }> = [],
+) {
+  const opcionesOrdenadas = [...opcionesOrigen]
+    .sort((a, b) => Number(a.orden ?? 0) - Number(b.orden ?? 0))
+    .map((opt, idx) => ({
+      etiqueta: opt.etiqueta ?? String.fromCharCode(65 + idx),
+      texto: opt.texto,
+      correcta: opt.correcta,
+      orden: opt.orden || idx + 1,
+      ...(opt.retroalimentacion ? { retroalimentacion: opt.retroalimentacion } : {}),
+    }));
+
+  if (esCodigoCuestionario(codigo)) {
+    const sincronizado = sincronizarOpcionesCuestionario(configuracion, opcionesOrdenadas, {
+      preferirOpcionesBorrador: opcionesOrdenadas.some((o) => o.texto.trim().length > 0),
+    });
+    return {
+      configuracion: sincronizado.configuracion,
+      opciones: sincronizado.opciones.map((opt, idx) => ({
+        ...opt,
+        ...(opcionesOrdenadas[idx]?.retroalimentacion
+          ? { retroalimentacion: opcionesOrdenadas[idx]!.retroalimentacion }
+          : {}),
+      })),
+    };
+  }
+
+  return {
+    configuracion: normalizarConfiguracionActividad(codigo, configuracion, opcionesOrdenadas),
+    opciones: opcionesOrdenadas,
+  };
 }

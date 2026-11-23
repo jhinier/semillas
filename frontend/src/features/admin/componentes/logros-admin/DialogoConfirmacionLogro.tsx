@@ -1,4 +1,5 @@
 import { Loader2, X } from "lucide-react";
+import { renderizarEnCapaModalAdmin, useContenedorModalAdmin } from "../admin-modal-portal";
 import "./admin-logros-studio.css";
 
 export type ConfirmacionLogroAccion = {
@@ -15,6 +16,7 @@ type Props = {
 };
 
 export function DialogoConfirmacionLogro({ confirmacion, mutando, onConfirmar, onCancelar }: Props) {
+  const contenedorModal = useContenedorModalAdmin();
   if (!confirmacion) return null;
 
   const esArchivar = confirmacion.tipo === "archivar";
@@ -25,12 +27,12 @@ export function DialogoConfirmacionLogro({ confirmacion, mutando, onConfirmar, o
   const textoAccion = esArchivar ? "Archivar" : "Reactivar";
   const colorAccion = esArchivar ? "bg-red-600 hover:bg-red-700" : "bg-emerald-600 hover:bg-emerald-700";
 
-  return (
+  return renderizarEnCapaModalAdmin(
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="dialogo-confirmar-logro-titulo"
-      className="fixed inset-0 z-50 grid place-items-center p-6"
+      className="fixed inset-0 z-[215] grid place-items-center overflow-y-auto p-6"
     >
       <button
         type="button"
@@ -73,6 +75,7 @@ export function DialogoConfirmacionLogro({ confirmacion, mutando, onConfirmar, o
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    contenedorModal,
   );
 }

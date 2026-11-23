@@ -609,7 +609,7 @@ function resumirErroresProxy(errores: Array<{ codigo?: string; mensaje?: string 
   for (const err of errores) {
     const codigo = String(err?.codigo ?? "").trim();
     if (!codigo || codigo === "NARRACION_SEMILLAS_REQUERIDA") continue;
-    if (codigo === "TITULO_REQUERIDO" || codigo === "SENDA_REQUERIDA" || codigo === "VERSION_BIBLICA_REQUERIDA") {
+    if (codigo === "TITULO_REQUERIDO" || codigo === "OBJETIVO_REQUERIDO" || codigo === "SENDA_REQUERIDA" || codigo === "VERSION_BIBLICA_REQUERIDA") {
       push("completa la información general");
     } else if (codigo === "VERSICULO_REQUERIDO" || codigo === "REFERENCIA_BIBLICA_REQUERIDA") {
       push("agrega el versículo clave con su cita bíblica");
@@ -627,7 +627,12 @@ function resumirErroresProxy(errores: Array<{ codigo?: string; mensaje?: string 
       push("el tema requiere aprobación de revisión antes de publicarse");
     } else if (codigo === "MARKDOWN_INSEGURO") {
       push("revisa el formato HTML o enlaces inseguros del texto");
-    } else if (codigo.includes("ACTIVIDAD") || codigo === "RESPUESTA_CORRECTA_REQUERIDA" || codigo === "MEDIA_INVALIDA") {
+    } else if (
+      codigo.includes("ACTIVIDAD") ||
+      codigo === "RESPUESTA_CORRECTA_REQUERIDA" ||
+      codigo === "MEDIA_INVALIDA" ||
+      codigo === "CONFIGURACION_ACTIVIDAD_INVALIDA"
+    ) {
       push("revisa las actividades con datos pendientes");
     } else if (err?.mensaje) {
       push(err.mensaje.toLowerCase());
@@ -654,13 +659,15 @@ function normalizarEstudioRespuesta(parsed: any, sendasCatalogo: any[] = [], gru
   const temaEnriquecido = enriquecerTemaConSendas(datos.tema, sendasCatalogo);
   const grupos = Array.isArray(temaEnriquecido.grupos_edad) ? temaEnriquecido.grupos_edad : [];
   const gruposIncluidosSet = new Set(grupos.map((g: any) => String(g.id ?? g.grupo_edad_id ?? "")));
-  const gruposCombinados = [...(gruposCatalogo.length > 0 ? gruposCatalogo : grupos)];
-  for (const g of grupos) {
-    const gid = String(g.id ?? g.grupo_edad_id ?? "");
-    if (gid && !gruposCombinados.some((cg: any) => String(cg.id ?? cg.grupo_edad_id ?? "") === gid)) {
-      gruposCombinados.push(g);
-    }
-  }
+  const gruposCombinados =
+    grupos.length > 0
+      ? gruposCatalogo.length > 0
+        ? [
+            ...gruposCatalogo.filter((cg: any) => gruposIncluidosSet.has(String(cg.id))),
+            ...grupos.filter((g: any) => !gruposCatalogo.some((cg: any) => String(cg.id) === String(g.id ?? g.grupo_edad_id ?? ""))),
+          ]
+        : grupos
+      : gruposCatalogo;
   const pasos = Array.isArray(datos.pasos) ? datos.pasos : [];
   const actividades = Array.isArray(datos.actividades) ? datos.actividades : [];
   const comp = datos.completitud;
@@ -686,12 +693,17 @@ function normalizarEstudioRespuesta(parsed: any, sendasCatalogo: any[] = [], gru
       momentos_total: MOMENTOS_CRECER.length,
       actividades: actividadesGrupo,
       incluida: gruposIncluidosSet.has(gid),
-      lista_para_publicar: momentosCompletos >= MOMENTOS_CRECER.length && (actividadesGrupo > 0 || actividades.length > 0),
+      lista_para_publicar:
+        momentosCompletos >= MOMENTOS_CRECER.length &&
+        (actividadesGrupo > 0 || (gruposCombinados.length <= 1 && actividades.length > 0)),
     };
   });
 
   const franjasCompletas = franjasDetalle.filter((f: any) => f.momentos_completos >= MOMENTOS_CRECER.length);
   const algunaFranjaCompleta = franjasCompletas.length > 0;
+  const contenidosCreadosSeleccionados = franjasDetalle.reduce((acc: number, f: any) => acc + Number(f.momentos_completos ?? 0), 0);
+  const contenidosEsperadosSeleccionados = Math.max(franjasDetalle.length * MOMENTOS_CRECER.length, 1);
+  const actividadesSeleccionadas = franjasDetalle.reduce((acc: number, f: any) => acc + Number(f.actividades ?? 0), 0);
 
   const criteriosPrevios = Array.isArray(comp.criterios) ? comp.criterios : [];
   const critPubPrevio = criteriosPrevios.find((c: any) => c?.codigo === "publicacion");
@@ -722,8 +734,8 @@ function normalizarEstudioRespuesta(parsed: any, sendasCatalogo: any[] = [], gru
         ...crit,
         completo: algunaFranjaCompleta || Boolean(crit.completo),
         detalle: algunaFranjaCompleta
-          ? `${franjasCompletas.length} de ${Math.max(grupos.length, 1)} franja(s) listas (6/6 momentos)`
-          : `Completa 6 momentos en al menos 1 franja (${comp.estadisticas?.contenidos_creados ?? 0}/${comp.estadisticas?.contenidos_esperados ?? Math.max(grupos.length * 6, 1)})`,
+          ? `${franjasCompletas.length} de ${Math.max(franjasDetalle.length, 1)} franja(s) listas (6/6 momentos)`
+          : `Completa 6 momentos en al menos 1 franja (${contenidosCreadosSeleccionados}/${contenidosEsperadosSeleccionados})`,
       };
     }
     return crit;
@@ -777,6 +789,13 @@ function normalizarEstudioRespuesta(parsed: any, sendasCatalogo: any[] = [], gru
         criterios,
         franjas_detalle: franjasDetalle,
         errores_publicacion: erroresFiltrados,
+        estadisticas: {
+          ...(comp.estadisticas ?? {}),
+          grupos_edad: franjasDetalle.length,
+          contenidos_creados: contenidosCreadosSeleccionados,
+          contenidos_esperados: contenidosEsperadosSeleccionados,
+          actividades: actividadesSeleccionadas || (grupos.length === 0 ? actividades.length : 0),
+        },
       },
     },
   };
@@ -885,7 +904,22 @@ async function postprocesarRespuestaTemasGet(pathname: string, parsed: any): Pro
     return { ...parsed, datos: parsed.datos.map((t: any) => enriquecerTemaConSendas(t, sendasCatalogo)) };
   }
   if (pathname.match(/^\/temas\/[^/]+$/) && parsed?.datos && typeof parsed.datos === "object") {
-    return { ...parsed, datos: enriquecerTemaConSendas(parsed.datos, sendasCatalogo) };
+    let temaEnr = enriquecerTemaConSendas(parsed.datos, sendasCatalogo);
+    if (!temaEnr.versiculo_clave && supabaseLocal && temaEnr.id) {
+      try {
+        const { data: versiculo } = await supabaseLocal
+          .from("versiculo_clave")
+          .select("id, tema_id, libro_id, capitulo, versiculo, texto")
+          .eq("tema_id", String(temaEnr.id))
+          .maybeSingle();
+        if (versiculo) {
+          temaEnr = { ...temaEnr, versiculo_clave: versiculo };
+        }
+      } catch {
+        // continuar sin versiculo adicional si falla consulta
+      }
+    }
+    return { ...parsed, datos: temaEnr };
   }
   if (pathname === "/catalogo/grupos-etarios" && Array.isArray(parsed?.datos)) {
     return { ...parsed, datos: await sincronizarFranjasCatalogoEnArray(parsed.datos) };

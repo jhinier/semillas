@@ -82,12 +82,76 @@ export type AccionPasoPendiente = {
   label: string;
 };
 
+export type CompletitudResumen = {
+  criterios?: Array<{ codigo: string; completo: boolean; detalle?: string | null }>;
+  errores_publicacion?: Array<{ codigo: string; mensaje?: string | null }>;
+} | null | undefined;
+
+/** Indica si el Paso 1 (datos base + cita y texto del versículo clave) está completo según la validación de publicación. */
+export function esPaso1CompletoPublicacion(completitud?: CompletitudResumen, themeExists = true): boolean {
+  if (!themeExists || !completitud) return false;
+  const criterios = completitud.criterios ?? [];
+  const criteriosIncompletos = new Set(criterios.filter((c) => !c.completo).map((c) => c.codigo));
+  const codigosError = new Set((completitud.errores_publicacion ?? []).map((e) => e.codigo));
+  const detallePublicacion = criterios.find((c) => c.codigo === "publicacion")?.detalle ?? "";
+
+  if (
+    criteriosIncompletos.has("informacion") ||
+    criteriosIncompletos.has("ficha_base") ||
+    criteriosIncompletos.has("publico") ||
+    criteriosIncompletos.has("configuracion")
+  ) {
+    return false;
+  }
+
+  return !(
+    codigosError.has("VERSICULO_REQUERIDO") ||
+    codigosError.has("REFERENCIA_BIBLICA_REQUERIDA") ||
+    codigosError.has("TITULO_REQUERIDO") ||
+    codigosError.has("OBJETIVO_REQUERIDO") ||
+    codigosError.has("SENDA_REQUERIDA") ||
+    codigosError.has("FRANJA_REQUERIDA") ||
+    codigosError.has("VERSION_BIBLICA_REQUERIDA") ||
+    /VERSICULO_REQUERIDO|REFERENCIA_BIBLICA_REQUERIDA|TITULO_REQUERIDO|OBJETIVO_REQUERIDO|SENDA_REQUERIDA|FRANJA_REQUERIDA|vers[ií]culo/i.test(
+      detallePublicacion,
+    )
+  );
+}
+
+/** Limita la lista de franjas del catálogo a las edades realmente elegidas para el tema en Paso 1. */
+export function resolverFranjasDelTema<
+  TCatalogo extends { id: string; nombre?: string | null },
+>(
+  catalogo: TCatalogo[] | undefined,
+  gruposTema?: Array<{ id: string; codigo?: string; nombre?: string } | string> | null,
+  idsAdicionalesConContenido: Iterable<string> = [],
+): TCatalogo[] {
+  const baseCatalogo = catalogo ?? [];
+  const temaLista = (gruposTema ?? [])
+    .map((g) => (typeof g === "string" ? { id: g, nombre: g } : g))
+    .filter((g): g is { id: string; codigo?: string; nombre?: string } => Boolean(g?.id));
+
+  if (temaLista.length === 0) {
+    return baseCatalogo;
+  }
+
+  const permitidos = new Set<string>(temaLista.map((g) => g.id));
+  for (const extraId of idsAdicionalesConContenido) {
+    if (extraId) permitidos.add(extraId);
+  }
+
+  const filtradas = baseCatalogo.filter((item) => permitidos.has(item.id));
+  for (const raw of temaLista) {
+    if (!filtradas.some((item) => item.id === raw.id)) {
+      filtradas.push(raw as unknown as TCatalogo);
+    }
+  }
+  return filtradas;
+}
+
 /** Determina únicamente los pasos que tienen criterios o errores reales pendientes para publicar. */
 export function obtenerAccionesPendientesPublicacion(
-  completitud?: {
-    criterios?: Array<{ codigo: string; completo: boolean; detalle?: string | null }>;
-    errores_publicacion?: Array<{ codigo: string; mensaje?: string | null }>;
-  } | null,
+  completitud?: CompletitudResumen,
 ): AccionPasoPendiente[] {
   const criterios = completitud?.criterios ?? [];
   const criteriosIncompletos = new Set(criterios.filter((c) => !c.completo).map((c) => c.codigo));
@@ -96,20 +160,7 @@ export function obtenerAccionesPendientesPublicacion(
 
   const acciones: AccionPasoPendiente[] = [];
 
-  const paso1Pendiente =
-    criteriosIncompletos.has("informacion") ||
-    criteriosIncompletos.has("ficha_base") ||
-    criteriosIncompletos.has("publico") ||
-    criteriosIncompletos.has("configuracion") ||
-    codigosError.has("VERSICULO_REQUERIDO") ||
-    codigosError.has("REFERENCIA_BIBLICA_REQUERIDA") ||
-    codigosError.has("TITULO_REQUERIDO") ||
-    codigosError.has("OBJETIVO_REQUERIDO") ||
-    codigosError.has("SENDA_REQUERIDA") ||
-    codigosError.has("FRANJA_REQUERIDA") ||
-    /VERSICULO_REQUERIDO|REFERENCIA_BIBLICA_REQUERIDA|TITULO_REQUERIDO|OBJETIVO_REQUERIDO|SENDA_REQUERIDA|FRANJA_REQUERIDA|vers[ií]culo/i.test(
-      detallePublicacion,
-    );
+  const paso1Pendiente = Boolean(completitud) && !esPaso1CompletoPublicacion(completitud, true);
 
   const paso2Pendiente =
     criteriosIncompletos.has("portada") ||
@@ -202,6 +253,14 @@ export function validarCamposObligatoriosPaso1(input: {
       mensajeToast: "al menos una senda",
     });
   }
+  if (edadesInvalidas) {
+    pendientesGeneral.push({
+      id: "tema-edades",
+      seccion: "general",
+      etiqueta: "Franjas de edad (CRECER y Actividades)",
+      mensajeToast: "al menos una franja de edad",
+    });
+  }
   if (versionBiblicaInvalida) {
     pendientesGeneral.push({
       id: "tema-version",
@@ -224,14 +283,6 @@ export function validarCamposObligatoriosPaso1(input: {
       seccion: "general",
       etiqueta: "Objetivo de aprendizaje (mín. 10 letras)",
       mensajeToast: "objetivo de aprendizaje (mínimo 10 letras)",
-    });
-  }
-  if (edadesInvalidas) {
-    pendientesGeneral.push({
-      id: "tema-edades",
-      seccion: "general",
-      etiqueta: "Edades destinatarias",
-      mensajeToast: "al menos una edad",
     });
   }
 

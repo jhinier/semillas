@@ -38,6 +38,30 @@ describe("CrecerMatrixStatus", () => {
     expect(html).toContain("Borrador");
     expect(html).toContain("Revisar");
     expect(html).toContain("Pendiente");
+    expect(html).toContain("Mapa de avance (18 momentos)");
     expect(html).toContain("aria-label=\"Semillas, Conectar: Completo\"");
+  });
+
+  it("muestra solo las franjas seleccionadas y ajusta el conteo de momentos (6 momentos para 1 franja)", () => {
+    const html = renderToStaticMarkup(
+      <CrecerMatrixStatus
+        ageGroups={[{ id: "exploradores", nombre: "Exploradores" }]}
+        steps={[
+          { codigo: "conectar", nombre: "Conectar" },
+          { codigo: "relatar", nombre: "Relatar" },
+          { codigo: "ensenar", nombre: "Enseñar" },
+          { codigo: "comprobar", nombre: "Comprobar" },
+          { codigo: "experimentar", nombre: "Experimentar" },
+          { codigo: "recompensar", nombre: "Recompensar" },
+        ]}
+        getCell={() => "missing"}
+        onSelect={() => undefined}
+      />,
+    );
+
+    expect(html).toContain("Mapa de avance (6 momentos)");
+    expect(html).toContain("Exploradores");
+    expect(html).not.toContain("Semillas");
+    expect(html).not.toContain("Embajadores");
   });
 });

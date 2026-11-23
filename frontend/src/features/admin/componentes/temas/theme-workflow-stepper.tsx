@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Check, Lock } from "lucide-react";
 
 import type { CompletitudTema } from "../../admin.api";
+import { esPaso1CompletoPublicacion } from "./theme-view.utils";
 
 export type ThemeWorkflowStep = 1 | 2 | 3 | 4 | 5;
 
@@ -39,15 +40,7 @@ export function ThemeWorkflowStepper({
   const esLibrePorEstado =
     themeEstado === "publicado" || themeEstado === "aprobado" || themeEstado === "revision";
 
-  const erroresCodigos = new Set(
-    (completitud?.errores_publicacion ?? []).map((err) => err.codigo),
-  );
-  const tieneBase =
-    Boolean(themeId) &&
-    !erroresCodigos.has("VERSICULO_REQUERIDO") &&
-    !erroresCodigos.has("REFERENCIA_BIBLICA_REQUERIDA") &&
-    !erroresCodigos.has("TITULO_REQUERIDO") &&
-    !erroresCodigos.has("OBJETIVO_REQUERIDO");
+  const tieneBase = esPaso1CompletoPublicacion(completitud, Boolean(themeId));
   const tienePortada = criterioCompleto(completitud, "portada");
   const contenidosCreados = completitud?.estadisticas?.contenidos_creados ?? 0;
   const crecerCompleto =

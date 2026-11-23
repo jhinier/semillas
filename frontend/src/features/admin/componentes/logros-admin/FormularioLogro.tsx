@@ -32,6 +32,7 @@ import {
 import { ResolvedMediaImage } from "@/features/media/resolved-media-image";
 import { esUrlDirectaValida } from "@/features/media/use-resolved-media-url";
 import { MediaGalleryDialog } from "../medios/media-gallery-dialog";
+import { renderizarEnCapaModalAdmin, useContenedorModalAdmin } from "../admin-modal-portal";
 import type { CodigoCriterioLogro, LogroAdminResumen } from "../../admin-logros.api";
 import {
   CRITERIOS_LOGRO,
@@ -204,6 +205,9 @@ export function FormularioLogro({
   const inputXpRef = useRef<HTMLInputElement>(null);
   const inputUrlExternaRef = useRef<HTMLInputElement>(null);
   const objectUrlRef = useRef<string | null>(null);
+  const contenedorModal = useContenedorModalAdmin();
+  const onCerrarRef = useRef(onCerrar);
+  onCerrarRef.current = onCerrar;
 
   const valoresInicialesBase = modo === "editar" && logro ? valoresDesdeLogro(logro) : VALORES_INICIALES;
   const [valores, setValores] = useState<ValoresFormulario>(valoresInicialesBase);
@@ -287,6 +291,23 @@ export function FormularioLogro({
     // Solo reinicializar cuando cambia el estado de apertura, modo o el ID del logro
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [abierto, modo, logro?.id]);
+
+  useEffect(() => {
+    if (!abierto || presentacion !== "modal" || typeof document === "undefined") {
+      return;
+    }
+
+    const manejarEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      if (bibliotecaAbierta || guardando || subiendoImagen) return;
+      onCerrarRef.current();
+    };
+
+    document.addEventListener("keydown", manejarEscape);
+    return () => {
+      document.removeEventListener("keydown", manejarEscape);
+    };
+  }, [abierto, bibliotecaAbierta, guardando, presentacion, subiendoImagen]);
 
   const urlActualLimpia = valores.url_icono.trim();
   const presetSeleccionado = INSIGNIAS_PREDEFINIDAS.find((preset) =>
@@ -1186,64 +1207,67 @@ export function FormularioLogro({
     );
   }
 
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="formulario-logro-titulo"
-      className="fixed inset-0 z-50 grid place-items-center p-4"
-    >
-      <button
-        type="button"
-        className="absolute inset-0 bg-slate-950/55 backdrop-blur-[2px]"
-        aria-label="Cerrar diálogo"
-        onClick={onCerrar}
-      />
-      <form onSubmit={enviar} noValidate className="admin-logros-modal-card admin-logros-modal-card--wide">
-        <header className="admin-logros-modal-head">
-          <div className="min-w-0">
-            <h2 id="formulario-logro-titulo" className="admin-logros-title text-xl truncate">
-              {titulo}
-            </h2>
-            <p className="admin-logros-subtitle mt-0.5 text-sm">
-              Configura el nombre, la meta y el diseño que verá el estudiante.
-            </p>
+  return renderizarEnCapaModalAdmin(
+    <>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="formulario-logro-titulo"
+        className="fixed inset-0 z-[215] grid place-items-center overflow-y-auto p-3 sm:p-4"
+      >
+        <button
+          type="button"
+          className="absolute inset-0 bg-slate-950/55 backdrop-blur-[2px]"
+          aria-label="Cerrar diálogo"
+          onClick={onCerrar}
+        />
+        <form onSubmit={enviar} noValidate className="admin-logros-modal-card admin-logros-modal-card--wide">
+          <header className="admin-logros-modal-head">
+            <div className="min-w-0">
+              <h2 id="formulario-logro-titulo" className="admin-logros-title text-xl truncate">
+                {titulo}
+              </h2>
+              <p className="admin-logros-subtitle mt-0.5 text-sm">
+                Configura el nombre, la meta y el diseño que verá el estudiante.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onCerrar}
+              className="admin-logros-close-btn"
+              aria-label="Cerrar"
+            >
+              <X className="size-5" aria-hidden="true" />
+            </button>
+          </header>
+
+          <div className="admin-logros-modal-body admin-logros-modal-body--split">
+            <div className="admin-logros-modal-scroll">{pasosContenido}</div>
+            <div className="admin-logros-modal-aside">{tarjetaVistaPrevia}</div>
           </div>
-          <button
-            type="button"
-            onClick={onCerrar}
-            className="admin-logros-close-btn"
-            aria-label="Cerrar"
-          >
-            <X className="size-5" aria-hidden="true" />
-          </button>
-        </header>
 
-        <div className="admin-logros-modal-body admin-logros-modal-body--split">
-          <div className="admin-logros-modal-scroll">{pasosContenido}</div>
-          <div className="admin-logros-modal-aside">{tarjetaVistaPrevia}</div>
-        </div>
-
-        <footer className="admin-logros-modal-foot">
-          {alertaPieFormulario}
-          <button
-            type="button"
-            onClick={onCerrar}
-            disabled={guardando || subiendoImagen}
-            className="admin-logros-secondary-btn"
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            disabled={guardando || subiendoImagen}
-            className="admin-logros-primary-btn"
-          >
-            {textoBotonGuardar}
-          </button>
-        </footer>
-      </form>
+          <footer className="admin-logros-modal-foot">
+            {alertaPieFormulario}
+            <button
+              type="button"
+              onClick={onCerrar}
+              disabled={guardando || subiendoImagen}
+              className="admin-logros-secondary-btn"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={guardando || subiendoImagen}
+              className="admin-logros-primary-btn"
+            >
+              {textoBotonGuardar}
+            </button>
+          </footer>
+        </form>
+      </div>
       {selectorBiblioteca}
-    </div>
+    </>,
+    contenedorModal,
   );
 }

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import {
+  esPaso1CompletoPublicacion,
   obtenerAccionesPendientesPublicacion,
+  resolverFranjasDelTema,
   validarCamposObligatoriosPaso1,
 } from "./theme-view.utils";
 
@@ -73,10 +75,10 @@ describe("validarCamposObligatoriosPaso1", () => {
     expect(inicial.pendientesGeneral.map((item) => item.id)).toEqual([
       "tema-titulo",
       "tema-sendas",
+      "tema-edades",
       "tema-version",
       "tema-resumen",
       "tema-objetivo",
-      "tema-edades",
     ]);
     expect(inicial.pendientesVersiculo.map((item) => item.id)).toEqual([
       "tema-capitulo",
@@ -110,5 +112,46 @@ describe("validarCamposObligatoriosPaso1", () => {
     expect(completo.versiculoNumInvalido).toBe(false);
     expect(completo.esValido).toBe(true);
     expect(completo.pendientes).toEqual([]);
+  });
+});
+
+describe("resolverFranjasDelTema y esPaso1CompletoPublicacion", () => {
+  it("conserva únicamente las franjas elegidas en Paso 1 en el orden del catálogo", () => {
+    const catalogo = [
+      { id: "sem", nombre: "Semillas" },
+      { id: "exp", nombre: "Exploradores" },
+      { id: "emb", nombre: "Embajadores" },
+    ];
+
+    expect(resolverFranjasDelTema(catalogo, [{ id: "exp", nombre: "Exploradores" }]).map((g) => g.id)).toEqual(["exp"]);
+    expect(
+      resolverFranjasDelTema(catalogo, [
+        { id: "emb", nombre: "Embajadores" },
+        { id: "sem", nombre: "Semillas" },
+      ]).map((g) => g.id),
+    ).toEqual(["sem", "emb"]);
+    expect(resolverFranjasDelTema(catalogo, []).map((g) => g.id)).toEqual(["sem", "exp", "emb"]);
+  });
+
+  it("considera incompleto el Paso 1 cuando falta versículo o cita bíblica aunque informacion esté en true", () => {
+    expect(
+      esPaso1CompletoPublicacion(
+        {
+          criterios: [{ codigo: "informacion", completo: true }],
+          errores_publicacion: [{ codigo: "VERSICULO_REQUERIDO" }],
+        },
+        true,
+      ),
+    ).toBe(false);
+
+    expect(
+      esPaso1CompletoPublicacion(
+        {
+          criterios: [{ codigo: "informacion", completo: true }],
+          errores_publicacion: [],
+        },
+        true,
+      ),
+    ).toBe(true);
   });
 });

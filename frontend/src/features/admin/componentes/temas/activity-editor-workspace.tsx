@@ -8,17 +8,16 @@ import {
   FileText,
   Gamepad2,
   Loader2,
-  Plus,
   Save,
   Settings2,
-  Trash2,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
 
-import type { ActivityDraft, OptionDraft } from "../../types";
+import type { ActivityDraft } from "../../types";
 import type { RecursoMultimedia } from "../../../media/media.api";
 import {
+  esCodigoCuestionario,
   normalizarConfiguracionActividad,
   sincronizarOpcionesCuestionario,
   validarActividadParaGuardar,
@@ -65,7 +64,7 @@ const TABS: Array<{ id: ActivityEditorTab; label: string; helper: string; icon: 
 export function ActivityEditorWorkspace(props: ActivityEditorWorkspaceProps) {
   const update = <K extends keyof ActivityDraft>(key: K, value: ActivityDraft[K]) => props.onChange({ ...props.draft, [key]: value });
   const updateConfig = (configuracion: Record<string, unknown>) => {
-    if (props.selectedTypeCode === "cuestionario") {
+    if (esCodigoCuestionario(props.selectedTypeCode)) {
       const { configuracion: configNormalizada, opciones: opcionesSincronizadas } = sincronizarOpcionesCuestionario(
         configuracion,
         props.draft.opciones,
@@ -136,13 +135,38 @@ export function ActivityEditorWorkspace(props: ActivityEditorWorkspaceProps) {
         <main className="activity-editor-workspace__main">
           {props.tab === "contexto" ? (
             <section className="activity-editor-panel">
-              <PanelHeading eyebrow="Paso 1 de 4" title="Ubica la actividad" description="Selecciona para qué edad es, en qué momento CRECER aparece y qué tipo de actividad será." />
+              <PanelHeading
+                eyebrow="Paso 1 de 4"
+                title="Ubica la actividad"
+                description={
+                  props.groups.length === 1
+                    ? "Elige en qué momento CRECER aparece y qué tipo de actividad será (la franja se toma del Paso 1)."
+                    : "Selecciona para qué edad es, en qué momento CRECER aparece y qué tipo de actividad será."
+                }
+              />
               <div className="activity-editor-context-grid">
-                <Field label="Edad destinataria" help="La actividad solo se mostrará a este grupo.">
-                  <select value={props.draft.grupo_edad_id} onChange={(event) => update("grupo_edad_id", event.target.value)}>
-                    <option value="">Selecciona una edad</option>
-                    {props.groups.map((group) => <option key={group.id} value={group.id}>{group.nombre}</option>)}
-                  </select>
+                <Field
+                  label="Edad destinataria"
+                  help={
+                    props.groups.length === 1
+                      ? "Franja fija definida en el Paso 1 (Datos base)."
+                      : "La actividad solo se mostrará a este grupo."
+                  }
+                >
+                  {props.groups.length === 1 ? (
+                    <div
+                      className="flex min-h-[44px] items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50/70 px-3.5 py-2 text-sm font-extrabold text-emerald-900 dark:border-emerald-500/40 dark:bg-emerald-950/40 dark:text-emerald-200"
+                      role="status"
+                    >
+                      <span>{props.groups[0]!.nombre}</span>
+                      <span className="text-[11px] font-bold opacity-80">Definida en Paso 1</span>
+                    </div>
+                  ) : (
+                    <select value={props.draft.grupo_edad_id} onChange={(event) => update("grupo_edad_id", event.target.value)}>
+                      <option value="">Selecciona una edad</option>
+                      {props.groups.map((group) => <option key={group.id} value={group.id}>{group.nombre}</option>)}
+                    </select>
+                  )}
                 </Field>
                 <Field label="Momento CRECER" help="Elige en qué parte de la lección se presenta.">
                   <select value={props.draft.paso_id} onChange={(event) => update("paso_id", event.target.value)}>
@@ -213,9 +237,6 @@ export function ActivityEditorWorkspace(props: ActivityEditorWorkspaceProps) {
               ) : (
                 <div className="activity-editor-mechanics">
                   <ActivityTypeConfigBuilder codigo={props.selectedTypeCode} configuracion={props.draft.configuracion} onChange={updateConfig} onUpload={props.onUpload} resources={props.resources} uploading={props.uploading} />
-                  {definition.requiereOpciones && props.selectedTypeCode !== "cuestionario" ? (
-                    <OptionsBuilder options={props.draft.opciones} onChange={(opciones) => update("opciones", opciones)} />
-                  ) : null}
                 </div>
               )}
             </section>
@@ -306,26 +327,6 @@ function PanelHeading({ eyebrow, title, description }: { eyebrow: string; title:
 
 function Field({ label, help, wide, children }: { label: string; help?: string; wide?: boolean; children: ReactNode }) {
   return <label className={`activity-editor-field ${wide ? "activity-editor-field--wide" : ""}`}><span>{label}</span>{children}{help ? <small>{help}</small> : null}</label>;
-}
-
-function OptionsBuilder({ options, onChange }: { options: OptionDraft[]; onChange: (options: OptionDraft[]) => void }) {
-  return (
-    <fieldset className="activity-options-builder">
-      <legend>Opciones de respuesta</legend>
-      <p>Escribe de dos a seis opciones y marca una respuesta correcta.</p>
-      <div className="activity-options-builder__list">
-        {options.map((option, index) => (
-          <div key={`${option.etiqueta}-${index}`} className="activity-option-row">
-            <span className="activity-option-row__label">{String.fromCharCode(65 + index)}</span>
-            <input value={option.texto} placeholder={`Opción ${index + 1}`} onChange={(event) => onChange(options.map((item, itemIndex) => itemIndex === index ? { ...item, texto: event.target.value } : item))} />
-            <label className="activity-option-row__correct"><input type="radio" name="correct-answer" checked={option.correcta} onChange={() => onChange(options.map((item, itemIndex) => ({ ...item, correcta: itemIndex === index })))} /><span>Correcta</span></label>
-            <button type="button" aria-label={`Eliminar opción ${index + 1}`} disabled={options.length <= 2} onClick={() => onChange(options.filter((_, itemIndex) => itemIndex !== index).map((item, itemIndex) => ({ ...item, etiqueta: String.fromCharCode(65 + itemIndex), orden: itemIndex + 1 })))}><Trash2 size={16} /></button>
-          </div>
-        ))}
-      </div>
-      <button type="button" className="admin-secondary-button" disabled={options.length >= 6} onClick={() => onChange([...options, { etiqueta: String.fromCharCode(65 + options.length), texto: "", correcta: false, orden: options.length + 1 }])}><Plus size={15} /> Agregar opción</button>
-    </fieldset>
-  );
 }
 
 function getEditorValidation(draft: ActivityDraft, code: string, configText: string) {

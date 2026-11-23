@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
+import { DialogoConfirmacionLogro } from "./DialogoConfirmacionLogro";
 import { FormularioLogro } from "./FormularioLogro";
 
 describe("FormularioLogro", () => {
@@ -110,7 +111,25 @@ describe("FormularioLogro", () => {
 
     expect(html).toContain("admin-logros-modal-card--wide");
     expect(html).toContain("admin-logros-close-btn");
+    expect(html).toContain("z-[215]");
+    expect(html).toContain("overflow-y-auto");
     expect(html).toContain("Así lo verá el estudiante");
     expect(html).not.toContain("/media/123e4567-e89b-12d3-a456-426614174000/url");
+  });
+
+  it("renderiza el diálogo de confirmación de logro por encima de la barra lateral sin quedar recortado", () => {
+    const html = renderToStaticMarkup(
+      <DialogoConfirmacionLogro
+        confirmacion={{ tipo: "archivar", logroId: "l2", nombre: "Insignia 5" }}
+        mutando={false}
+        onConfirmar={() => undefined}
+        onCancelar={() => undefined}
+      />,
+    );
+
+    expect(html).toContain('role="dialog"');
+    expect(html).toContain("z-[215]");
+    expect(html).toContain("overflow-y-auto");
+    expect(html).toContain("Insignia 5");
   });
 });

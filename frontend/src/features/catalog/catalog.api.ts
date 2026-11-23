@@ -1,7 +1,9 @@
+import { useQuery } from "@tanstack/react-query";
 import { peticion } from "../../shared/api/api";
 import type { GrupoEdad } from "../../shared/api/api";
 
 const CACHE_GRUPOS_EDAD_KEY = "semillas_grupos_edad_cache_v1";
+const CACHE_LIBROS_BIBLICOS_KEY = "semillas_libros_biblicos_cache_v1";
 
 export type LibroBiblicoCatalogo = {
   id: number;
@@ -80,13 +82,132 @@ export const LIBROS_BIBLICOS_CATALOGO: LibroBiblicoCatalogo[] = [
   { id: 66, nombre: "Apocalipsis", abreviatura: "Ap", testamento: "NT", orden: 66 },
 ];
 
-export function obtenerNombreLibroBiblico(libroId?: number | null): string {
+type LibroBiblicoRemoto = {
+  id?: number | string | null;
+  codigo?: number | string | null;
+  nombre: string;
+  orden: number;
+  testamento_id?: number | null;
+  testamento?: "AT" | "NT";
+  abreviatura?: string;
+};
+
+let librosBiblicosEnMemoria: LibroBiblicoCatalogo[] | null = null;
+let promesaLibrosEnVuelo: Promise<LibroBiblicoCatalogo[]> | null = null;
+
+function leerCacheLibrosBiblicos(): LibroBiblicoCatalogo[] | null {
+  try {
+    if (typeof localStorage === "undefined") return null;
+    const raw = localStorage.getItem(CACHE_LIBROS_BIBLICOS_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as LibroBiblicoCatalogo[];
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export function tieneCacheLibrosBiblicos(): boolean {
+  return Boolean(librosBiblicosEnMemoria?.length || leerCacheLibrosBiblicos()?.length);
+}
+
+/**
+ * Mapea filas de `libro_biblico` de la API a la forma usada en UI conservando los IDs reales de BD.
+ * La API pública puede exponer el identificador numérico en `codigo` (ej. `"63"`) o en `id`.
+ */
+export function normalizarLibrosCatalogo(remotos: LibroBiblicoRemoto[]): LibroBiblicoCatalogo[] {
+  const porNombre = new Map(
+    LIBROS_BIBLICOS_CATALOGO.map((libro) => [libro.nombre.toLowerCase(), libro]),
+  );
+  const porOrden = new Map(LIBROS_BIBLICOS_CATALOGO.map((libro) => [libro.orden, libro]));
+
+  return remotos
+    .map((item) => {
+      const rawId = Number(item?.id ?? item?.codigo);
+      if (!Number.isFinite(rawId) || rawId <= 0 || !item?.nombre) return null;
+      const orden = Number(item.orden) || 0;
+      const nombre = String(item.nombre).trim();
+      const base = porNombre.get(nombre.toLowerCase()) ?? porOrden.get(orden);
+      return {
+        id: rawId,
+        nombre,
+        abreviatura: item.abreviatura ?? base?.abreviatura ?? nombre.slice(0, 3),
+        testamento:
+          item.testamento ??
+          (item.testamento_id === 1 ? "AT" : item.testamento_id === 2 ? "NT" : base?.testamento ?? "NT"),
+        orden: orden || base?.orden || rawId,
+      } satisfies LibroBiblicoCatalogo;
+    })
+    .filter((libro): libro is LibroBiblicoCatalogo => libro !== null)
+    .sort((a, b) => a.orden - b.orden);
+}
+
+export function obtenerLibrosBiblicosSincrono(): LibroBiblicoCatalogo[] {
+  return librosBiblicosEnMemoria ?? leerCacheLibrosBiblicos() ?? LIBROS_BIBLICOS_CATALOGO;
+}
+
+export function resolverLibroPorDefectoId(libros?: LibroBiblicoCatalogo[] | null): number {
+  const lista = libros && libros.length > 0 ? libros : obtenerLibrosBiblicosSincrono();
+  return lista.find((libro) => libro.nombre.toLowerCase() === "juan")?.id ?? lista[0]?.id ?? 43;
+}
+
+export function obtenerNombreLibroBiblico(
+  libroId?: number | null,
+  libros?: LibroBiblicoCatalogo[] | null,
+): string {
   if (!libroId) return "Biblia";
-  return LIBROS_BIBLICOS_CATALOGO.find((libro) => libro.id === Number(libroId))?.nombre ?? `Libro ${libroId}`;
+  const idNumerico = Number(libroId);
+  const lista = libros && libros.length > 0 ? libros : obtenerLibrosBiblicosSincrono();
+  return (
+    lista.find((libro) => libro.id === idNumerico)?.nombre ??
+    LIBROS_BIBLICOS_CATALOGO.find((libro) => libro.id === idNumerico)?.nombre ??
+    `Libro ${libroId}`
+  );
 }
 
 export async function obtenerLibrosBiblicos(): Promise<LibroBiblicoCatalogo[]> {
-  return LIBROS_BIBLICOS_CATALOGO;
+  if (librosBiblicosEnMemoria?.length) {
+    return librosBiblicosEnMemoria;
+  }
+
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    return obtenerLibrosBiblicosSincrono();
+  }
+
+  if (!promesaLibrosEnVuelo) {
+    promesaLibrosEnVuelo = (async () => {
+      try {
+        const remotos = await peticion<LibroBiblicoRemoto[]>("/catalogo/libros-biblicos", {
+          autenticar: false,
+        });
+        const normalizados = Array.isArray(remotos) ? normalizarLibrosCatalogo(remotos) : [];
+        if (normalizados.length > 0) {
+          librosBiblicosEnMemoria = normalizados;
+          try {
+            localStorage.setItem(CACHE_LIBROS_BIBLICOS_KEY, JSON.stringify(normalizados));
+          } catch {
+            // ignorar cuota o modo privado
+          }
+          return normalizados;
+        }
+        return obtenerLibrosBiblicosSincrono();
+      } catch {
+        return obtenerLibrosBiblicosSincrono();
+      } finally {
+        promesaLibrosEnVuelo = null;
+      }
+    })();
+  }
+
+  return promesaLibrosEnVuelo;
+}
+
+export function useLibrosBiblicos() {
+  return useQuery({
+    queryKey: ["catalog", "bible-books"],
+    queryFn: obtenerLibrosBiblicos,
+    staleTime: 60 * 60 * 1000,
+  });
 }
 
 export const GRUPOS_EDAD_OFFLINE: GrupoEdad[] = [

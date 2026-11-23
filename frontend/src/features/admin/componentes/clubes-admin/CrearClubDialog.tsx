@@ -72,7 +72,7 @@ export function CrearClubDialog({ abierto, guardando, onCerrar, onCrear }: Crear
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="crear-club-title">
+    <div className="fixed inset-0 z-[215] flex items-center justify-center overflow-y-auto p-4 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="crear-club-title">
       <button type="button" className="fixed inset-0 bg-slate-950/45" aria-label="Cerrar creación de club" onClick={cerrar} />
       <form onSubmit={enviar} className="relative z-10 flex max-h-[calc(100dvh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
         <header className="flex shrink-0 items-start justify-between border-b border-slate-200 px-6 py-4">

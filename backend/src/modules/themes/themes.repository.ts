@@ -5,11 +5,15 @@ import { schema } from "../../db/client";
 type TemaFila = typeof schema.tema.$inferSelect;
 type SendaFila = typeof schema.senda.$inferSelect | null;
 type PortadaFila = typeof schema.recursoMultimedia.$inferSelect | null;
+type VersiculoFila = typeof schema.versiculoClave.$inferSelect | null;
+type ReferenciaFila = typeof schema.referenciaBiblica.$inferSelect | null;
 
 export type TemaListadoRepo = {
   tema: TemaFila;
   senda: SendaFila;
   portada: PortadaFila;
+  versiculo?: VersiculoFila;
+  referencia?: ReferenciaFila;
 };
 
 export function crearThemesRepository(db: DbClient) {
@@ -21,6 +25,7 @@ export function crearThemesRepository(db: DbClient) {
               tema: schema.tema,
               senda: schema.senda,
               portada: schema.recursoMultimedia,
+              versiculo: schema.versiculoClave,
             })
             .from(schema.tema)
             .leftJoin(schema.senda, eq(schema.tema.sendaId, schema.senda.id))
@@ -28,6 +33,7 @@ export function crearThemesRepository(db: DbClient) {
               schema.recursoMultimedia,
               eq(schema.tema.portadaRecursoId, schema.recursoMultimedia.id),
             )
+            .leftJoin(schema.versiculoClave, eq(schema.tema.id, schema.versiculoClave.temaId))
             .where(and(eq(schema.tema.estado, "publicado"), eq(schema.tema.sendaId, sendaId)))
             .orderBy(asc(schema.tema.publicadoEn))) as TemaListadoRepo[])
         : ((await db
@@ -35,6 +41,7 @@ export function crearThemesRepository(db: DbClient) {
               tema: schema.tema,
               senda: schema.senda,
               portada: schema.recursoMultimedia,
+              versiculo: schema.versiculoClave,
             })
             .from(schema.tema)
             .leftJoin(schema.senda, eq(schema.tema.sendaId, schema.senda.id))
@@ -42,6 +49,7 @@ export function crearThemesRepository(db: DbClient) {
               schema.recursoMultimedia,
               eq(schema.tema.portadaRecursoId, schema.recursoMultimedia.id),
             )
+            .leftJoin(schema.versiculoClave, eq(schema.tema.id, schema.versiculoClave.temaId))
             .where(eq(schema.tema.estado, "publicado"))
             .orderBy(asc(schema.tema.publicadoEn))) as TemaListadoRepo[]);
 
@@ -99,12 +107,22 @@ export function crearThemesRepository(db: DbClient) {
           tema: schema.tema,
           senda: schema.senda,
           portada: schema.recursoMultimedia,
+          versiculo: schema.versiculoClave,
+          referencia: schema.referenciaBiblica,
         })
         .from(schema.tema)
         .leftJoin(schema.senda, eq(schema.tema.sendaId, schema.senda.id))
         .leftJoin(
           schema.recursoMultimedia,
           eq(schema.tema.portadaRecursoId, schema.recursoMultimedia.id),
+        )
+        .leftJoin(schema.versiculoClave, eq(schema.tema.id, schema.versiculoClave.temaId))
+        .leftJoin(
+          schema.referenciaBiblica,
+          and(
+            eq(schema.tema.id, schema.referenciaBiblica.temaId),
+            eq(schema.referenciaBiblica.principal, true),
+          ),
         )
         .where(and(eq(schema.tema.id, temaId), eq(schema.tema.estado, "publicado")))
         .limit(1);
@@ -208,7 +226,8 @@ export function crearThemesRepository(db: DbClient) {
           const opciones = await db
             .select()
             .from(schema.opcionActividad)
-            .where(eq(schema.opcionActividad.actividadId, registro.actividad.id));
+            .where(eq(schema.opcionActividad.actividadId, registro.actividad.id))
+            .orderBy(asc(schema.opcionActividad.orden));
 
           return {
             actividad: registro.actividad,

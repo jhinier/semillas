@@ -3,6 +3,7 @@ import { describe, expect, it } from "bun:test";
 import {
   afirmacionesAlineas,
   normalizarConfiguracionActividad,
+  prepararOpcionesYConfiguracionActividad,
   validarActividadParaGuardar,
 } from "./activity-configuration";
 
@@ -220,5 +221,49 @@ describe("validarActividadParaGuardar", () => {
       opciones: [],
     });
     expect(palabraLarga).toContain("supera el tamaño máximo");
+  });
+
+  it("sincroniza opciones completas de opcion_actividad sobre configuracion obsoleta y extrae preguntas legadas en Quiz", () => {
+    const reparado = prepararOpcionesYConfiguracionActividad(
+      "cuestionario",
+      {
+        opciones: [
+          { texto: "David utilizó una espada y", correcta: false },
+          { texto: "David confió en Dios.", correcta: true },
+        ],
+      },
+      [
+        { etiqueta: "B", texto: "David confió en Dios.", correcta: true, orden: 2 },
+        { etiqueta: "A", texto: "David utilizó una espada y un escudo.", correcta: false, orden: 1 },
+      ],
+    );
+
+    expect(reparado.opciones.map((o) => o.texto)).toEqual([
+      "David utilizó una espada y un escudo.",
+      "David confió en Dios.",
+    ]);
+    expect((reparado.configuracion.opciones as Array<{ texto: string }>).map((o) => o.texto)).toEqual([
+      "David utilizó una espada y un escudo.",
+      "David confió en Dios.",
+    ]);
+
+    const legado = prepararOpcionesYConfiguracionActividad(
+      "quiz",
+      {
+        preguntas: [
+          {
+            pregunta: "¿Quién nos ama siempre?",
+            opciones: ["Dios", "Un juguete"],
+            respuesta_correcta: 0,
+          },
+        ],
+      },
+      [],
+    );
+
+    expect(legado.opciones).toEqual([
+      { etiqueta: "A", texto: "Dios", correcta: true, orden: 1 },
+      { etiqueta: "B", texto: "Un juguete", correcta: false, orden: 2 },
+    ]);
   });
 });

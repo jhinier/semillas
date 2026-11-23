@@ -109,7 +109,7 @@ export function ActivityTypeConfigBuilder({
     );
   }
 
-  if (codigo === "cuestionario") {
+  if (codigo === "cuestionario" || codigo === "quiz") {
     return <CuestionarioBuilder configuracion={configuracion} onChange={onChange} />;
   }
 

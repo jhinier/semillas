@@ -51,9 +51,12 @@ import {
 } from "../features/catalog/catalog.api";
 import { obtenerRecursosMultimedia, subirArchivo } from "../features/media/media.api";
 import {
+  esCodigoCuestionario,
   normalizarConfiguracionActividad,
+  prepararOpcionesYConfiguracionActividad,
   sincronizarOpcionesCuestionario,
 } from "@/features/admin/componentes/temas/activity-configuration";
+import { resolverFranjasDelTema } from "@/features/admin/componentes/temas";
 import {
   ActivityEditorWorkspace,
   type ActivityEditorTab,
@@ -147,8 +150,11 @@ function AdminThemeActivitiesPage() {
   });
 
   const allowedGroups = useMemo(() => {
-    return groupsQuery.data ?? [];
-  }, [groupsQuery.data]);
+    const gruposTema = themeQuery.data?.grupos_edad?.length
+      ? themeQuery.data.grupos_edad
+      : estudioQuery.data?.tema?.grupos_edad;
+    return resolverFranjasDelTema(groupsQuery.data, gruposTema);
+  }, [estudioQuery.data?.tema?.grupos_edad, groupsQuery.data, themeQuery.data?.grupos_edad]);
 
   const combinedSteps = useMemo(() => {
     const existing = stepsQuery.data ?? [];
@@ -196,7 +202,13 @@ function AdminThemeActivitiesPage() {
   }, [estudioQuery.data?.actividades]);
 
   useEffect(() => {
-    if (ageSelectedByUser.current || search.form === "editar" || !allowedGroups.length) return;
+    if (!allowedGroups.length || themeQuery.isLoading) return;
+    if (selectedAge && !allowedGroups.some((g) => g.id === selectedAge)) {
+      ageSelectedByUser.current = false;
+      setSelectedAge(allowedGroups[0]!.id);
+      return;
+    }
+    if (ageSelectedByUser.current || search.form === "editar") return;
     const includedIds = new Set(themeQuery.data?.grupos_edad?.map((g) => g.id) ?? []);
     const groupWithActivities = allowedGroups.find((group) => (activityCountsByAge[group.id] ?? 0) > 0);
     const defaultIncluded = allowedGroups.find((group) => includedIds.has(group.id));
@@ -207,7 +219,7 @@ function AdminThemeActivitiesPage() {
     if ((activityCountsByAge[selectedAge] ?? 0) === 0 && groupWithActivities) {
       setSelectedAge(groupWithActivities.id);
     }
-  }, [activityCountsByAge, allowedGroups, search.form, selectedAge, themeQuery.data?.grupos_edad]);
+  }, [activityCountsByAge, allowedGroups, search.form, selectedAge, themeQuery.data?.grupos_edad, themeQuery.isLoading]);
 
   useEffect(() => {
     if (search.form !== "nueva") {
@@ -251,12 +263,15 @@ function AdminThemeActivitiesPage() {
     if (!activity) return;
     if (editFormInitializedId.current === activity.id) return;
 
-    const opcionesRaw = (activity.opciones ?? []).length
-      ? (activity.opciones ?? []).map((option, index) => ({
+    const opcionesServidor = [...(activity.opciones ?? [])].sort(
+      (a, b) => Number(a.orden ?? 0) - Number(b.orden ?? 0),
+    );
+    const opcionesRaw = opcionesServidor.length
+      ? opcionesServidor.map((option, index) => ({
           etiqueta: option.etiqueta ?? String.fromCharCode(65 + index),
           texto: option.texto,
           correcta: option.correcta,
-          orden: option.orden,
+          orden: option.orden || index + 1,
         }))
       : defaultOptions.map((option) => ({ ...option }));
 
@@ -265,17 +280,18 @@ function AdminThemeActivitiesPage() {
       typesQuery.data?.find((item) => item.id === activity.tipo_actividad_id)?.codigo ??
       "";
 
-    const sincronizado =
-      codigoActividad === "cuestionario"
-        ? sincronizarOpcionesCuestionario(activity.configuracion ?? {}, opcionesRaw)
-        : {
-            configuracion: normalizarConfiguracionActividad(
-              codigoActividad,
-              activity.configuracion ?? {},
-              opcionesRaw,
-            ),
-            opciones: opcionesRaw,
-          };
+    const sincronizado = esCodigoCuestionario(codigoActividad)
+      ? sincronizarOpcionesCuestionario(activity.configuracion ?? {}, opcionesRaw, {
+          preferirOpcionesBorrador: opcionesServidor.some((o) => o.texto.trim().length > 0),
+        })
+      : {
+          configuracion: normalizarConfiguracionActividad(
+            codigoActividad,
+            activity.configuracion ?? {},
+            opcionesRaw,
+          ),
+          opciones: opcionesRaw,
+        };
 
     const nextDraft: ActivityDraft = {
       paso_id: activity.paso_id ?? "",
@@ -438,15 +454,11 @@ function AdminThemeActivitiesPage() {
       source.tipo_actividad?.codigo ??
       typesQuery.data?.find((t) => t.id === source.tipo_actividad_id)?.codigo ??
       "";
-    const opcionesBase = (source.opciones ?? []).length
-      ? source.opciones.map((opt, idx) => ({
-          etiqueta: opt.etiqueta ?? String.fromCharCode(65 + idx),
-          texto: opt.texto,
-          correcta: opt.correcta,
-          orden: opt.orden || idx + 1,
-        }))
-      : defaultOptions.map((o) => ({ ...o }));
-    const configNorm = normalizarConfiguracionActividad(codigo, source.configuracion ?? {}, opcionesBase);
+    const { configuracion, opciones } = prepararOpcionesYConfiguracionActividad(
+      codigo,
+      source.configuracion ?? {},
+      source.opciones ?? [],
+    );
 
     pendingTemplateRef.current = {
       paso_id: reuseTargetStepId || combinedSteps[0]?.id || "",
@@ -459,8 +471,8 @@ function AdminThemeActivitiesPage() {
       limite_tiempo_seg: source.limite_tiempo_seg,
       dificultad: (source.dificultad as ActivityDraft["dificultad"]) ?? "facil",
       obligatorio: source.obligatorio,
-      configuracion: configNorm,
-      opciones: opcionesBase,
+      configuracion,
+      opciones: opciones.length ? opciones : defaultOptions.map((o) => ({ ...o })),
     };
     setShowReuseDialog(false);
     navigate({ search: { form: "nueva", tab: "contenido" } });
@@ -488,14 +500,11 @@ function AdminThemeActivitiesPage() {
         source.tipo_actividad?.codigo ??
         typesQuery.data?.find((t) => t.id === source.tipo_actividad_id)?.codigo ??
         "";
-      const opcionesPayload = (source.opciones ?? []).map((opt, idx) => ({
-        etiqueta: opt.etiqueta ?? String.fromCharCode(65 + idx),
-        texto: opt.texto,
-        correcta: opt.correcta,
-        orden: opt.orden || idx + 1,
-        ...(opt.retroalimentacion ? { retroalimentacion: opt.retroalimentacion } : {}),
-      }));
-      const configNorm = normalizarConfiguracionActividad(codigo, source.configuracion ?? {}, opcionesPayload);
+      const { configuracion, opciones } = prepararOpcionesYConfiguracionActividad(
+        codigo,
+        source.configuracion ?? {},
+        source.opciones ?? [],
+      );
 
       await crearActividad({
         tema_id: themeId,
@@ -510,11 +519,13 @@ function AdminThemeActivitiesPage() {
         limite_tiempo_seg: source.limite_tiempo_seg,
         dificultad: (source.dificultad as ActivityDraft["dificultad"]) ?? "facil",
         obligatorio: source.obligatorio,
-        configuracion: configNorm,
-        opciones: opcionesPayload,
+        configuracion,
+        opciones,
       });
 
-      await asegurarGrupoEdadEnTema(themeId, grupoDestino, themeQuery.data?.grupos_edad);
+      if (!themeQuery.data?.grupos_edad?.length) {
+        await asegurarGrupoEdadEnTema(themeId, grupoDestino, themeQuery.data?.grupos_edad);
+      }
       await invalidate();
       setShowReuseDialog(false);
       toast.success(`“${source.titulo}” se copió a esta franja`);
@@ -653,20 +664,48 @@ function AdminThemeActivitiesPage() {
         )
       ) : (
         <>
-          <section className="admin-age-switcher" aria-label="Franja de edad">
-            <div><span className="admin-eyebrow">Franja activa</span><strong>Contenido independiente por audiencia</strong></div>
-            <div className="admin-age-switcher__options">
-              {allowedGroups.map((group) => {
-                const count = activityCountsByAge[group.id] ?? 0;
-                return (
-                  <button key={group.id} type="button" onClick={() => changeAgeContext(group.id)} className={selectedAge === group.id ? "admin-age-switcher__option--active" : ""}>
-                    <span>{group.nombre}</span>
-                    <small>{count} {count === 1 ? "actividad" : "actividades"} · {selectedAge === group.id ? "Editando" : "Ver secuencia"}</small>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
+          {allowedGroups.length === 1 ? (
+            <section className="admin-age-switcher" aria-label="Franja de edad del tema">
+              <div>
+                <span className="admin-eyebrow">Franja definida en Paso 1</span>
+                <strong>
+                  {allowedGroups[0]!.nombre} · {activityCountsByAge[allowedGroups[0]!.id] ?? activities.length}{" "}
+                  {(activityCountsByAge[allowedGroups[0]!.id] ?? activities.length) === 1 ? "actividad" : "actividades"}
+                </strong>
+              </div>
+              <button
+                type="button"
+                className="text-xs font-bold text-violet-600 hover:underline dark:text-violet-300"
+                onClick={() =>
+                  navigate({
+                    to: "/admin/temas/$themeId/edit",
+                    params: { themeId },
+                    search: { tab: "general" },
+                  })
+                }
+              >
+                Cambiar franja en Paso 1
+              </button>
+            </section>
+          ) : (
+            <section className="admin-age-switcher" aria-label="Franja de edad">
+              <div>
+                <span className="admin-eyebrow">Franjas elegidas en Paso 1</span>
+                <strong>Contenido independiente por audiencia</strong>
+              </div>
+              <div className="admin-age-switcher__options">
+                {allowedGroups.map((group) => {
+                  const count = activityCountsByAge[group.id] ?? 0;
+                  return (
+                    <button key={group.id} type="button" onClick={() => changeAgeContext(group.id)} className={selectedAge === group.id ? "admin-age-switcher__option--active" : ""}>
+                      <span>{group.nombre}</span>
+                      <small>{count} {count === 1 ? "actividad" : "actividades"} · {selectedAge === group.id ? "Editando" : "Ver secuencia"}</small>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          )}
 
           <section className="admin-activity-sequence-board">
             <header>

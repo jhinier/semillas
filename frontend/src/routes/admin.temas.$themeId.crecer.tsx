@@ -19,6 +19,7 @@ import {
   CrecerMatrixStatus,
   CrecerReuseDialog,
   CrecerStepSelector,
+  resolverFranjasDelTema,
 } from "@/features/admin/componentes/temas";
 import { ContenidoMarkdown } from "@/componentes/ui/contenido-markdown";
 import { ResolvedMediaImage } from "@/features/media/resolved-media-image";
@@ -61,7 +62,12 @@ function AdminThemeCrecerPage() {
   }
 
   const availableAgeGroups = editor.ageGroupsQuery.data ?? [];
-  const includedAgeIds = new Set(editor.theme?.grupos_edad?.map((g) => g.id) ?? []);
+  const gruposDelTema = editor.theme.grupos_edad?.length
+    ? editor.theme.grupos_edad
+    : estudioQuery.data?.tema?.grupos_edad;
+  const themeAgeGroups = resolverFranjasDelTema(availableAgeGroups, gruposDelTema);
+  const hasMultipleAgeGroups = themeAgeGroups.length > 1;
+  const singleAgeGroup = themeAgeGroups.length === 1 ? themeAgeGroups[0]! : null;
 
   const getAgeGroupMeta = (ageGroupId: string) => {
     const completosGrupo = editor.pasos.filter((step) =>
@@ -78,14 +84,11 @@ function AdminThemeCrecerPage() {
       ),
     ).length;
     const total = editor.totalPasos;
-    const incluida = includedAgeIds.has(ageGroupId);
     return {
       badge:
         completosGrupo >= total
           ? `${completosGrupo}/${total} listos`
-          : incluida
-            ? `${completosGrupo}/${total} momentos`
-            : `${completosGrupo}/${total} · Clic para completar`,
+          : `${completosGrupo}/${total} momentos`,
     };
   };
 
@@ -169,7 +172,9 @@ function AdminThemeCrecerPage() {
             <p>
               <strong>{editor.theme.titulo}</strong>
               <span aria-hidden="true"> · </span>
-              completa cada momento en orden para tus grupos de edad.
+              {themeAgeGroups.length === 1
+                ? `completa los momentos en orden para ${themeAgeGroups[0]?.nombre ?? "la franja seleccionada"}.`
+                : "completa cada momento en orden para tus grupos de edad elegidos."}
             </p>
           </div>
         </div>
@@ -196,11 +201,38 @@ function AdminThemeCrecerPage() {
         completitud={estudioQuery.data?.completitud}
       />
 
-      <section className="admin-crecer-workflow" aria-label="Selección de edad y momento">
+      <section className="admin-crecer-workflow" aria-label={hasMultipleAgeGroups ? "Selección de edad y momento" : "Selección de momento CRECER"}>
         <div className="admin-crecer-workflow__intro">
           <div>
             <span>¿Cómo completar este paso?</span>
-            <p>Paso 1: elige la edad · Paso 2: elige un momento (del 1 al 6) · Paso 3: escribe el título y el texto abajo y pulsa «Guardar este momento».</p>
+            <p>
+              {hasMultipleAgeGroups
+                ? "Paso 1: alterna entre las franjas elegidas en Datos base · Paso 2: elige un momento (del 1 al 6) · Paso 3: escribe el título y el texto abajo y pulsa «Guardar este momento»."
+                : "Paso 1: elige un momento (del 1 al 6) · Paso 2: escribe el título y el texto abajo y pulsa «Guardar este momento»."}
+            </p>
+            {singleAgeGroup ? (
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 font-extrabold text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-950/50 dark:text-emerald-200">
+                  Franja definida en Paso 1: {singleAgeGroup.nombre}
+                  {singleAgeGroup.edad_minima != null && singleAgeGroup.edad_maxima != null
+                    ? ` (${singleAgeGroup.edad_minima}–${singleAgeGroup.edad_maxima} años)`
+                    : ""}
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate({
+                      to: "/admin/temas/$themeId/edit",
+                      params: { themeId },
+                      search: { tab: "general" },
+                    })
+                  }
+                  className="font-bold text-violet-600 hover:underline dark:text-violet-300"
+                >
+                  Cambiar en Paso 1
+                </button>
+              </div>
+            ) : null}
           </div>
           <button
             type="button"
@@ -212,13 +244,20 @@ function AdminThemeCrecerPage() {
         </div>
 
         <div className="admin-crecer-workflow__controls">
-          {availableAgeGroups ? (
+          {hasMultipleAgeGroups ? (
             <AgeGroupSelector
-              ageGroups={availableAgeGroups}
+              ageGroups={themeAgeGroups}
               selectedAgeGroupId={editor.selectedAgeGroupId}
               onSelect={editor.setSelectedAgeGroupId}
               hasDraft={editor.hasDraftForAgeGroup}
               getAgeGroupMeta={getAgeGroupMeta}
+              onEditAgeGroups={() =>
+                navigate({
+                  to: "/admin/temas/$themeId/edit",
+                  params: { themeId },
+                  search: { tab: "general" },
+                })
+              }
             />
           ) : null}
 
@@ -229,6 +268,7 @@ function AdminThemeCrecerPage() {
             stepsData={editor.stepsQuery.data}
             onSelect={editor.setActiveStepCode}
             hasDraft={editor.hasDraftForStep}
+            stepNumber={hasMultipleAgeGroups ? 2 : 1}
           />
         </div>
       </section>
@@ -236,6 +276,7 @@ function AdminThemeCrecerPage() {
       <div className="admin-editor-shell">
         <main className="admin-editor-main">
           <CrecerContentEditor
+            stepNumber={hasMultipleAgeGroups ? 3 : 2}
             activeStep={editor.activeStep}
             selectedAgeGroup={editor.selectedAgeGroup}
             title={editor.title}
@@ -256,6 +297,8 @@ function AdminThemeCrecerPage() {
             }
             onSave={editor.saveCurrentDraft}
             onOpenReuse={() => setReuseDialogOpen(true)}
+            nextStepLabel={nextMoment?.nombre ?? null}
+            onNextStep={() => void (nextMoment ? handleSaveAndNextMoment() : handleContinueToActivities())}
             isPending={editor.saveMutation.isPending}
             isUploading={editor.uploadMutation.isPending}
             isSuccess={editor.isCurrentSaved}
@@ -278,28 +321,14 @@ function AdminThemeCrecerPage() {
               <ArrowLeft size={16} /> Paso anterior: Portada
             </button>
 
-            <div className="flex flex-wrap gap-2">
-              {nextMoment ? (
-                <button
-                  type="button"
-                  className="admin-secondary-button"
-                  disabled={editor.saveMutation.isPending}
-                  onClick={() => void handleSaveAndNextMoment()}
-                >
-                  {editor.isCurrentDirty ? `Guardar e ir a ${nextMoment.nombre}` : `Siguiente momento: ${nextMoment.nombre}`}{" "}
-                  <ArrowRight size={16} />
-                </button>
-              ) : null}
-
-              <button
-                type="button"
-                className="admin-primary-button"
-                disabled={editor.saveMutation.isPending}
-                onClick={() => void handleContinueToActivities()}
-              >
-                Continuar al Paso 4: Actividades <ArrowRight size={17} />
-              </button>
-            </div>
+            <button
+              type="button"
+              className="admin-primary-button"
+              disabled={editor.saveMutation.isPending}
+              onClick={() => void handleContinueToActivities()}
+            >
+              Continuar al Paso 4: Actividades <ArrowRight size={17} />
+            </button>
           </div>
         </main>
 
@@ -353,7 +382,7 @@ function AdminThemeCrecerPage() {
       </div>
 
       <CrecerMatrixStatus
-        ageGroups={availableAgeGroups ?? []}
+        ageGroups={themeAgeGroups}
         steps={editor.pasos}
         activeAgeGroupId={editor.selectedAgeGroupId}
         activeStepCode={editor.activeStepCode}

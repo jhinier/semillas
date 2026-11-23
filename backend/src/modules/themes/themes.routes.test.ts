@@ -47,6 +47,14 @@ function crearDbMock() {
         bucketAlmacenamiento: "media",
         claveAlmacenamiento: "imagen/portadas/la-creacion-del-mundo.png",
         activo: true
+      },
+      versiculo: {
+        id: "vers-1",
+        temaId: "550e8400-e29b-41d4-a716-446655440011",
+        libroId: 1,
+        capitulo: 1,
+        versiculo: 1,
+        texto: "En el principio creó Dios los cielos y la tierra."
       }
     }
   ];
@@ -192,5 +200,13 @@ describe("themes.routes", () => {
     expect(portada.status).toBe(200);
     expect(cuerpoPortada.datos.url).toContain("token=abc123");
     expect(cuerpoPortada.datos.expira_en_segundos).toBe(300);
+
+    const detalle = await app.fetch(new Request("http://localhost/550e8400-e29b-41d4-a716-446655440011"), env);
+    const cuerpoDetalle = (await detalle.json()) as {
+      exito: true;
+      datos: { versiculo_clave?: { libro_id: number; capitulo: number; versiculo: number; texto: string } };
+    };
+    expect(detalle.status).toBe(200);
+    expect(cuerpoDetalle.datos.versiculo_clave?.texto).toContain("En el principio creó Dios");
   });
 });

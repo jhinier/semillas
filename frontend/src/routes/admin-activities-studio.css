@@ -798,7 +798,7 @@
 .activity-library-pagination strong { min-width: 58px; text-align: center; }
 .activity-library-pagination select { width: auto; min-height: 34px; justify-self: end; padding: 6px 9px; font-size: 9px; }
 
-.activity-theme-picker-backdrop { position: fixed; z-index: 100; inset: 0; display: grid; place-items: center; background: rgba(20, 29, 44, .58); padding: 24px; backdrop-filter: blur(4px); }
+.activity-theme-picker-backdrop { position: fixed; z-index: 215; inset: 0; display: grid; place-items: center; background: rgba(20, 29, 44, .58); padding: 24px; backdrop-filter: blur(4px); }
 .activity-theme-picker { display: flex; flex-direction: column; width: min(660px, 100%); max-height: min(700px, calc(100dvh - 3rem)); overflow: hidden; border: 1px solid rgba(255,255,255,.4); border-radius: 21px; background: #fff; box-shadow: 0 30px 80px rgba(12, 20, 35, .3); }
 .activity-theme-picker > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; border-bottom: 1px solid #e5eaf1; padding: 24px 26px 20px; }
 .activity-theme-picker h2 { margin: 5px 0 5px; font-size: 26px; letter-spacing: -.035em; }

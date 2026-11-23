@@ -31,7 +31,8 @@ import {
   type ActividadAdmin,
 } from "@/features/admin/admin.api";
 import { resolverPasoTemaParaActividad } from "@/features/admin/hooks/use-theme-activities";
-import { normalizarConfiguracionActividad } from "@/features/admin/componentes/temas/activity-configuration";
+import { prepararOpcionesYConfiguracionActividad } from "@/features/admin/componentes/temas/activity-configuration";
+import { resolverFranjasDelTema } from "@/features/admin/componentes/temas";
 import { obtenerPasosCrecer } from "@/features/catalog/catalog.api";
 import {
   type ActivityLibraryStatus,
@@ -84,7 +85,10 @@ function AdminActivitiesPage() {
     () => page.temasBase.find((t) => t.id === targetThemeId) ?? null,
     [page.temasBase, targetThemeId],
   );
-  const targetAgeOptions = page.ageGroupsBase;
+  const targetAgeOptions = useMemo(
+    () => resolverFranjasDelTema(page.ageGroupsBase, targetTheme?.grupos_edad),
+    [page.ageGroupsBase, targetTheme?.grupos_edad],
+  );
 
   const targetStepOptions = useMemo(() => {
     const existing = targetStepsQuery.data ?? [];
@@ -144,14 +148,11 @@ function AdminActivitiesPage() {
       });
 
       const codigo = cloneSource.tipo_actividad?.codigo ?? "";
-      const opcionesPayload = (cloneSource.opciones ?? []).map((opt, idx) => ({
-        etiqueta: opt.etiqueta ?? String.fromCharCode(65 + idx),
-        texto: opt.texto,
-        correcta: opt.correcta,
-        orden: opt.orden || idx + 1,
-        ...(opt.retroalimentacion ? { retroalimentacion: opt.retroalimentacion } : {}),
-      }));
-      const configNorm = normalizarConfiguracionActividad(codigo, cloneSource.configuracion ?? {}, opcionesPayload);
+      const { configuracion, opciones } = prepararOpcionesYConfiguracionActividad(
+        codigo,
+        cloneSource.configuracion ?? {},
+        cloneSource.opciones ?? [],
+      );
 
       await crearActividad({
         tema_id: targetThemeId,
@@ -166,11 +167,13 @@ function AdminActivitiesPage() {
         limite_tiempo_seg: cloneSource.limite_tiempo_seg,
         dificultad: (cloneSource.dificultad as "facil" | "normal" | "dificil") ?? "facil",
         obligatorio: cloneSource.obligatorio,
-        configuracion: configNorm,
-        opciones: opcionesPayload,
+        configuracion,
+        opciones,
       });
 
-      await asegurarGrupoEdadEnTema(targetThemeId, targetAgeId, targetTheme?.grupos_edad);
+      if (!targetTheme?.grupos_edad?.length) {
+        await asegurarGrupoEdadEnTema(targetThemeId, targetAgeId, targetTheme?.grupos_edad);
+      }
       await invalidate();
       setCloneSource(null);
       toast.success(`Actividad copiada al tema “${targetTheme?.titulo ?? "destino"}”`);
@@ -386,15 +389,21 @@ function AdminActivitiesPage() {
               </label>
               <label className="block space-y-1.5">
                 <span className="text-xs font-bold uppercase tracking-wide text-slate-500">Franja de edad destino</span>
-                <select
-                  value={targetAgeId}
-                  onChange={(e) => setTargetAgeId(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent px-3.5 py-2.5 text-sm"
-                >
-                  {targetAgeOptions.map((group) => (
-                    <option key={group.id} value={group.id}>{group.nombre}</option>
-                  ))}
-                </select>
+                {targetAgeOptions.length === 1 ? (
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 px-3.5 py-2.5 text-sm font-extrabold text-emerald-900 dark:border-emerald-500/40 dark:bg-emerald-950/40 dark:text-emerald-200">
+                    {targetAgeOptions[0]!.nombre} · Franja única del tema
+                  </div>
+                ) : (
+                  <select
+                    value={targetAgeId}
+                    onChange={(e) => setTargetAgeId(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent px-3.5 py-2.5 text-sm"
+                  >
+                    {targetAgeOptions.map((group) => (
+                      <option key={group.id} value={group.id}>{group.nombre}</option>
+                    ))}
+                  </select>
+                )}
               </label>
               <label className="block space-y-1.5">
                 <span className="text-xs font-bold uppercase tracking-wide text-slate-500">Momento CRECER</span>

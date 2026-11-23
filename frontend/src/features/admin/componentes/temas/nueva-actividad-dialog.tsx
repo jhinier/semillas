@@ -105,7 +105,7 @@ export function NuevaActividadDialogContenido({ busqueda, temas, isLoading, sele
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center" role="presentation">
+    <div className="fixed inset-0 z-[215] flex items-end justify-center p-4 sm:items-center" role="presentation">
       <button type="button" className="absolute inset-0 bg-slate-950/55" aria-label="Cerrar diálogo" onClick={onClose} />
       <div ref={dialogoRef} role="dialog" aria-modal="true" aria-labelledby="nueva-actividad-titulo" aria-describedby="nueva-actividad-descripcion" tabIndex={-1} onKeyDown={contenerFoco} className="relative max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl outline-none sm:max-h-[calc(100dvh-4rem)] sm:p-7">
         <div className="mb-6 flex items-start justify-between gap-4">
